@@ -64,6 +64,196 @@ Visit [http://localhost:3000](http://localhost:3000)
 
 You'll be redirected to `/dashboard`. To see the login page, go to [http://localhost:3000/login](http://localhost:3000/login)
 
+## 🎨 Working with Shadcn UI
+
+### Adding New Components
+
+This project uses Shadcn UI components. Here's how to add new components:
+
+#### Manual Installation (Recommended for this project)
+
+Since the project structure is already set up, manually add components:
+
+1. **Create the component file** in `src/components/ui/`
+
+2. **Example: Adding a Progress component**
+
+```tsx
+// src/components/ui/progress.tsx
+"use client"
+
+import * as React from "react"
+import * as ProgressPrimitive from "@radix-ui/react-progress"
+
+import { cn } from "@/lib/utils"
+
+const Progress = React.forwardRef<
+  React.ElementRef<typeof ProgressPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
+>(({ className, value, ...props }, ref) => (
+  <ProgressPrimitive.Root
+    ref={ref}
+    className={cn(
+      "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
+      className
+    )}
+    {...props}
+  >
+    <ProgressPrimitive.Indicator
+      className="h-full w-full flex-1 bg-primary transition-all"
+      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+    />
+  </ProgressPrimitive.Root>
+))
+Progress.displayName = ProgressPrimitive.Root.displayName
+
+export { Progress }
+```
+
+3. **Install required dependencies**
+
+```bash
+npm install @radix-ui/react-progress
+```
+
+#### Using Shadcn CLI (Alternative)
+
+If you prefer using the CLI:
+
+```bash
+# Initialize shadcn (only if not already done)
+npx shadcn@latest init
+
+# Add specific components
+npx shadcn@latest add progress
+npx shadcn@latest add toast
+npx shadcn@latest add popover
+npx shadcn@latest add calendar
+npx shadcn@latest add command
+```
+
+**Note**: If using the CLI, components will be added to `src/components/ui/` automatically.
+
+### Available Components Already Installed
+
+The following Shadcn components are already available:
+
+- ✅ `button` - Buttons with variants
+- ✅ `card` - Container cards
+- ✅ `input` - Text inputs
+- ✅ `label` - Form labels
+- ✅ `table` - Data tables
+- ✅ `avatar` - User avatars
+- ✅ `badge` - Status badges
+- ✅ `dropdown-menu` - Dropdown menus
+- ✅ `select` - Select dropdowns
+- ✅ `textarea` - Multiline inputs
+- ✅ `separator` - Dividers
+- ✅ `dialog` - Modal dialogs
+- ✅ `switch` - Toggle switches
+
+### Commonly Needed Components
+
+Here are components you might want to add:
+
+```bash
+# Form components
+npx shadcn@latest add form
+npx shadcn@latest add checkbox
+npx shadcn@latest add radio-group
+
+# Navigation
+npx shadcn@latest add tabs
+npx shadcn@latest add breadcrumb
+npx shadcn@latest add navigation-menu
+
+# Feedback
+npx shadcn@latest add toast
+npx shadcn@latest add alert
+npx shadcn@latest add progress
+
+# Overlays
+npx shadcn@latest add popover
+npx shadcn@latest add tooltip
+npx shadcn@latest add sheet
+
+# Data Display
+npx shadcn@latest add calendar
+npx shadcn@latest add accordion
+npx shadcn@latest add collapsible
+```
+
+### Usage Example
+
+```tsx
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+
+export function MyComponent() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>My Form</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Input placeholder="Enter your name" />
+        <Button>Submit</Button>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+### Customizing Components
+
+All Shadcn components can be customized by:
+
+1. **Editing the component file** in `src/components/ui/`
+2. **Modifying Tailwind classes** in the component
+3. **Updating theme colors** in `src/app/globals.css`
+
+Example customization:
+
+```tsx
+// Customize button in src/components/ui/button.tsx
+const buttonVariants = cva(
+  "inline-flex items-center justify-center...",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        // Add your custom variant
+        custom: "bg-purple-500 text-white hover:bg-purple-600",
+      },
+    },
+  }
+)
+```
+
+### Shadcn Configuration
+
+The project's Shadcn configuration is in `components.json`:
+
+```json
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "tailwind.config.ts",
+    "css": "src/app/globals.css",
+    "baseColor": "slate",
+    "cssVariables": true
+  },
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils"
+  }
+}
+```
+
 ## 📋 Available Routes
 
 | Route | Description |
