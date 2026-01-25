@@ -1,6 +1,17 @@
-import { treaty } from "@elysiajs/eden"
-import type  { App } from "@backend/autogen.routes";
+import axios, { AxiosResponse, AxiosError } from 'axios';
+import { env } from './env';
 
-export const client = treaty<App>('localhost:3000');
+export const api = axios.create({
+    baseURL: env.apiUrl,
+    withCredentials: true,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
 
-
+api.interceptors.response.use(
+    (response: AxiosResponse) => response,
+    (error: AxiosError) => {
+        return Promise.reject(error);
+    }
+);

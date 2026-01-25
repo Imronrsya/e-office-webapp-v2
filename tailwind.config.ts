@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: ["class"],
+  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -11,6 +11,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // --- WARNA BAWAAN SHADCN
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -51,14 +52,24 @@ const config: Config = {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+
+        // --- WARNA CUSTOM
+        "primary-base": "#2B2B2B",
+        "secondary-400": "#6D6D6D",
+        "grey-100": "#E1DFE0",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      // --- FONT CUSTOM ---
+      fontFamily: {
+        sans: ["var(--font-poppins)", "sans-serif"],
+      },
     },
   },
+  // Plugin animasi penting untuk Shadcn
   plugins: [],
 };
 export default config;
