@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { dashboardService, type DashboardItem, type DashboardPagination } from "@/services/dashboard.service";
+import { dashboardService } from "@/services/dashboard.service";
+import type { DashboardItem, DashboardPagination } from "@/features/dashboard/types";
 
 import { DashboardToolbar, type DashboardFilters, type TabCount } from "./dashboard-toolbar";
 import { LetterTable } from "./letter-table";

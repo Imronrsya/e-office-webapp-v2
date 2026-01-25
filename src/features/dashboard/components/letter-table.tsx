@@ -17,8 +17,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 import type { ColumnConfig } from "../config/dashboard-config";
-import type { DashboardItem } from "@/services/dashboard.service";
-
+import type { DashboardItem } from "@/features/dashboard/types";
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -54,7 +53,7 @@ function formatTipeSurat(tipe: string): string {
 
 function formatJenisSurat(jenis: string): string {
   const mapping: Record<string, string> = {
-    AKADEMIK: "SK Dekan",
+    AKADEMIK: "Akademik",
     SUMBER_DAYA: "Sumber Daya",
     UMUM: "Umum",
   };

@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, FileText, Calendar, X } from "lucide-react";
+import { ArrowLeft, FileText, X } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import {
     submissionService,
     type SubmissionFormData,
+    type CreateSubmissionJSON,
+    type LetterType
 } from "@/services/submission.service";
 import { FileUpload } from "./file-upload";
 import BottomNav from "@/components/layout/bottom-nav";
@@ -25,7 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 
 // ============================================================================
-// TYPES
+// TYPES & INTERFACES
 // ============================================================================
 
 type JenisSurat = "SURAT_TUGAS" | "SURAT_KEPUTUSAN";
@@ -33,7 +35,7 @@ type TTDLevel = "kaprodi" | "kadep" | "";
 
 interface FormState {
     jenisSurat: JenisSurat | "";
-    judulSurat: string;
+    judulSurat: string; // Di-mapping ke 'judulAcara' di backend
     keperluan: string;
     namaLengkap: string;
     nimNip: string;
@@ -46,7 +48,7 @@ interface FormState {
 }
 
 // ============================================================================
-// COMPONENT
+// MAIN COMPONENT
 // ============================================================================
 
 export function PengajuanForm() {
@@ -54,6 +56,9 @@ export function PengajuanForm() {
     const { user } = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
+    const [letterTypes, setLetterTypes] = useState<LetterType[]>([]);
+
+    // Initial State
     const [formState, setFormState] = useState<FormState>({
         jenisSurat: "",
         judulSurat: "",
@@ -68,69 +73,121 @@ export function PengajuanForm() {
         ttdLevel: "",
     });
 
-    // Prefill user data
+    // 1. Fetch Letter Types dari Backend saat component dimuat
+    useEffect(() => {
+        const fetchTypes = async () => {
+            const types = await submissionService.getLetterTypes();
+            setLetterTypes(types);
+        };
+        fetchTypes();
+    }, []);
+
+    // 2. Auto-fill data diri user jika sudah login
     useEffect(() => {
         if (user) {
             setFormState((prev) => ({
                 ...prev,
                 namaLengkap: user.name || "",
+                // Jika di masa depan profile user menyimpan NIP/NIM/Prodi, isi di sini
             }));
         }
     }, [user]);
 
-    const handleInputChange = (
-        field: keyof FormState,
-        value: string
-    ) => {
+    // Handle perubahan input form
+    const handleInputChange = (field: keyof FormState, value: string) => {
         setFormState((prev) => ({ ...prev, [field]: value }));
     };
 
+    // Handle Submit Form
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validasi dasar tipe surat
+        if (!formState.jenisSurat) {
+            alert("Mohon pilih tipe surat terlebih dahulu.");
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
-            // Determine if user is mahasiswa or dosen based on role
             const isMahasiswa = user?.role?.toUpperCase() === "MAHASISWA";
 
-            const submissionData: SubmissionFormData = {
-                letterTypeId: formState.jenisSurat === "SURAT_TUGAS" ? "ST" : "SK",
+            // 3. MAPPING FRONTEND -> BACKEND
+            // Kita cari UUID dari letterType berdasarkan kode "ST" atau "SK"
+            const targetCode = formState.jenisSurat === "SURAT_TUGAS" ? "ST" : "SK";
+            const selectedType = letterTypes.find(t => t.code === targetCode);
+
+            if (!selectedType) {
+                alert(`Tipe surat dengan kode '${targetCode}' tidak ditemukan di sistem.`);
+                setIsSubmitting(false);
+                return;
+            }
+
+            // 4. SUSUN PAYLOAD
+            // Backend meminta struktur Nested Object: { letterTypeId, formData: {}, signatureConfig: {} }
+            const formDataPayload: SubmissionFormData = {
+                // Data Diri
                 nama: formState.namaLengkap,
                 nim: isMahasiswa ? formState.nimNip : undefined,
                 nip: !isMahasiswa ? formState.nimNip : undefined,
-                email: user?.email || "",
-                noHp: "",
-                departemen: "",
+                departemen: "Informatika",   // Hardcoded sementara (idealnya dari profile)
                 programStudi: formState.programStudi,
+
+                // Detail Surat
                 jenisSurat: formState.jenisSurat as JenisSurat,
                 keperluan: formState.keperluan,
-                judulAcara: formState.namaAcara,
-                tanggalAcara: formState.tanggalAcara,
+
+                // PENTING: Backend pakai 'judulAcara', Frontend pakai 'judulSurat'
+                judulAcara: formState.judulSurat,
+
+                // PENTING: Backend butuh ISO Date String
+                tanggalAcara: formState.tanggalAcara ? new Date(formState.tanggalAcara).toISOString() : new Date().toISOString(),
+
                 durasiAcara: formState.durasiAcara,
                 lokasiAcara: formState.lokasiAcara,
-                targetSigner: "DEKAN",
-                requestKadepSign: formState.ttdLevel === "kadep",
+
+                // Config
                 butuhTtdKadep: formState.ttdLevel === "kadep",
             };
 
-            const result = await submissionService.createSubmission(
-                submissionData,
-                files
-            );
+            const payload: CreateSubmissionJSON = {
+                letterTypeId: selectedType.id, // Menggunakan UUID asli
+                formData: formDataPayload,
+                signatureConfig: {
+                    targetSigner: "DEKAN", // Default signer sesuai docs
+                    requestKadepSign: formState.ttdLevel === "kadep",
+                }
+            };
 
+            // 5. EKSEKUSI REQUEST
+            // Jika ada file -> Multipart Endpoint
+            // Jika tidak ada -> JSON Endpoint
+            let result;
+            if (files.length > 0) {
+                result = await submissionService.createSubmissionWithFiles(payload, files);
+            } else {
+                result = await submissionService.createSubmission(payload);
+            }
+
+            // Handle Response
             if (result.success) {
                 router.push("/dashboard");
             } else {
                 alert(result.message || "Gagal mengajukan surat");
             }
-        } catch (error) {
+
+        } catch (error: any) {
             console.error("Submission error:", error);
-            alert("Terjadi kesalahan saat mengajukan surat");
+            // Ambil pesan error spesifik dari backend jika ada
+            const msg = error.response?.data?.message || "Terjadi kesalahan saat mengajukan surat";
+            alert(msg);
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    // Validasi tombol submit (Client-side validation)
     const isFormValid =
         formState.jenisSurat &&
         formState.judulSurat &&
@@ -138,22 +195,21 @@ export function PengajuanForm() {
         formState.namaLengkap &&
         formState.nimNip &&
         formState.programStudi &&
-        formState.namaAcara &&
         formState.tanggalAcara &&
         formState.lokasiAcara;
 
     return (
         <form onSubmit={handleSubmit} className="min-h-screen flex flex-col">
-            {/* Content */}
+            {/* --- HEADER --- */}
             <div className="flex-1 w-full pb-24">
-                {/* Title */}
                 <div className="flex items-center gap-3 mb-8">
                     <div className="w-2 h-8 bg-[#2B2B2B] rounded-full" />
                     <h1 className="text-2xl font-bold text-gray-900">Pengajuan</h1>
                 </div>
 
                 <div className="space-y-8">
-                    {/* Tipe Surat */}
+
+                    {/* --- TIPE SURAT --- */}
                     <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-700">
                             Tipe Surat <span className="text-red-500">*</span>
@@ -211,38 +267,36 @@ export function PengajuanForm() {
                         </div>
                     </div>
 
-                    {/* Judul Surat */}
+                    {/* --- JUDUL & KEPERLUAN --- */}
                     <div className="space-y-2">
                         <Label htmlFor="judulSurat" className="text-sm font-medium text-gray-700">
-                            Judul Surat <span className="text-red-500">*</span>
+                            Judul Kegiatan / Acara <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             id="judulSurat"
-                            placeholder="Masukan Judul Surat"
+                            placeholder="Contoh: Lomba Competitive Programming Nasional"
                             value={formState.judulSurat}
                             onChange={(e) => handleInputChange("judulSurat", e.target.value)}
                             className="bg-white"
                         />
                     </div>
 
-                    {/* Keperluan */}
                     <div className="space-y-2">
                         <Label htmlFor="keperluan" className="text-sm font-medium text-gray-700">
                             Keperluan <span className="text-red-500">*</span>
                         </Label>
                         <Textarea
                             id="keperluan"
-                            placeholder="Masukan Keperluan Surat"
+                            placeholder="Jelaskan keperluan pembuatan surat secara detail"
                             value={formState.keperluan}
                             onChange={(e) => handleInputChange("keperluan", e.target.value)}
                             className="bg-white min-h-[100px]"
                         />
                     </div>
 
-                    {/* Divider */}
                     <hr className="border-gray-200" />
 
-                    {/* Data Diri Section */}
+                    {/* --- DATA DIRI --- */}
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold text-gray-900">Data Diri</h2>
 
@@ -254,24 +308,24 @@ export function PengajuanForm() {
                                 id="namaLengkap"
                                 placeholder="Masukan Nama Lengkap"
                                 value={formState.namaLengkap}
-                                onChange={(e) =>
-                                    handleInputChange("namaLengkap", e.target.value)
-                                }
+                                onChange={(e) => handleInputChange("namaLengkap", e.target.value)}
                                 className="bg-white"
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="nimNip" className="text-sm font-medium text-gray-700">
-                                NIM/NIP <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                id="nimNip"
-                                placeholder="Masukan NIM/NIP"
-                                value={formState.nimNip}
-                                onChange={(e) => handleInputChange("nimNip", e.target.value)}
-                                className="bg-white"
-                            />
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="nimNip" className="text-sm font-medium text-gray-700">
+                                    NIM/NIP <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="nimNip"
+                                    placeholder="Nomor Induk"
+                                    value={formState.nimNip}
+                                    onChange={(e) => handleInputChange("nimNip", e.target.value)}
+                                    className="bg-white"
+                                />
+                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -280,58 +334,40 @@ export function PengajuanForm() {
                             </Label>
                             <Select
                                 value={formState.programStudi}
-                                onValueChange={(value) =>
-                                    handleInputChange("programStudi", value)
-                                }
+                                onValueChange={(value) => handleInputChange("programStudi", value)}
                             >
                                 <SelectTrigger className="bg-white">
                                     <SelectValue placeholder="Pilih Program Studi" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="matematika">Matematika</SelectItem>
-                                    <SelectItem value="fisika">Fisika</SelectItem>
-                                    <SelectItem value="kimia">Kimia</SelectItem>
-                                    <SelectItem value="biologi">Biologi</SelectItem>
-                                    <SelectItem value="statistika">Statistika</SelectItem>
-                                    <SelectItem value="informatika">Informatika</SelectItem>
+                                    <SelectItem value="S1 Informatika">S1 Informatika</SelectItem>
+                                    <SelectItem value="S1 Matematika">S1 Matematika</SelectItem>
+                                    <SelectItem value="S1 Statistika">S1 Statistika</SelectItem>
+                                    <SelectItem value="S1 Biologi">S1 Biologi</SelectItem>
+                                    <SelectItem value="S1 Kimia">S1 Kimia</SelectItem>
+                                    <SelectItem value="S1 Fisika">S1 Fisika</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
 
-                    {/* Divider */}
                     <hr className="border-gray-200" />
 
-                    {/* Detail Acara Section */}
+                    {/* --- DETAIL ACARA --- */}
                     <div className="space-y-4">
-                        <h2 className="text-lg font-semibold text-gray-900">Detail Acara</h2>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="namaAcara" className="text-sm font-medium text-gray-700">
-                                Nama Acara <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                id="namaAcara"
-                                placeholder="Masukan Nama Acara"
-                                value={formState.namaAcara}
-                                onChange={(e) => handleInputChange("namaAcara", e.target.value)}
-                                className="bg-white"
-                            />
-                        </div>
+                        <h2 className="text-lg font-semibold text-gray-900">Detail Pelaksanaan</h2>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="tanggalAcara" className="text-sm font-medium text-gray-700">
-                                    Tanggal Acara <span className="text-red-500">*</span>
+                                    Tanggal Mulai <span className="text-red-500">*</span>
                                 </Label>
                                 <div className="relative">
                                     <Input
                                         id="tanggalAcara"
                                         type="date"
                                         value={formState.tanggalAcara}
-                                        onChange={(e) =>
-                                            handleInputChange("tanggalAcara", e.target.value)
-                                        }
+                                        onChange={(e) => handleInputChange("tanggalAcara", e.target.value)}
                                         className="bg-white"
                                     />
                                 </div>
@@ -339,15 +375,13 @@ export function PengajuanForm() {
 
                             <div className="space-y-2">
                                 <Label htmlFor="durasiAcara" className="text-sm font-medium text-gray-700">
-                                    Durasi Acara
+                                    Durasi / Tanggal Selesai
                                 </Label>
                                 <Input
                                     id="durasiAcara"
-                                    placeholder="Contoh: 3 hari"
+                                    placeholder="Contoh: 3 hari / 25 Januari 2026"
                                     value={formState.durasiAcara}
-                                    onChange={(e) =>
-                                        handleInputChange("durasiAcara", e.target.value)
-                                    }
+                                    onChange={(e) => handleInputChange("durasiAcara", e.target.value)}
                                     className="bg-white"
                                 />
                             </div>
@@ -355,41 +389,36 @@ export function PengajuanForm() {
 
                         <div className="space-y-2">
                             <Label htmlFor="lokasiAcara" className="text-sm font-medium text-gray-700">
-                                Lokasi Acara <span className="text-red-500">*</span>
+                                Lokasi Kegiatan <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="lokasiAcara"
-                                placeholder="Masukan Lokasi Acara"
+                                placeholder="Tempat pelaksanaan"
                                 value={formState.lokasiAcara}
-                                onChange={(e) =>
-                                    handleInputChange("lokasiAcara", e.target.value)
-                                }
+                                onChange={(e) => handleInputChange("lokasiAcara", e.target.value)}
                                 className="bg-white"
                             />
                         </div>
                     </div>
 
-                    {/* Divider */}
                     <hr className="border-gray-200" />
 
-                    {/* TTD Level */}
+                    {/* --- LEVEL TTD --- */}
                     <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-700">
-                            Tanda Tangan yang Dibutuhkan
+                            Tanda Tangan Tambahan (Opsional)
                         </Label>
                         <div className="flex items-center gap-2">
                             <Select
                                 value={formState.ttdLevel}
-                                onValueChange={(value) =>
-                                    handleInputChange("ttdLevel", value as TTDLevel)
-                                }
+                                onValueChange={(value) => handleInputChange("ttdLevel", value as TTDLevel)}
                             >
                                 <SelectTrigger className="bg-white flex-1">
-                                    <SelectValue placeholder="Pilih Level Tanda Tangan" />
+                                    <SelectValue placeholder="Pilih jika perlu TTD Departemen" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="kaprodi">Sampai Kaprodi</SelectItem>
-                                    <SelectItem value="kadep">Sampai Kadep</SelectItem>
+                                    <SelectItem value="kaprodi">Hanya Kaprodi</SelectItem>
+                                    <SelectItem value="kadep">Sampai Ketua Departemen</SelectItem>
                                 </SelectContent>
                             </Select>
                             {formState.ttdLevel && (
@@ -404,25 +433,30 @@ export function PengajuanForm() {
                                 </Button>
                             )}
                         </div>
+                        <p className="text-xs text-gray-500">
+                            Secara default surat akan ditandatangani oleh Dekan. Pilih opsi di atas jika surat memerlukan verifikasi berjenjang dari Departemen.
+                        </p>
                     </div>
 
-                    {/* Divider */}
                     <hr className="border-gray-200" />
 
-                    {/* Lampiran */}
+                    {/* --- LAMPIRAN --- */}
                     <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-700">
-                            Lampiran Tambahan
+                            Lampiran Dokumen
                         </Label>
                         <FileUpload files={files} onFilesChange={setFiles} />
+                        <p className="text-xs text-gray-500">
+                            Format: PDF, JPG, PNG. Maks 5MB per file.
+                        </p>
                     </div>
 
-                    {/* Bottom spacing for fixed footer */}
+                    {/* Spacer footer */}
                     <div className="h-24" />
                 </div>
             </div>
 
-            {/* Fixed Bottom Nav */}
+            {/* --- BOTTOM NAV (ACTION BUTTONS) --- */}
             <BottomNav
                 leftContent={
                     <Button

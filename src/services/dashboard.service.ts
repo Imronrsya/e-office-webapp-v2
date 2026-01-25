@@ -1,101 +1,20 @@
 // src/services/dashboard.service.ts
 import { api } from '@/lib/api';
-
-export interface DashboardColumn {
-  key: string;
-  label: string;
-}
-
-export interface DashboardTab {
-  key: string;
-  label: string;
-  count: number;
-}
-
-export interface DashboardItem {
-  id: string;
-  judulSurat: string;
-  tipeSurat: string;
-  tanggalSurat: string;
-  status: string;
-  displayStatus: string;  // Backend returns 'displayStatus' not 'statusDisplay'
-  actions: string | string[];  // Backend may return string or array
-  namaPengaju?: string;
-  jenisSurat?: string;
-  nomorSurat?: string;
-}
-
-export interface DashboardFilters {
-  search: boolean;
-  type?: string[];
-  status: string[];
-  tipeSurat: string[];
-  jenisSurat?: string[];
-}
-
-export interface DashboardPagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
-export interface DashboardData {
-  items: DashboardItem[];
-  pagination: DashboardPagination;
-  columns: DashboardColumn[];
-  filters?: DashboardFilters;
-  availableActions?: string[];
-  tabs?: DashboardTab[];
-  statistics?: {
-    total: number;
-    pending: number;
-    completed: number;
-    waiting: number;
-  };
-  userRole?: string;
-}
-
-export interface DashboardResponse {
-  success: boolean;
-  message?: string;
-  data: DashboardData;
-}
-
-export interface DashboardParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: string;
-  letterType?: string;
-  category?: string;
-  type?: string;
-}
-
-export interface DashboardStatistics {
-  total: number;
-  pending: number;
-  completed: number;
-  rejected: number;
-  thisMonth: number;
-}
-
-export interface RecentActivity {
-  id: string;
-  action: string;
-  letterTitle: string;
-  actorName: string;
-  actorRole: string;
-  timestamp: string;
-}
+import type { 
+  DashboardResponse, 
+  DashboardParams, 
+  DashboardStatistics, 
+  RecentActivity 
+} from '@/features/dashboard/types';
 
 export const dashboardService = {
   /**
    * Get dashboard data based on user role
-   * Backend: /dash/ (authGuard protected)
+   * Backend: /dash (authGuard protected)
    */
-  getDashboard: async (params?: DashboardParams): Promise<DashboardResponse> => {
-    const response = await api.get<DashboardResponse>('/dash/', { params });
+  getDashboard: async (params?: DashboardParams): Promise<{ success: boolean; data: DashboardResponse }> => {
+    // KOREKSI: Tambahkan wrapper { success, data } agar sesuai dengan format JSON backend
+    const response = await api.get<{ success: boolean; data: DashboardResponse }>('/dash', { params });
     return response.data;
   },
 
