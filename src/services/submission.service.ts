@@ -61,13 +61,15 @@ export const submissionService = {
     /**
      * Get available letter types
      * Endpoint: GET /api/submission/letter-types (PUBLIC)
+     * Backend returns: { success: boolean; message: string; data: LetterType[] }
      */
     async getLetterTypes(): Promise<LetterType[]> {
         try {
-            const response = await api.get<{ success: boolean; data: { letterTypes: LetterType[] } }>(
+            const response = await api.get<{ success: boolean; message: string; data: LetterType[] }>(
                 "/api/submission/letter-types"
             );
-            return response.data.data.letterTypes || [];
+            // Backend mengembalikan data langsung sebagai array, bukan { letterTypes: [...] }
+            return response.data.data || [];
         } catch (error) {
             console.error("Failed to get letter types:", error);
             return [];

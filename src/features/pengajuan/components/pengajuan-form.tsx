@@ -76,8 +76,13 @@ export function PengajuanForm() {
     // 1. Fetch Letter Types dari Backend saat component dimuat
     useEffect(() => {
         const fetchTypes = async () => {
-            const types = await submissionService.getLetterTypes();
-            setLetterTypes(types);
+            try {
+                const types = await submissionService.getLetterTypes();
+                console.log('[PengajuanForm] Letter types loaded:', types);
+                setLetterTypes(types);
+            } catch (error) {
+                console.error('[PengajuanForm] Failed to load letter types:', error);
+            }
         };
         fetchTypes();
     }, []);
