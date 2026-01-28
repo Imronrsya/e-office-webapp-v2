@@ -40,8 +40,14 @@ export interface DocumentSummary {
 export interface SignatureSummary {
     signerRole: string;
     signerName: string;
+    signerNip?: string | null;
+    signatureUrl?: string | null; // URL of the actual signature image
     signedAt: string;
     order: number;
+    // Position data for signature placement on PDF
+    positionX?: number | null;
+    positionY?: number | null;
+    positionPage?: number | null;
 }
 
 export interface AttachmentSummary {
@@ -390,6 +396,9 @@ export const suratService = {
                 signerName: string;
                 signerNip?: string;
                 order: number;
+                x?: number;
+                y?: number;
+                page?: number;
             }>;
             tembusan?: string[];
             content?: Record<string, unknown>;
@@ -460,13 +469,16 @@ export const suratService = {
     /**
      * Pejabat signs the document
      * Uses letterId (not documentId)
+     * Supports both base64 signatureData and existing signatureUrl
      */
     async signSuratHasil(
         letterId: string, 
         signatureData: { 
-            signatureUrl: string; 
-            signerName: string; 
-            signerNip?: string 
+            signatureData?: string; // base64 data for new signatures
+            signatureUrl?: string;  // URL for saved signatures
+            saveSignature?: boolean;
+            signerName?: string; 
+            signerNip?: string;
         }
     ): Promise<ApiResponse<unknown>> {
         const response = await api.post<ApiResponse<unknown>>(

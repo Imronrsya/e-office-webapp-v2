@@ -77,6 +77,8 @@ interface Props {
     onSignersChange: (signers: SignerPosition[]) => void;
     signerRoles: Array<{ value: string; label: string }>;
     readOnly?: boolean;
+    /** Callback when the rendered PDF width changes - useful for coordinate scaling */
+    onRenderedWidthChange?: (width: number) => void;
 }
 
 const COLORS = [
@@ -253,13 +255,24 @@ export default function PdfSignaturePositioner({
     signers,
     onSignersChange,
     signerRoles,
-    readOnly = false
+    readOnly = false,
+    onRenderedWidthChange
 }: Props) {
     const [numPages, setNumPages] = useState<number>(0);
     const [pageNumber, setPageNumber] = useState<number>(1);
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const containerRef = useRef<HTMLDivElement>(null);
     const pdfWrapperRef = useRef<HTMLDivElement>(null);
+
+    // Calculate the actual rendered width (capped at 700)
+    const renderedWidth = containerWidth > 700 ? 700 : Math.max(containerWidth - 32, 300);
+
+    // Notify parent when rendered width changes
+    useEffect(() => {
+        if (renderedWidth > 0 && onRenderedWidthChange) {
+            onRenderedWidthChange(renderedWidth);
+        }
+    }, [renderedWidth, onRenderedWidthChange]);
 
     useResizeObserver(containerRef, (width) => {
         setContainerWidth(width);

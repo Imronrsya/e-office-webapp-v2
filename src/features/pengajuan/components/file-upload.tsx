@@ -1,8 +1,14 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Upload, X, FileText, Image } from "lucide-react";
+import { Upload, X, FileText, Image, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface FileUploadProps {
@@ -25,6 +31,27 @@ export function FileUpload({
 }: FileUploadProps) {
     const [dragActive, setDragActive] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [previewFile, setPreviewFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    const handlePreview = (file: File) => {
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+        setPreviewFile(file);
+    };
+
+    const handleClosePreview = (open: boolean) => {
+        if (!open) {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+            setPreviewUrl(null);
+            setPreviewFile(null);
+        }
+    };
 
     const validateFile = useCallback(
         (file: File): string | null => {
@@ -166,9 +193,13 @@ export function FileUpload({
                     {files.map((file, index) => (
                         <div
                             key={`${file.name}-${index}`}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border group"
                         >
-                            <div className="flex items-center gap-3 min-w-0">
+                            <div 
+                                className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors"
+                                onClick={() => handlePreview(file)}
+                                title="Klik untuk melihat preview"
+                            >
                                 {getFileIcon(file)}
                                 <div className="min-w-0">
                                     <p className="text-sm font-medium text-gray-700 truncate">
@@ -192,6 +223,36 @@ export function FileUpload({
                     ))}
                 </div>
             )}
+
+            {/* Preview Modal */}
+            <Dialog open={!!previewFile} onOpenChange={handleClosePreview}>
+                <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col p-6">
+                    <DialogHeader>
+                        <DialogTitle className="truncate pr-8">
+                            {previewFile?.name}
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 w-full h-full min-h-0 bg-gray-100 rounded-md overflow-hidden relative border">
+                        {previewFile && previewUrl && (
+                            previewFile.type === "application/pdf" ? (
+                                <iframe
+                                    src={previewUrl}
+                                    className="w-full h-full"
+                                    title="PDF Preview"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center overflow-auto p-4">
+                                    <img
+                                        src={previewUrl}
+                                        alt="Preview"
+                                        className="max-w-full max-h-full object-contain shadow-sm"
+                                    />
+                                </div>
+                            )
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* File Counter */}
             <p className="text-xs text-gray-500 text-right">

@@ -36,7 +36,7 @@ import { toast } from "sonner";
 import BottomNav from "@/components/layout/bottom-nav";
 import { suratService } from "@/services/surat.service";
 import PdfSignaturePositioner, { SignerPosition } from "@/components/pdf-signature/PdfSignaturePositioner";
-import { generatePdfBlobUrl } from "@/lib/pdf-generator";
+import { generatePdfBlobUrl, generatePdfWithSignatures, SignerPlaceholder } from "@/lib/pdf-generator";
 
 // ============================================================================
 // TYPES
@@ -243,6 +243,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [draftPdfUrl, setDraftPdfUrl] = useState<string | undefined>(undefined);
     const [showPositioner, setShowPositioner] = useState(true); // Auto-show positioner
     const [generatingPdf, setGeneratingPdf] = useState(false);
+    // Track the rendered PDF width for coordinate scaling
+    const [renderedPdfWidth, setRenderedPdfWidth] = useState<number>(600);
     
     // Tembusan state
     const [tembusan, setTembusan] = useState<TembusanItem[]>([]);
@@ -557,11 +559,51 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 toast.error("Semua penanda tangan harus dipilih");
                 return;
             }
+            // Regenerate PDF with signature blocks embedded
+            await regeneratePdfWithSignatures();
             setCurrentStep("tembusan");
         } else if (currentStep === "tembusan") {
             setCurrentStep("review");
         }
     };
+
+    // Regenerate PDF with signature placeholder blocks embedded
+    const regeneratePdfWithSignatures = useCallback(async () => {
+        if (!suratType) return;
+        
+        setGeneratingPdf(true);
+        try {
+            const formData = getFormDataForPdf();
+            // Convert signers to SignerPlaceholder format
+            const signerPlaceholders: SignerPlaceholder[] = signers.map(s => ({
+                id: s.id,
+                role: SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
+                name: s.name || SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
+                nip: s.nip,
+                x: s.x || 0,
+                y: s.y || 0,
+                page: s.page || 1,
+                order: s.order
+            }));
+            
+            // Generate PDF with signatures embedded, using the actual rendered width
+            const pdfBlob = await generatePdfWithSignatures(suratType, formData, signerPlaceholders, renderedPdfWidth);
+            
+            // Clean up old URL
+            if (draftPdfUrl) {
+                URL.revokeObjectURL(draftPdfUrl);
+            }
+            
+            // Create new URL
+            const newPdfUrl = URL.createObjectURL(pdfBlob);
+            setDraftPdfUrl(newPdfUrl);
+        } catch (error) {
+            console.error("Error generating PDF with signatures:", error);
+            toast.error("Gagal membuat PDF dengan tanda tangan");
+        } finally {
+            setGeneratingPdf(false);
+        }
+    }, [suratType, signers, getFormDataForPdf, draftPdfUrl, renderedPdfWidth]);
 
     const goToPrevStep = () => {
         if (currentStep === "signature") {
@@ -1365,6 +1407,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         onSignersChange={handleSignerPositionsChange}
                                         signerRoles={SIGNER_ROLES}
                                         readOnly={false}
+                                        onRenderedWidthChange={setRenderedPdfWidth}
                                     />
                                 )}
                                 
@@ -1537,6 +1580,31 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             </p>
                                         )}
                                     </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* PDF Preview with Signature Blocks */}
+                                <div>
+                                    <Label className="text-sm text-muted-foreground mb-2 block">
+                                        Preview Surat (dengan Blok Tanda Tangan)
+                                    </Label>
+                                    {draftPdfUrl ? (
+                                        <div className="border rounded-lg overflow-hidden bg-gray-100">
+                                            <iframe
+                                                src={draftPdfUrl}
+                                                className="w-full h-[500px]"
+                                                title="Preview Surat"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="border rounded-lg p-8 text-center bg-gray-50">
+                                            <FileText className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+                                            <p className="text-sm text-muted-foreground">
+                                                PDF preview tidak tersedia
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

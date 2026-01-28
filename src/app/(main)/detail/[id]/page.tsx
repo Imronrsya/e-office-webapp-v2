@@ -42,6 +42,7 @@ import { SuratPreview } from "./components/surat-preview";
 import { ProcessHistory } from "./components/process-history";
 import { DetailSuratInfo } from "./components/detail-surat-info";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SignatureModal, type SignatureModalResult } from "@/components/signature";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -131,6 +132,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const [draftSuratDialogOpen, setDraftSuratDialogOpen] = useState(false);
     const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
     const [returnSuratDialogOpen, setReturnSuratDialogOpen] = useState(false);
+    const [signatureModalOpen, setSignatureModalOpen] = useState(false);
     const [verifyNotes, setVerifyNotes] = useState("");
     const [returnSuratReason, setReturnSuratReason] = useState("");
 
@@ -547,18 +549,25 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             return;
         }
         
+        // Open signature modal instead of using placeholder
+        setSignatureModalOpen(true);
+    };
+
+    // Handle signature confirmation from modal
+    const handleSignatureConfirm = async (result: SignatureModalResult) => {
+        if (!detail) return;
+        
         setActionLoading(true);
         try {
-            // TODO: Integrate with signature pad/modal
-            // Use letterId, not documentId
             const response = await suratService.signSuratHasil(detail.id, {
-                signatureUrl: "https://via.placeholder.com/150x50?text=TTD+Placeholder",
-                signerName: user?.name || "Penandatangan",
-                signerNip: ""
+                signatureData: result.signatureData,
+                signatureUrl: result.signatureUrl,
+                saveSignature: result.saveSignature,
             });
             
             if (response.success) {
                 toast.success("Dokumen berhasil ditandatangani");
+                setSignatureModalOpen(false);
                 await fetchDetail();
             } else {
                 toast.error(response.message || "Gagal menandatangani dokumen");
@@ -871,6 +880,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         isSigned={suratHasilDoc?.isSigned || false}
                                         content={suratHasilDoc?.content}
                                         documentType={suratHasilDoc?.type as 'SURAT_PENGANTAR' | 'SURAT_TUGAS' | 'SURAT_TUGAS_TABEL' | 'SURAT_KEPUTUSAN'}
+                                        signatures={suratHasilDoc?.signatures}
                                         onDownload={suratHasilDoc?.fileUrl ? () => {
                                             const link = document.createElement('a');
                                             link.href = suratHasilDoc.fileUrl!;
@@ -1324,6 +1334,16 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Signature Modal - for Dekan/Wadek to sign documents */}
+            <SignatureModal
+                open={signatureModalOpen}
+                onOpenChange={setSignatureModalOpen}
+                onConfirm={handleSignatureConfirm}
+                title="Tanda Tangan Digital"
+                description="Pilih metode untuk menandatangani dokumen SK/ST"
+                isLoading={actionLoading}
+            />
         </>
     );
 }
