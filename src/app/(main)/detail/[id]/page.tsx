@@ -37,6 +37,11 @@ import { DispositionDialog, LetterCategory } from "./components/disposition-dial
 import { CompleteDialog } from "./components/complete-dialog";
 import { ReturnDialog } from "./components/return-dialog";
 import { DraftSuratDialog } from "./components/draft-surat-dialog";
+import { PDFPreview } from "./components/pdf-preview";
+import { SuratPreview } from "./components/surat-preview";
+import { ProcessHistory } from "./components/process-history";
+import { DetailSuratInfo } from "./components/detail-surat-info";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -409,12 +414,16 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         }
     };
 
-    // Draft Surat Hasil Handler (Staf - buat SK/ST)
-    const handleDraftSurat = (type: "SURAT_TUGAS" | "SURAT_KEPUTUSAN") => {
+    // Draft Surat Handler (Admin Prodi, Staf, Supervisor - buat SP/SK/ST)
+    const handleDraftSurat = (type: "SURAT_PENGANTAR" | "SURAT_TUGAS" | "SURAT_TUGAS_TABEL" | "SURAT_KEPUTUSAN") => {
         if (!detail) return;
         setDraftSuratDialogOpen(false);
         router.push(`/draft-surat/${detail.id}?type=${type}`);
     };
+
+    // Check if user can draft surat (Admin Prodi, Staf, Supervisor)
+    const isAdminProdi = currentUserRole === "ADMIN_PRODI";
+    const canShowDraftButton = isAdminProdi || isSupervisor || isStaf;
 
     // Staf submit draft for verification
     const handleSubmitForVerification = async () => {
@@ -657,9 +666,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     const { permissions, submissionValues, logs, attachments } = detail;
     
-    // Reverse logs for display (newest action = waiting, oldest = first submitted)
-    const displayLogs = [...logs].reverse();
-    
     // Check if status is waiting
     const isWaiting = !['COMPLETED', 'REJECTED', 'CANCELLED'].includes(detail.status);
 
@@ -667,162 +673,236 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const suratPengantarDoc = detail.documents?.find(d => d.type === 'SURAT_PENGANTAR');
     const hasSuratPengantar = !!suratPengantarDoc;
 
+    // Check if SK/ST document exists (including SURAT_TUGAS_TABEL)
+    const suratHasilDoc = detail.documents?.find(d => 
+        d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
+    );
+
+    // Get the primary document to display (SK/ST first, then Surat Pengantar)
+    const primaryDocument = suratHasilDoc || suratPengantarDoc;
+    const hasDocument = !!primaryDocument;
+
+    // User role check for mahasiswa view
+    const isMahasiswa = currentUserRole === "MAHASISWA" || !currentUserRole;
+
     // ========================================================================
     // RENDER
     // ========================================================================
 
     // ========================================================================
-    // CONTENT CARDS SECTION (used in both layouts)
+    // IDENTITAS PEMOHON CARD
+    // ========================================================================
+    const IdentitasPemohonCard = () => (
+        <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
+            <CardContent className="p-6">
+                <h3 className="text-sm font-bold text-black mb-4">Identitas Pemohon</h3>
+                
+                <InfoRow 
+                    label="Nama Lengkap" 
+                    value={submissionValues.nama} 
+                />
+                <InfoRow 
+                    label={submissionValues.nim ? "NIM" : "NIP/NIK"} 
+                    value={submissionValues.nim || submissionValues.nip || "-"} 
+                />
+                <InfoRow 
+                    label="Program Studi" 
+                    value={submissionValues.programStudi} 
+                    showSeparator={false}
+                />
+            </CardContent>
+        </Card>
+    );
+
+    // ========================================================================
+    // LAMPIRAN CARD
+    // ========================================================================
+    const LampiranCard = () => (
+        attachments.length > 0 ? (
+            <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
+                <CardContent className="p-6">
+                    <h3 className="text-sm font-bold text-black mb-4">Lampiran</h3>
+                    
+                    <div className="space-y-3">
+                        {attachments.map((att) => (
+                            <div 
+                                key={att.id}
+                                className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-zinc-400"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                        <FileText className="w-5 h-5 text-red-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-black">{att.fileName}</p>
+                                        <p className="text-sm text-zinc-400">{formatFileSize(att.fileSize)}</p>
+                                    </div>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDownloadAttachment(att.id, att.fileName)}
+                                >
+                                    <Download className="w-5 h-5" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        ) : null
+    );
+
+    // ========================================================================
+    // CONTENT CARDS FOR OLD LAYOUT (NO DOCUMENT)
     // ========================================================================
     const ContentCards = () => (
         <div className="space-y-6">
             {/* Riwayat Proses */}
-            <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
-                <CardContent className="p-6">
-                    <h3 className="text-sm font-bold text-black mb-6">Riwayat Proses</h3>
-                        
-                        <div className="flex gap-4">
-                            {/* Timeline Icons Column */}
-                            <div className="flex flex-col items-center">
-                                {/* Current waiting status */}
-                                {isWaiting && detail.currentActiveRole && (
-                                    <>
-                                        <div className="w-10 h-10 rounded-full flex items-center justify-center border-4 bg-white border-zinc-400">
-                                            <Clock className="w-4 h-4 text-zinc-400" />
-                                        </div>
-                                        {displayLogs.length > 0 && <div className="w-0.5 h-6 bg-zinc-400" />}
-                                    </>
-                                )}
-                                
-                                {/* Completed logs */}
-                                {displayLogs.map((log, idx) => (
-                                    <div key={log.id} className="flex flex-col items-center">
-                                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-500">
-                                            <CheckCircle className="w-5 h-5 text-white" />
-                                        </div>
-                                        {idx < displayLogs.length - 1 && <div className="w-0.5 h-6 bg-zinc-400" />}
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            {/* Timeline Content Column */}
-                            <div className="flex flex-col">
-                                {/* Current waiting status content */}
-                                {isWaiting && detail.currentActiveRole && (
-                                    <div className="h-10 flex items-center mb-6">
-                                        <div>
-                                            <p className="text-sm font-bold text-black leading-5">
-                                                {detail.currentActiveRole === 'KAPRODI' && 'Verifikasi Oleh Ketua Prodi'}
-                                                {detail.currentActiveRole === 'ADMIN_PRODI' && 'Pembuatan Surat Pengantar'}
-                                                {detail.currentActiveRole === 'KADEP' && 'Tanda Tangan Ketua Departemen'}
-                                                {!['KAPRODI', 'ADMIN_PRODI', 'KADEP'].includes(detail.currentActiveRole) && 
-                                                    `Menunggu ${getRoleLabel(detail.currentActiveRole)}`}
-                                            </p>
-                                            <p className="text-sm text-zinc-500 leading-5">Menunggu proses...</p>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {/* Completed logs content */}
-                                {displayLogs.map((log, idx) => (
-                                    <div 
-                                        key={log.id} 
-                                        className={cn(
-                                            "h-10 flex items-center",
-                                            idx < displayLogs.length - 1 && "mb-6"
-                                        )}
-                                    >
-                                        <div>
-                                            <p className="text-sm font-bold text-black leading-5">{log.action}</p>
-                                            <p className="text-sm text-black leading-5">
-                                                Oleh: {log.actorName} • {formatDateTime(log.createdAt)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+            <ProcessHistory 
+                logs={logs}
+                isWaiting={isWaiting}
+                currentActiveRole={detail.currentActiveRole}
+            />
 
-                {/* Detail Surat */}
-                <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
-                    <CardContent className="p-6">
-                        <h3 className="text-sm font-bold text-black mb-4">Detail Surat</h3>
-                        
-                        <InfoRow 
-                            label="Jenis Surat" 
-                            value={submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'Surat Tugas' : 'Surat Keputusan'} 
-                        />
-                        <InfoRow 
-                            label="Judul Surat" 
-                            value={submissionValues.judulAcara} 
-                        />
-                        <InfoRow 
-                            label="Keperluan" 
-                            value={submissionValues.keperluan} 
-                            showSeparator={false}
-                        />
-                    </CardContent>
-                </Card>
+            {/* Detail Surat */}
+            <DetailSuratInfo 
+                jenisSurat={submissionValues.jenisSurat}
+                judulSurat={submissionValues.judulAcara}
+                keperluan={submissionValues.keperluan}
+            />
 
-                {/* Identitas Pemohon */}
-                <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
-                    <CardContent className="p-6">
-                        <h3 className="text-sm font-bold text-black mb-4">Identitas Pemohon</h3>
-                        
-                        <InfoRow 
-                            label="Nama Lengkap" 
-                            value={submissionValues.nama} 
-                        />
-                        <InfoRow 
-                            label={submissionValues.nim ? "NIM" : "NIP/NIK"} 
-                            value={submissionValues.nim || submissionValues.nip || "-"} 
-                        />
-                        <InfoRow 
-                            label="Program Studi" 
-                            value={submissionValues.programStudi} 
-                            showSeparator={false}
-                        />
-                    </CardContent>
-                </Card>
+            {/* Identitas Pemohon */}
+            <IdentitasPemohonCard />
 
-                {/* Lampiran */}
-                {attachments.length > 0 && (
-                    <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
-                        <CardContent className="p-6">
-                            <h3 className="text-sm font-bold text-black mb-4">Lampiran</h3>
-                            
-                            <div className="space-y-3">
-                                {attachments.map((att) => (
-                                    <div 
-                                        key={att.id}
-                                        className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-zinc-400"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                                                <FileText className="w-5 h-5 text-red-600" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-black">{att.fileName}</p>
-                                                <p className="text-sm text-zinc-400">{formatFileSize(att.fileSize)}</p>
-                                            </div>
-                                        </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleDownloadAttachment(att.id, att.fileName)}
-                                        >
-                                            <Download className="w-5 h-5" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+            {/* Lampiran */}
+            <LampiranCard />
         </div>
     );
+
+    // ========================================================================
+    // MAHASISWA VIEW LAYOUT (dengan preview PDF dan sidebar)
+    // ========================================================================
+    const MahasiswaViewLayout = () => {
+        // Determine the default tab based on available documents
+        const defaultTab = hasSuratPengantar ? "surat-pengantar" : "surat-hasil";
+        
+        // Prepare submission data for template
+        const submissionDataForTemplate = {
+            nama: submissionValues.nama,
+            nim: submissionValues.nim,
+            nip: submissionValues.nip,
+            programStudi: submissionValues.programStudi,
+            departemen: "Informatika", // Default departemen
+            keperluan: submissionValues.keperluan,
+            judulAcara: submissionValues.judulAcara,
+            tanggalAcara: submissionValues.tanggalAcara,
+            lokasiAcara: submissionValues.lokasiAcara,
+            durasiAcara: submissionValues.durasiAcara,
+        };
+
+        // Prepare document data for surat pengantar
+        const suratPengantarDocData = suratPengantarDoc ? {
+            nomorSurat: suratPengantarDoc.nomorSurat,
+            tanggalSurat: suratPengantarDoc.tanggalSurat,
+            perihal: suratPengantarDoc.perihal,
+            contentHtml: null, // Gunakan template
+            isSigned: suratPengantarDoc.isSigned,
+            signatures: suratPengantarDoc.signatures?.map(s => ({
+                signerRole: s.signerRole,
+                signerName: s.signerName,
+                signerNip: "",
+                signatureUrl: undefined,
+            })),
+        } : undefined;
+        
+        return (
+            <>
+                {/* Sub-header dengan Judul Pengajuan */}
+                <h2 className="text-lg font-bold text-black mb-4">
+                    {submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'ST' : 'SK'} - {submissionValues.judulAcara.toUpperCase()}
+                </h2>
+
+                {/* Document Tabs with Content */}
+                <Tabs defaultValue={defaultTab} className="w-full">
+                    {/* Tab Buttons */}
+                    <div className="mb-6">
+                        <TabsList className="bg-transparent gap-2 p-0 h-auto">
+                            <TabsTrigger 
+                                value="surat-pengantar"
+                                className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=inactive]:bg-zinc-200 data-[state=inactive]:text-zinc-800 px-4 py-2 rounded-lg"
+                            >
+                                Surat Pengantar
+                            </TabsTrigger>
+                            {suratHasilDoc && (
+                                <TabsTrigger 
+                                    value="surat-hasil"
+                                    className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=inactive]:bg-zinc-200 data-[state=inactive]:text-zinc-800 px-4 py-2 rounded-lg"
+                                >
+                                    {suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
+                                </TabsTrigger>
+                            )}
+                        </TabsList>
+                    </div>
+
+                    {/* Main Content - 2 Column Layout */}
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-6">
+                        {/* Left Column - Surat Preview with Tabs Content */}
+                        <div className="relative">
+                            <TabsContent value="surat-pengantar" className="mt-0">
+                                <SuratPreview 
+                                    submissionData={submissionDataForTemplate}
+                                    documentData={suratPengantarDocData}
+                                    fileUrl={suratPengantarDoc?.fileUrl}
+                                    fileName="Surat Pengantar"
+                                    onDownload={suratPengantarDoc?.fileUrl ? () => {
+                                        const link = document.createElement('a');
+                                        link.href = suratPengantarDoc.fileUrl!;
+                                        link.download = 'surat-pengantar.pdf';
+                                        link.click();
+                                    } : undefined}
+                                />
+                            </TabsContent>
+                            {suratHasilDoc && (
+                                <TabsContent value="surat-hasil" className="mt-0">
+                                    <PDFPreview 
+                                        fileUrl={suratHasilDoc?.fileUrl || null}
+                                        fileName={suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
+                                        isSigned={suratHasilDoc?.isSigned || false}
+                                        content={suratHasilDoc?.content}
+                                        documentType={suratHasilDoc?.type as 'SURAT_PENGANTAR' | 'SURAT_TUGAS' | 'SURAT_TUGAS_TABEL' | 'SURAT_KEPUTUSAN'}
+                                        onDownload={suratHasilDoc?.fileUrl ? () => {
+                                            const link = document.createElement('a');
+                                            link.href = suratHasilDoc.fileUrl!;
+                                            link.download = `${suratHasilDoc.type.toLowerCase().replace('_', '-')}.pdf`;
+                                            link.click();
+                                        } : undefined}
+                                    />
+                                </TabsContent>
+                            )}
+                        </div>
+
+                        {/* Right Column - Info Cards */}
+                        <div className="space-y-6">
+                            {/* Riwayat Proses */}
+                            <ProcessHistory 
+                                logs={logs}
+                                isWaiting={isWaiting}
+                                currentActiveRole={detail.currentActiveRole}
+                            />
+
+                            {/* Detail Surat */}
+                            <DetailSuratInfo 
+                                jenisSurat={submissionValues.jenisSurat}
+                                judulSurat={submissionValues.judulAcara}
+                                keperluan={submissionValues.keperluan}
+                            />
+                        </div>
+                    </div>
+                </Tabs>
+            </>
+        );
+    };
 
     return (
         <>
@@ -832,36 +912,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 <h1 className="text-2xl font-bold text-black">Detail</h1>
             </div>
 
-            {/* Main Content - Conditional 2-column layout when document exists */}
-            {hasSuratPengantar ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-24">
-                    {/* Left Column - PDF Preview */}
-                    <div className="bg-zinc-800 rounded-xl min-h-[600px] flex items-center justify-center">
-                        {suratPengantarDoc?.fileUrl ? (
-                            <iframe
-                                src={suratPengantarDoc.fileUrl}
-                                className="w-full h-full min-h-[600px] rounded-xl"
-                                title="Surat Pengantar Preview"
-                            />
-                        ) : (
-                            <div className="text-center text-white p-8">
-                                <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                                <p className="text-lg font-medium">Preview Surat Pengantar</p>
-                                <p className="text-sm text-zinc-400 mt-2">
-                                    Dokumen akan ditampilkan setelah surat ditandatangani
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                    
-                    {/* Right Column - Detail Cards */}
-                    <ContentCards />
-                </div>
-            ) : (
-                <div className="pb-24">
-                    <ContentCards />
-                </div>
-            )}
+            {/* Main Content - Always use MahasiswaViewLayout with template preview */}
+            <div className="pb-24">
+                <MahasiswaViewLayout />
+            </div>
 
             {/* Bottom Navigation */}
             <BottomNav
@@ -937,8 +991,32 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
-                        {/* === STAF FAKULTAS BUTTONS === */}
+                        {/* === DRAFT SURAT BUTTONS === */}
                         
+                        {/* Draft Surat Button - Admin Prodi (buat Surat Pengantar) */}
+                        {permissions.canDraft && isAdminProdi && (
+                            <Button 
+                                onClick={() => setDraftSuratDialogOpen(true)}
+                                disabled={actionLoading}
+                                className="bg-purple-600 hover:bg-purple-700 gap-2"
+                            >
+                                <FilePlus className="w-4 h-4" />
+                                Draft Surat
+                            </Button>
+                        )}
+
+                        {/* Draft Surat Button - Supervisor (buat SK/ST) */}
+                        {(permissions.canDraftSuratHasil || permissions.canVerifySuratHasil) && isSupervisor && (
+                            <Button 
+                                onClick={() => setDraftSuratDialogOpen(true)}
+                                disabled={actionLoading}
+                                className="bg-blue-600 hover:bg-blue-700 gap-2"
+                            >
+                                <FilePlus className="w-4 h-4" />
+                                Draft Surat
+                            </Button>
+                        )}
+
                         {/* Draft Surat Button (Staf) - buat SK/ST */}
                         {permissions.canDraftSuratHasil && isStaf && (
                             <Button 
@@ -1149,11 +1227,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 loading={actionLoading}
             />
 
-            {/* Draft Surat Dialog - for Staf to select surat type */}
+            {/* Draft Surat Dialog - for Admin Prodi, Staf, Supervisor to select surat type */}
             <DraftSuratDialog
                 open={draftSuratDialogOpen}
                 onOpenChange={setDraftSuratDialogOpen}
                 onSubmit={handleDraftSurat}
+                userRole={currentUserRole}
             />
 
             {/* Verify Surat Hasil Dialog - for Supervisor/Manajer TU */}

@@ -26,13 +26,14 @@ export interface SignatureConfig {
 
 export interface DocumentSummary {
     id: string;
-    type: 'SURAT_PENGANTAR' | 'SURAT_TUGAS' | 'SURAT_KEPUTUSAN';
+    type: 'SURAT_PENGANTAR' | 'SURAT_TUGAS' | 'SURAT_TUGAS_TABEL' | 'SURAT_KEPUTUSAN';
     nomorSurat: string | null;
     tanggalSurat: string | null;
     perihal: string | null;
     isSigned: boolean;
     fileUrl: string | null;
-    contentHtml?: string | null;
+    content?: Record<string, unknown> | null; // Form data untuk generate preview
+    contentHtml?: string | null; // HTML content jika sudah di-generate
     signatures: SignatureSummary[];
 }
 
@@ -234,6 +235,29 @@ export const suratService = {
     },
 
     /**
+     * Admin Prodi saves surat pengantar draft with content
+     */
+    async savePengantarDraft(
+        id: string,
+        data: {
+            content: Record<string, unknown>;
+            tembusan?: string[];
+            signatories: Array<{
+                signerRole: string;
+                signerName: string;
+                signerNip?: string;
+                order: number;
+            }>;
+        }
+    ): Promise<ApiResponse<unknown>> {
+        const response = await api.post<ApiResponse<unknown>>(
+            `/api/department-approval/${id}/draft`,
+            data
+        );
+        return response.data;
+    },
+
+    /**
      * Admin Prodi submits draft for signature
      */
     async submitDraft(id: string): Promise<ApiResponse<unknown>> {
@@ -360,7 +384,7 @@ export const suratService = {
     async createDraftSuratHasil(
         id: string, 
         data: {
-            documentType: 'SURAT_TUGAS' | 'SURAT_KEPUTUSAN';
+            documentType: 'SURAT_TUGAS' | 'SURAT_KEPUTUSAN' | 'SURAT_PENGANTAR' | 'SURAT_TUGAS_TABEL';
             signatories: Array<{
                 signerRole: string;
                 signerName: string;
