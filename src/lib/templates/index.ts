@@ -1,6 +1,6 @@
 // Export all templates
 export { generateSuratPengantarHTML, generateSuratPengantarHTML as suratPengantarTemplate, type SuratPengantarData } from './surat-pengantar';
-export { suratTugasTemplate, type SuratTugasData } from './surat-tugas';
+export { suratTugasTemplate, type SuratTugasData, type SignatureBlock } from './surat-tugas';
 export { suratTugasTableTemplate, type SuratTugasTableData } from './surat-tugas-table';
 export { suratKeputusanTemplate, type SuratKeputusanData } from './surat-keputusan';
 

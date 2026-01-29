@@ -1,3 +1,17 @@
+/**
+ * Interface untuk blok tanda tangan
+ */
+export interface SignatureBlock {
+  signerRole: string;      // "Dekan", "Wakil Dekan 1", dll
+  signerName: string;      // Nama lengkap
+  signerNip?: string;      // NIP
+  signatureUrl?: string;   // URL gambar TTD (base64 data URL atau URL)
+  signedAt?: string;       // Tanggal TTD (format: "29 Januari 2026")
+}
+
+/**
+ * Interface untuk data Surat Tugas
+ */
 export interface SuratTugasData {
   jenisSurat: 'tugas' | 'keputusan';
   jenisSuratText: string;
@@ -7,7 +21,68 @@ export interface SuratTugasData {
   programStudi: string;
   keperluan: string;
   judulSurat: string;
+  
+  // Tanda tangan
+  signatures?: SignatureBlock[];
+  
+  // Tanggal surat
+  tanggalSurat?: string;  // Format: "Semarang, 29 Januari 2026"
+  
+  // QR Code untuk verifikasi
+  qrCodeDataUrl?: string;  // QR Code sebagai data URL (base64)
+  verificationUrl?: string; // URL untuk verifikasi dokumen
 }
+
+/**
+ * Helper untuk render blok tanda tangan
+ */
+const renderSignatureBlock = (signature: SignatureBlock): string => {
+  const signatureImage = signature.signatureUrl 
+    ? `<img src="${signature.signatureUrl}" alt="Tanda Tangan" style="max-width: 120px; max-height: 60px; object-fit: contain;" />`
+    : '<div style="height: 60px;"></div>';
+  
+  return `
+    <div class="signature-block" style="text-align: center; min-width: 200px;">
+      <p style="margin: 0 0 5px 0; color: #000000 !important;">${signature.signerRole}</p>
+      ${signatureImage}
+      <p style="margin: 5px 0 0 0; color: #000000 !important; font-weight: bold; text-decoration: underline;">${signature.signerName}</p>
+      ${signature.signerNip ? `<p style="margin: 2px 0 0 0; color: #000000 !important; font-size: 10pt;">NIP. ${signature.signerNip}</p>` : ''}
+    </div>
+  `;
+};
+
+/**
+ * Helper untuk render semua blok tanda tangan
+ */
+const renderSignatures = (signatures?: SignatureBlock[]): string => {
+  if (!signatures || signatures.length === 0) {
+    // Placeholder kosong jika belum ada tanda tangan
+    return `
+      <div class="ttd-box">
+        <p style="color: #ffffff;"></p>
+        <p style="color: #ffffff;"></p>
+        <p class="nama-pejabat" style="color: #ffffff;"></p>
+        <p style="color: #ffffff;"></p>
+      </div>
+    `;
+  }
+  
+  return signatures.map(sig => renderSignatureBlock(sig)).join('');
+};
+
+/**
+ * Helper untuk render QR Code
+ */
+const renderQRCode = (qrCodeDataUrl?: string, verificationUrl?: string): string => {
+  if (!qrCodeDataUrl) return '';
+  
+  return `
+    <div class="qr-code-container" style="position: fixed; bottom: 20px; right: 20px; text-align: center; background: white; padding: 5px;">
+      <img src="${qrCodeDataUrl}" alt="QR Code Verifikasi" style="width: 80px; height: 80px;" />
+      <p style="margin: 2px 0 0 0; font-size: 6pt; color: #666666 !important;">Scan untuk verifikasi</p>
+    </div>
+  `;
+};
 
 export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE html>
 <html lang="id">
@@ -111,10 +186,16 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       margin-top: 50px;
       display: flex;
       justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 30px;
     }
     .ttd-box {
-      text-align: left;
-      width: 300px;
+      text-align: center;
+      min-width: 200px;
+    }
+    .signature-block {
+      text-align: center;
+      min-width: 200px;
     }
     .ttd-box p {
       margin: 3px 0;
@@ -124,6 +205,22 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       margin-top: 70px !important;
       font-weight: normal;
       color: #000000 !important;
+    }
+    .qr-code-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      text-align: center;
+      background: white;
+      padding: 5px;
+      z-index: 1000;
+    }
+    @media print {
+      .qr-code-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+      }
     }
     b, strong {
       font-weight: bold !important;
@@ -187,13 +284,10 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
   <div class="penutup">
     <p style="color: #000000;">Demikian surat ${data.jenisSurat === 'keputusan' ? 'keputusan' : 'tugas'} ini dibuat untuk dapat dipergunakan sebagaimana mestinya.</p>
   </div>
+  ${data.tanggalSurat ? `<p style="text-align: right; margin-top: 30px; color: #000000 !important;">${data.tanggalSurat}</p>` : ''}
   <div class="ttd-container">
-    <div class="ttd-box">
-      <p style="color: #ffffff;"></p>
-      <p style="color: #ffffff;"></p>
-      <p class="nama-pejabat" style="color: #ffffff;"></p>
-      <p style="color: #ffffff;"></p>
-    </div>
+    ${renderSignatures(data.signatures)}
   </div>
+  ${renderQRCode(data.qrCodeDataUrl, data.verificationUrl)}
 </body>
 </html>`;

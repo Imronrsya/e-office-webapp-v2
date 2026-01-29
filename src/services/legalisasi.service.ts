@@ -249,6 +249,34 @@ export const legalisasiService = {
   },
 
   /**
+   * Assign nomor surat to document with position for PDF overlay
+   */
+  async assignNumberWithPosition(
+    documentId: string,
+    data: { 
+      nomorSurat: string; 
+      tanggalSurat: string;
+      position: {
+        x: number;
+        y: number;
+        page: number;
+        fontSize: number;
+      };
+    }
+  ): Promise<AssignNumberResponse> {
+    try {
+      const response = await api.post<AssignNumberResponse>(
+        `/api/legalisasi/document/${documentId}/assign-number`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to assign nomor surat with position:", error);
+      return { success: false, error: "Gagal memberikan nomor surat" };
+    }
+  },
+
+  /**
    * Apply stempel to document
    */
   async applyStamp(
@@ -299,5 +327,16 @@ export const legalisasiService = {
       console.error("Failed to finalize document:", error);
       return { success: false, error: "Gagal menyelesaikan legalisasi" };
     }
+  },
+
+  /**
+   * Get PDF proxy URL for a document
+   * This bypasses signed URL issues by fetching PDF through the backend proxy
+   * @param documentId - The document ID
+   * @returns URL to the PDF proxy endpoint
+   */
+  getPdfProxyUrl(documentId: string): string {
+    const baseUrl = api.defaults.baseURL || '';
+    return `${baseUrl}/api/legalisasi/document/${documentId}/pdf`;
   },
 };

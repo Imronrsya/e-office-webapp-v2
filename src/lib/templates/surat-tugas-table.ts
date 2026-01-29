@@ -1,3 +1,14 @@
+/**
+ * Interface untuk blok tanda tangan
+ */
+export interface SignatureBlock {
+  signerRole: string;
+  signerName: string;
+  signerNip?: string;
+  signatureUrl?: string;
+  signedAt?: string;
+}
+
 export interface MahasiswaData {
   nama: string;
   nim: string;
@@ -10,7 +21,67 @@ export interface SuratTugasTableData {
   keterangan: string;
   tanggalMulai: string;
   tanggalSelesai: string;
+  
+  // Tanda tangan
+  signatures?: SignatureBlock[];
+  
+  // Tanggal surat
+  tanggalSurat?: string;
+  
+  // QR Code untuk verifikasi
+  qrCodeDataUrl?: string;
+  verificationUrl?: string;
 }
+
+/**
+ * Helper untuk render blok tanda tangan
+ */
+const renderSignatureBlock = (signature: SignatureBlock): string => {
+  const signatureImage = signature.signatureUrl 
+    ? `<img src="${signature.signatureUrl}" alt="Tanda Tangan" style="max-width: 120px; max-height: 60px; object-fit: contain;" />`
+    : '<div style="height: 60px;"></div>';
+  
+  return `
+    <div class="signature-block" style="text-align: center; min-width: 200px;">
+      <p style="margin: 0 0 5px 0; color: #000000 !important;">${signature.signerRole}</p>
+      ${signatureImage}
+      <p style="margin: 5px 0 0 0; color: #000000 !important; font-weight: bold; text-decoration: underline;">${signature.signerName}</p>
+      ${signature.signerNip ? `<p style="margin: 2px 0 0 0; color: #000000 !important; font-size: 10pt;">NIP. ${signature.signerNip}</p>` : ''}
+    </div>
+  `;
+};
+
+/**
+ * Helper untuk render semua blok tanda tangan
+ */
+const renderSignatures = (signatures?: SignatureBlock[]): string => {
+  if (!signatures || signatures.length === 0) {
+    return `
+      <div class="ttd-box">
+        <p style="color: #ffffff;"></p>
+        <p style="color: #ffffff;"></p>
+        <p class="nama-pejabat" style="color: #ffffff;"></p>
+        <p style="color: #ffffff;"></p>
+      </div>
+    `;
+  }
+  
+  return signatures.map(sig => renderSignatureBlock(sig)).join('');
+};
+
+/**
+ * Helper untuk render QR Code
+ */
+const renderQRCode = (qrCodeDataUrl?: string): string => {
+  if (!qrCodeDataUrl) return '';
+  
+  return `
+    <div class="qr-code-container" style="position: fixed; bottom: 20px; right: 20px; text-align: center; background: white; padding: 5px;">
+      <img src="${qrCodeDataUrl}" alt="QR Code Verifikasi" style="width: 80px; height: 80px;" />
+      <p style="margin: 2px 0 0 0; font-size: 6pt; color: #666666 !important;">Scan untuk verifikasi</p>
+    </div>
+  `;
+};
 
 export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<!DOCTYPE html>
 <html lang="id">
@@ -142,10 +213,16 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       margin-top: 50px;
       display: flex;
       justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 30px;
     }
     .ttd-box {
-      text-align: flex-start;
-      width: 300px;
+      text-align: center;
+      min-width: 200px;
+    }
+    .signature-block {
+      text-align: center;
+      min-width: 200px;
     }
     .ttd-box p {
       margin: 3px 0;
@@ -156,6 +233,22 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       font-weight: normal;
       color: #000000 !important;
       text-decoration: underline;
+    }
+    .qr-code-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      text-align: center;
+      background: white;
+      padding: 5px;
+      z-index: 1000;
+    }
+    @media print {
+      .qr-code-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+      }
     }
     b, strong {
       font-weight: bold !important;
@@ -227,14 +320,10 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
   <div class="penutup">
     <p style="color: #000000;">Demikian untuk dilaksanakan dengan sebaik-baiknya dan memberikan laporan setelah selesai.</p>
   </div>
-  
+  ${data.tanggalSurat ? `<p style="text-align: right; margin-top: 30px; color: #000000 !important;">${data.tanggalSurat}</p>` : ''}
   <div class="ttd-container">
-    <div class="ttd-box">
-      <p style="color: #ffffff;"></p>
-      <p style="color: #ffffff;"></p>
-      <p class="nama-pejabat" style="color: #ffffff;"></p>
-      <p style="color: #ffffff;"></p>
-    </div>
+    ${renderSignatures(data.signatures)}
   </div>
+  ${renderQRCode(data.qrCodeDataUrl)}
 </body>
 </html>`;

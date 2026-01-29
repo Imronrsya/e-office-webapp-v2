@@ -131,6 +131,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
     
+    // Refresh key for PDF preview - increment to force refresh after actions
+    const [pdfRefreshKey, setPdfRefreshKey] = useState(0);
+    
     // Dialog states
     const [dispositionDialogOpen, setDispositionDialogOpen] = useState(false);
     const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
@@ -597,6 +600,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const handleNumberingSuccess = async () => {
         toast.success("Nomor surat berhasil diberikan");
         await fetchDetail();
+        // Increment refresh key to force PDF preview to reload
+        setPdfRefreshKey(prev => prev + 1);
     };
 
     // Handle stamp (UPA)
@@ -619,6 +624,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             if (response.success) {
                 toast.success("Stempel berhasil dibubuhkan");
                 await fetchDetail();
+                setPdfRefreshKey(prev => prev + 1);
             } else {
                 toast.error(response.error || "Gagal membubuhkan stempel");
             }
@@ -650,6 +656,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             if (response.success) {
                 toast.success("QR Code berhasil di-generate");
                 await fetchDetail();
+                setPdfRefreshKey(prev => prev + 1);
             } else {
                 toast.error(response.error || "Gagal generate QR Code");
             }
@@ -684,6 +691,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             if (response.success) {
                 toast.success("Surat berhasil diselesaikan");
                 await fetchDetail();
+                setPdfRefreshKey(prev => prev + 1);
             } else {
                 toast.error(response.error || "Gagal menyelesaikan surat");
             }
@@ -990,6 +998,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             {suratHasilDoc && (
                                 <TabsContent value="surat-hasil" className="mt-0">
                                     <PDFPreview 
+                                        key={`surat-hasil-${pdfRefreshKey}`}
                                         fileUrl={suratHasilDoc?.fileUrl || null}
                                         fileName={suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
                                         isSigned={suratHasilDoc?.isSigned || false}
@@ -1522,13 +1531,16 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 isLoading={actionLoading}
             />
 
-            {/* Numbering Modal - for UPA to assign nomor surat */}
+            {/* Numbering Modal - for UPA to assign nomor surat with drag-and-drop positioning */}
             {suratHasilDoc && (
                 <NumberingModal
                     open={numberingModalOpen}
                     onOpenChange={setNumberingModalOpen}
                     documentId={suratHasilDoc.id}
                     documentType={suratHasilDoc.type}
+                    pdfUrl={suratHasilDoc.fileUrl || undefined}
+                    content={suratHasilDoc.content}
+                    signatures={suratHasilDoc.signatures}
                     onSuccess={handleNumberingSuccess}
                 />
             )}

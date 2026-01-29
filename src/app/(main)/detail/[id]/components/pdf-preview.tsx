@@ -46,6 +46,11 @@ interface PDFPreviewProps {
     onDownload?: () => void;
 }
 
+// Note: We cannot add cache-busting parameters to presigned URLs from MinIO/S3
+// because the signature is calculated based on the exact URL including query params.
+// Adding extra params like ?t=xxx will cause SignatureDoesNotMatch error.
+// Instead, use pdfRefreshKey at the component level to force re-render.
+
 export function PDFPreview({ 
     fileUrl, 
     fileName = "Surat", 
@@ -118,7 +123,14 @@ export function PDFPreview({
     }, [content, documentType]);
 
     // Generate PDF with signature blocks embedded when we have content and signatures
+    // ONLY if fileUrl is NOT available (fileUrl from backend takes priority)
     useEffect(() => {
+        // ✅ Skip PDF generation if we already have a fileUrl from backend
+        // Backend PDF sudah ter-regenerate dengan nomor surat, stempel, dan QR code
+        if (fileUrl) {
+            return;
+        }
+
         // Only generate PDF if we have content, documentType, and signatures with position data
         if (!content || !documentType || documentType === 'SURAT_PENGANTAR') {
             return;
@@ -179,7 +191,7 @@ export function PDFPreview({
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [content, documentType, signatures]);
+    }, [content, documentType, signatures, fileUrl]);
 
     // Show loading state while generating PDF with signatures
     if (isGeneratingPdf) {
@@ -203,111 +215,8 @@ export function PDFPreview({
         );
     }
 
-    // Jika ada pdfBlobUrl (PDF dengan signature blocks embedded), tampilkan itu
-    if (pdfBlobUrl) {
-        return (
-            <div ref={containerRef} className="bg-zinc-800 rounded-xl overflow-hidden flex flex-col h-full min-h-[600px] relative">
-                {/* Toolbar */}
-                <div className="flex items-center justify-between bg-zinc-700 px-3 py-2 text-white text-sm">
-                    <div className="flex items-center gap-3">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-white hover:bg-zinc-600 h-8 w-8">
-                                    <Menu className="w-4 h-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                                <DropdownMenuItem onClick={handlePrint}>
-                                    <Printer className="w-4 h-4 mr-2" />
-                                    Cetak
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        
-                        <span className="truncate max-w-[120px]">{fileName}</span>
-                        <span className="text-zinc-400">|</span>
-                        <span className="text-zinc-400">1 / 1</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-1">
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={handleZoomOut}
-                            disabled={zoom <= 50}
-                            className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
-                        >
-                            <Minus className="w-4 h-4" />
-                        </Button>
-                        <span className="min-w-[50px] text-center">{zoom}%</span>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={handleZoomIn}
-                            disabled={zoom >= 200}
-                            className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
-                        >
-                            <Plus className="w-4 h-4" />
-                        </Button>
-                        <span className="text-zinc-500 mx-2">|</span>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={handleFullscreen}
-                            className="text-white hover:bg-zinc-600 h-8 w-8"
-                        >
-                            <Maximize2 className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={handleRotate}
-                            className="text-white hover:bg-zinc-600 h-8 w-8"
-                        >
-                            <RotateCw className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={handlePrint}
-                            className="text-white hover:bg-zinc-600 h-8 w-8"
-                        >
-                            <Printer className="w-4 h-4" />
-                        </Button>
-                    </div>
-                </div>
-
-                {/* PDF Viewer with signature blocks */}
-                <div className="flex-1 bg-zinc-600 overflow-auto">
-                    <div 
-                        className="w-full h-full flex items-center justify-center p-4"
-                        style={{ 
-                            transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
-                            transformOrigin: 'center center',
-                            transition: 'transform 0.2s ease'
-                        }}
-                    >
-                        <iframe
-                            ref={iframeRef}
-                            src={`${pdfBlobUrl}#toolbar=0&navpanes=0`}
-                            className="w-full h-full bg-white rounded shadow-lg"
-                            style={{ minHeight: '500px' }}
-                            title="PDF Preview with Signatures"
-                        />
-                    </div>
-                </div>
-
-                {/* DRAFT Badge */}
-                <div className="absolute top-16 right-4">
-                    <span className="bg-yellow-500 text-white px-3 py-1 rounded text-sm font-medium shadow">
-                        DRAFT
-                    </span>
-                </div>
-            </div>
-        );
-    }
-
-    // Jika ada file URL, tampilkan PDF
+    // ✅ PRIORITAS 1: Jika ada file URL dari backend, tampilkan PDF tersebut
+    // PDF dari backend sudah ter-regenerate dengan nomor surat, stempel, dan QR code
     if (fileUrl) {
         return (
             <div ref={containerRef} className="bg-zinc-800 rounded-xl overflow-hidden flex flex-col h-full min-h-[600px] relative">
@@ -417,6 +326,111 @@ export function PDFPreview({
                 <div className="absolute bottom-4 right-4">
                     <span className="bg-white text-zinc-800 px-3 py-1 rounded text-sm font-medium shadow">
                         SALINAN
+                    </span>
+                </div>
+            </div>
+        );
+    }
+
+    // PRIORITAS 2: Jika ada pdfBlobUrl (PDF dengan signature blocks embedded), tampilkan itu
+    // Ini untuk draft PDF yang belum ada di backend
+    if (pdfBlobUrl) {
+        return (
+            <div ref={containerRef} className="bg-zinc-800 rounded-xl overflow-hidden flex flex-col h-full min-h-[600px] relative">
+                {/* Toolbar */}
+                <div className="flex items-center justify-between bg-zinc-700 px-3 py-2 text-white text-sm">
+                    <div className="flex items-center gap-3">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-white hover:bg-zinc-600 h-8 w-8">
+                                    <Menu className="w-4 h-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                                <DropdownMenuItem onClick={handlePrint}>
+                                    <Printer className="w-4 h-4 mr-2" />
+                                    Cetak
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        
+                        <span className="truncate max-w-[120px]">{fileName}</span>
+                        <span className="text-zinc-400">|</span>
+                        <span className="text-zinc-400">1 / 1</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={handleZoomOut}
+                            disabled={zoom <= 50}
+                            className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
+                        >
+                            <Minus className="w-4 h-4" />
+                        </Button>
+                        <span className="min-w-[50px] text-center">{zoom}%</span>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={handleZoomIn}
+                            disabled={zoom >= 200}
+                            className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
+                        >
+                            <Plus className="w-4 h-4" />
+                        </Button>
+                        <span className="text-zinc-500 mx-2">|</span>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={handleFullscreen}
+                            className="text-white hover:bg-zinc-600 h-8 w-8"
+                        >
+                            <Maximize2 className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={handleRotate}
+                            className="text-white hover:bg-zinc-600 h-8 w-8"
+                        >
+                            <RotateCw className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={handlePrint}
+                            className="text-white hover:bg-zinc-600 h-8 w-8"
+                        >
+                            <Printer className="w-4 h-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* PDF Viewer with signature blocks */}
+                <div className="flex-1 bg-zinc-600 overflow-auto">
+                    <div 
+                        className="w-full h-full flex items-center justify-center p-4"
+                        style={{ 
+                            transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
+                            transformOrigin: 'center center',
+                            transition: 'transform 0.2s ease'
+                        }}
+                    >
+                        <iframe
+                            ref={iframeRef}
+                            src={`${pdfBlobUrl}#toolbar=0&navpanes=0`}
+                            className="w-full h-full bg-white rounded shadow-lg"
+                            style={{ minHeight: '500px' }}
+                            title="PDF Preview with Signatures"
+                        />
+                    </div>
+                </div>
+
+                {/* DRAFT Badge */}
+                <div className="absolute top-16 right-4">
+                    <span className="bg-yellow-500 text-white px-3 py-1 rounded text-sm font-medium shadow">
+                        DRAFT
                     </span>
                 </div>
             </div>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { TembusanBadge } from "./tembusan-badge";
 
 export default function TopNav() {
   const { user, loading, logout } = useAuth();
@@ -34,12 +35,17 @@ export default function TopNav() {
             </div>
           </div>
 
-          {/* Kanan: User Profile */}
-          <div
-            className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-2 pr-4 transition hover:bg-gray-50"
-            onClick={logout}
-            title="Klik untuk Logout"
-          >
+          {/* Kanan: Tembusan Badge & User Profile */}
+          <div className="flex items-center gap-4">
+            {/* Tembusan Badge */}
+            {user && <TembusanBadge />}
+
+            {/* User Profile */}
+            <div
+              className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-2 pr-4 transition hover:bg-gray-50"
+              onClick={logout}
+              title="Klik untuk Logout"
+            >
             {loading || !user ? (
               <>
                 <div className="h-10 w-10 rounded-full bg-zinc-200 animate-pulse" />
@@ -66,6 +72,7 @@ export default function TopNav() {
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
       </div>

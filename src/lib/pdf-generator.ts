@@ -4,7 +4,7 @@
  */
 
 import { generateSuratPengantarHTML, SuratPengantarData } from './templates/surat-pengantar';
-import { suratTugasTemplate, SuratTugasData } from './templates/surat-tugas';
+import { suratTugasTemplate, SuratTugasData, SignatureBlock } from './templates/surat-tugas';
 import { suratTugasTableTemplate, SuratTugasTableData } from './templates/surat-tugas-table';
 import { suratKeputusanTemplate, SuratKeputusanData } from './templates/surat-keputusan';
 
@@ -21,6 +21,16 @@ export interface SignerPlaceholder {
     order: number;
     signatureUrl?: string; // URL of the signature image to embed
 }
+
+export interface QRCodePosition {
+    x: number;      // X position from right edge (in PDF points)
+    y: number;      // Y position from bottom edge (in PDF points)
+    width: number;  // QR Code width
+    height: number; // QR Code height
+}
+
+// Re-export SignatureBlock for convenience
+export type { SignatureBlock };
 
 /**
  * Generate HTML string based on surat type and data
@@ -347,4 +357,151 @@ export async function generatePdfBlobUrlWithSignatures(
 ): Promise<string> {
     const blob = await generatePdfWithSignatures(type, data, signers, renderedWidth);
     return URL.createObjectURL(blob);
+}
+
+/**
+ * Default QR Code position (bottom-right corner)
+ */
+const DEFAULT_QR_POSITION: QRCodePosition = {
+    x: 30,      // 30 points from right edge
+    y: 30,      // 30 points from bottom edge
+    width: 60,  // 60 points wide (~21mm)
+    height: 60, // 60 points tall
+};
+
+/**
+ * Embed QR Code ke semua halaman PDF
+ * QR Code akan muncul di sudut kanan bawah setiap halaman
+ * 
+ * @param pdfBlob - PDF blob yang akan di-embed QR Code
+ * @param qrCodeDataUrl - QR Code sebagai data URL (base64)
+ * @param position - Posisi QR Code (optional, default bottom-right)
+ * @returns Promise<Blob> - PDF dengan QR Code di setiap halaman
+ */
+export async function embedQRCodeToAllPages(
+    pdfBlob: Blob,
+    qrCodeDataUrl: string,
+    position: Partial<QRCodePosition> = {}
+): Promise<Blob> {
+    const { PDFDocument } = await import('pdf-lib');
+    
+    // Merge with default position
+    const qrPosition = { ...DEFAULT_QR_POSITION, ...position };
+    
+    // Load the existing PDF
+    const pdfBytes = await pdfBlob.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const pages = pdfDoc.getPages();
+
+    // Convert QR Code data URL to bytes
+    let qrImageBytes: Uint8Array;
+    try {
+        // Extract base64 from data URL
+        const base64Data = qrCodeDataUrl.split(',')[1];
+        qrImageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+    } catch (error) {
+        console.error('Error parsing QR Code data URL:', error);
+        throw new Error('Invalid QR Code data URL');
+    }
+
+    // Embed the QR Code image
+    let qrImage;
+    try {
+        if (qrCodeDataUrl.includes('image/png')) {
+            qrImage = await pdfDoc.embedPng(qrImageBytes);
+        } else {
+            qrImage = await pdfDoc.embedJpg(qrImageBytes);
+        }
+    } catch (error) {
+        console.error('Error embedding QR Code image:', error);
+        throw new Error('Failed to embed QR Code image');
+    }
+
+    // Add QR Code to each page
+    for (const page of pages) {
+        const pageWidth = page.getWidth();
+        const pageHeight = page.getHeight();
+
+        // Calculate position (from bottom-right corner)
+        const x = pageWidth - qrPosition.x - qrPosition.width;
+        const y = qrPosition.y;
+
+        try {
+            page.drawImage(qrImage, {
+                x,
+                y,
+                width: qrPosition.width,
+                height: qrPosition.height,
+            });
+        } catch (error) {
+            console.error('Error drawing QR Code on page:', error);
+        }
+    }
+
+    // Save and return as blob
+    const modifiedPdfBytes = await pdfDoc.save();
+    return new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+}
+
+/**
+ * Generate final PDF dengan semua komponen (nomor surat, tanda tangan, QR Code)
+ * 
+ * @param type - Tipe surat
+ * @param data - Data surat termasuk signatures dan qrCodeDataUrl
+ * @param options - Opsi tambahan
+ * @returns Promise<Blob> - PDF final yang siap distribusi
+ */
+export async function generateFinalPdf(
+    type: SuratType,
+    data: Record<string, unknown> & {
+        signatures?: SignatureBlock[];
+        qrCodeDataUrl?: string;
+    },
+    options: {
+        embedQRToAllPages?: boolean;
+    } = {}
+): Promise<Blob> {
+    // Generate HTML dengan semua data (termasuk nomor surat, signatures, QR dalam HTML)
+    const html = generateSuratHTML(type, data);
+    let pdfBlob = await htmlToPdfBlob(html);
+
+    // Jika ada QR Code dan opsi embedQRToAllPages aktif, embed ke semua halaman
+    // Note: QR di HTML akan muncul di halaman pertama saja (karena position: fixed)
+    // Untuk multi-page PDF, kita perlu embed QR ke setiap halaman via pdf-lib
+    if (options.embedQRToAllPages && data.qrCodeDataUrl) {
+        pdfBlob = await embedQRCodeToAllPages(pdfBlob, data.qrCodeDataUrl);
+    }
+
+    return pdfBlob;
+}
+
+/**
+ * Generate final PDF dan return sebagai Blob URL
+ */
+export async function generateFinalPdfBlobUrl(
+    type: SuratType,
+    data: Record<string, unknown> & {
+        signatures?: SignatureBlock[];
+        qrCodeDataUrl?: string;
+    },
+    options: {
+        embedQRToAllPages?: boolean;
+    } = {}
+): Promise<string> {
+    const blob = await generateFinalPdf(type, data, options);
+    return URL.createObjectURL(blob);
+}
+
+/**
+ * Download PDF langsung
+ */
+export function downloadPdf(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
