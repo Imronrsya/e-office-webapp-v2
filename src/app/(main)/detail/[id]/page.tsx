@@ -300,27 +300,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const handleSign = async () => {
         if (!detail || actionLoading) return; // Prevent double-click
         
-        setActionLoading(true);
-        try {
-            // Temporary: Use placeholder signature data until signature modal is ready
-            const response = await suratService.sign(detail.id, {
-                signatureUrl: "https://via.placeholder.com/150x50?text=TTD+Placeholder",
-                signerName: "Penandatangan",
-                signerNip: ""
-            });
-            
-            if (response.success) {
-                toast.success("Dokumen berhasil ditandatangani");
-                await fetchDetail();
-            } else {
-                toast.error(response.message || "Gagal menandatangani dokumen");
-            }
-        } catch (err) {
-            console.error("Sign failed:", err);
-            toast.error("Terjadi kesalahan saat menandatangani dokumen");
-        } finally {
-            setActionLoading(false);
-        }
+        // Open signature modal for Kaprodi/Kadep (same as pejabat)
+        setSignatureModalOpen(true);
     };
 
     // Forward Letter Handler (Admin Fakultas)
@@ -563,17 +544,35 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         setSignatureModalOpen(true);
     };
 
-    // Handle signature confirmation from modal
+    // Handle signature confirmation from modal (for both Surat Pengantar and SK/ST)
     const handleSignatureConfirm = async (result: SignatureModalResult) => {
         if (!detail) return;
         
         setActionLoading(true);
         try {
-            const response = await suratService.signSuratHasil(detail.id, {
-                signatureData: result.signatureData,
-                signatureUrl: result.signatureUrl,
-                saveSignature: result.saveSignature,
-            });
+            // Determine which endpoint to use based on role and document type
+            const isKaprodiOrKadep = ["KAPRODI", "KADEP"].includes(currentUserRole);
+            const isDekanOrWadek = isDekanWadek;
+            
+            let response;
+            
+            if (isKaprodiOrKadep) {
+                // KAPRODI/KADEP signing Surat Pengantar
+                response = await suratService.sign(detail.id, {
+                    signatureData: result.signatureData,
+                    signatureUrl: result.signatureUrl,
+                    saveSignature: result.saveSignature,
+                });
+            } else if (isDekanOrWadek) {
+                // DEKAN/WADEK signing SK/ST
+                response = await suratService.signSuratHasil(detail.id, {
+                    signatureData: result.signatureData,
+                    signatureUrl: result.signatureUrl,
+                    saveSignature: result.saveSignature,
+                });
+            } else {
+                throw new Error('Unauthorized to sign documents');
+            }
             
             if (response.success) {
                 toast.success("Dokumen berhasil ditandatangani");
@@ -583,7 +582,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 toast.error(response.message || "Gagal menandatangani dokumen");
             }
         } catch (err) {
-            console.error("Sign surat hasil failed:", err);
+            console.error("Sign failed:", err);
             toast.error("Terjadi kesalahan saat menandatangani");
         } finally {
             setActionLoading(false);
@@ -936,8 +935,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             signatures: suratPengantarDoc.signatures?.map(s => ({
                 signerRole: s.signerRole,
                 signerName: s.signerName,
-                signerNip: "",
-                signatureUrl: undefined,
+                signerNip: s.signerNip || "",
+                signatureUrl: s.signatureUrl || undefined,
             })),
         } : undefined;
         
@@ -1396,7 +1395,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 loading={actionLoading}
                 mode={isAdminFakultas ? "forward" : "disposition"}
                 currentUserRole={currentUserRole}
-                letterCategory={detail?.letterType?.category as "AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null}
+                letterCategory={(detail?.category || detail?.letterType?.category) as "AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null}
             />
 
             {/* Complete Dialog - for Pejabat to finish processing */}

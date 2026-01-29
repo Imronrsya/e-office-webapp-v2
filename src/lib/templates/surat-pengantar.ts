@@ -323,7 +323,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         
         <p>
             dengan ini mohon kiranya dapat diizinkan bagi mahasiswa tersebut untuk 
-            melaksanakan kegiatan ${keperluan.toLowerCase()} di tempat Saudara yang akan 
+            melaksanakan kegiatan ${(keperluan || 'kegiatan').toLowerCase()} di tempat Saudara yang akan 
             dilaksanakan mulai tanggal ${tanggalMulai}.
         </p>
         

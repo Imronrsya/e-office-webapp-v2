@@ -61,8 +61,8 @@ function getWaitingLabel(role: string): string {
 }
 
 export function ProcessHistory({ logs, isWaiting, currentActiveRole }: ProcessHistoryProps) {
-    // Reverse logs for display (newest first for display, but in timeline oldest at bottom)
-    const displayLogs = [...logs].reverse();
+    // Sort logs in reverse chronological order (newest first from top to bottom)
+    const displayLogs = [...logs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return (
         <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
@@ -71,35 +71,35 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole }: ProcessHi
                 
                 <div className="flex gap-4">
                     {/* Timeline Icons Column */}
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center pt-1">
                         {/* Current waiting status (at top) */}
                         {isWaiting && currentActiveRole && (
                             <>
-                                <div className="w-10 h-10 rounded-full flex items-center justify-center border-4 bg-white border-zinc-400">
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center border-4 bg-white border-zinc-400 flex-shrink-0">
                                     <Clock className="w-4 h-4 text-zinc-400" />
                                 </div>
-                                {displayLogs.length > 0 && <div className="w-0.5 h-6 bg-zinc-400" />}
+                                {displayLogs.length > 0 && <div className="w-0.5 h-12 bg-zinc-400" />}
                             </>
                         )}
                         
                         {/* Completed logs */}
                         {displayLogs.map((log, idx) => (
                             <div key={log.id} className="flex flex-col items-center">
-                                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-500">
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-500 flex-shrink-0">
                                     <CheckCircle className="w-5 h-5 text-white" />
                                 </div>
-                                {idx < displayLogs.length - 1 && <div className="w-0.5 h-6 bg-zinc-400" />}
+                                {idx < displayLogs.length - 1 && <div className="w-0.5 h-12 bg-zinc-400" />}
                             </div>
                         ))}
                     </div>
                     
                     {/* Timeline Content Column */}
-                    <div className="flex flex-col flex-1">
+                    <div className="flex flex-col flex-1 pt-1">
                         {/* Current waiting status content */}
                         {isWaiting && currentActiveRole && (
                             <div className={cn(
-                                "min-h-10 flex items-center",
-                                displayLogs.length > 0 && "mb-6"
+                                "flex items-start min-h-10",
+                                displayLogs.length > 0 && "mb-8"
                             )}>
                                 <div>
                                     <p className="text-sm font-bold text-black leading-5">
@@ -115,8 +115,8 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole }: ProcessHi
                             <div 
                                 key={log.id} 
                                 className={cn(
-                                    "min-h-10 flex items-center",
-                                    idx < displayLogs.length - 1 && "mb-6"
+                                    "flex items-start min-h-10",
+                                    idx < displayLogs.length - 1 && "mb-8"
                                 )}
                             >
                                 <div>
