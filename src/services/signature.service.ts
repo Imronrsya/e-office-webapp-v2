@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 
 export interface SavedSignature {
   id: string;
-  type: "UPLOAD" | "DRAW";
+  type: "UPLOAD" | "HANDWRITING";
   fileUrl: string;
   fileName: string;
   alias: string | null;

@@ -273,7 +273,16 @@ export const suratService = {
         return response.data;
     },
 
-    async sign(id: string, signatureData: { signatureUrl: string; signerName: string; signerNip?: string }): Promise<ApiResponse<unknown>> {
+    async sign(
+        id: string, 
+        signatureData: { 
+            signatureData?: string; // base64 data for new signatures
+            signatureUrl?: string;  // URL for saved signatures
+            saveSignature?: boolean;
+            signerName?: string; 
+            signerNip?: string;
+        }
+    ): Promise<ApiResponse<unknown>> {
         const response = await api.post<ApiResponse<unknown>>(
             `/api/department-approval/${id}/sign`,
             signatureData

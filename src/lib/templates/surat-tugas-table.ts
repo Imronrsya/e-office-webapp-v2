@@ -208,7 +208,7 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
         </tr>
       </thead>
       <tbody>
-        ${data.dataMahasiswa.map((mhs, index) => `
+        ${(data.dataMahasiswa || []).map((mhs, index) => `
         <tr>
           <td style="color: #000000;">${index + 1}.</td>
           <td style="color: #000000;">${mhs.nama}</td>
