@@ -30,6 +30,10 @@ import {
     Send,
     PenTool,
     Undo2,
+    Hash,
+    Stamp,
+    QrCode,
+    CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -43,6 +47,8 @@ import { ProcessHistory } from "./components/process-history";
 import { DetailSuratInfo } from "./components/detail-surat-info";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SignatureModal, type SignatureModalResult } from "@/components/signature";
+import { NumberingModal } from "@/components/numbering";
+import { legalisasiService } from "@/services/legalisasi.service";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -133,6 +139,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
     const [returnSuratDialogOpen, setReturnSuratDialogOpen] = useState(false);
     const [signatureModalOpen, setSignatureModalOpen] = useState(false);
+    const [numberingModalOpen, setNumberingModalOpen] = useState(false);
     const [verifyNotes, setVerifyNotes] = useState("");
     const [returnSuratReason, setReturnSuratReason] = useState("");
 
@@ -150,6 +157,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     // Staf cannot dispose (they're at bottom of hierarchy)
     const isStaf = ["STAF_AKADEMIK", "STAF_SUMBER_DAYA"].includes(currentUserRole);
+
+    // UPA role check
+    const isUPA = currentUserRole === "UPA";
 
     // Fetch detail data
     const fetchDetail = useCallback(async () => {
@@ -575,6 +585,112 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         } catch (err) {
             console.error("Sign surat hasil failed:", err);
             toast.error("Terjadi kesalahan saat menandatangani");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // ========================================================================
+    // UPA HANDLERS
+    // ========================================================================
+
+    // Handle numbering success
+    const handleNumberingSuccess = async () => {
+        toast.success("Nomor surat berhasil diberikan");
+        await fetchDetail();
+    };
+
+    // Handle stamp (UPA)
+    const handleStamp = async () => {
+        if (!detail || actionLoading) return;
+        
+        const suratHasilDoc = detail.documents?.find(d => 
+            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
+        );
+        
+        if (!suratHasilDoc) {
+            toast.error("Dokumen tidak ditemukan");
+            return;
+        }
+        
+        setActionLoading(true);
+        try {
+            const response = await legalisasiService.applyStamp(suratHasilDoc.id);
+            
+            if (response.success) {
+                toast.success("Stempel berhasil dibubuhkan");
+                await fetchDetail();
+            } else {
+                toast.error(response.error || "Gagal membubuhkan stempel");
+            }
+        } catch (err) {
+            console.error("Apply stamp failed:", err);
+            toast.error("Terjadi kesalahan saat membubuhkan stempel");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // Handle QR Code generation (UPA)
+    const handleGenerateQR = async () => {
+        if (!detail || actionLoading) return;
+        
+        const suratHasilDoc = detail.documents?.find(d => 
+            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
+        );
+        
+        if (!suratHasilDoc) {
+            toast.error("Dokumen tidak ditemukan");
+            return;
+        }
+        
+        setActionLoading(true);
+        try {
+            const response = await legalisasiService.generateQRCode(suratHasilDoc.id);
+            
+            if (response.success) {
+                toast.success("QR Code berhasil di-generate");
+                await fetchDetail();
+            } else {
+                toast.error(response.error || "Gagal generate QR Code");
+            }
+        } catch (err) {
+            console.error("Generate QR failed:", err);
+            toast.error("Terjadi kesalahan saat generate QR Code");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // Handle finalize (UPA)
+    const handleFinalize = async () => {
+        if (!detail || actionLoading) return;
+        
+        const suratHasilDoc = detail.documents?.find(d => 
+            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
+        );
+        
+        if (!suratHasilDoc || !suratHasilDoc.fileUrl) {
+            toast.error("Dokumen atau file tidak ditemukan");
+            return;
+        }
+        
+        setActionLoading(true);
+        try {
+            const response = await legalisasiService.finalize(suratHasilDoc.id, {
+                fileUrl: suratHasilDoc.fileUrl,
+                notes: "Surat telah selesai diproses"
+            });
+            
+            if (response.success) {
+                toast.success("Surat berhasil diselesaikan");
+                await fetchDetail();
+            } else {
+                toast.error(response.error || "Gagal menyelesaikan surat");
+            }
+        } catch (err) {
+            console.error("Finalize failed:", err);
+            toast.error("Terjadi kesalahan saat menyelesaikan surat");
         } finally {
             setActionLoading(false);
         }
@@ -1081,6 +1197,68 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
+                        {/* === UPA LEGALISASI BUTTONS === */}
+                        
+                        {/* Beri Nomor Surat Button (UPA) - when status is UPA_NUMBERING */}
+                        {permissions.canAssignNumber && isUPA && detail.status === 'UPA_NUMBERING' && (
+                            <Button 
+                                onClick={() => setNumberingModalOpen(true)}
+                                disabled={actionLoading}
+                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                            >
+                                <Hash className="w-4 h-4" />
+                                Beri Nomor Surat
+                            </Button>
+                        )}
+
+                        {/* Bubuhkan Stempel Button (UPA) - when status is UPA_STAMPING */}
+                        {permissions.canStamp && isUPA && detail.status === 'UPA_STAMPING' && (
+                            <Button 
+                                onClick={handleStamp}
+                                disabled={actionLoading}
+                                className="bg-blue-600 hover:bg-blue-700 gap-2"
+                            >
+                                {actionLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Stamp className="w-4 h-4" />
+                                )}
+                                Bubuhkan Stempel
+                            </Button>
+                        )}
+
+                        {/* Generate QR Code Button (UPA) - when status is UPA_FINALIZING */}
+                        {isUPA && detail.status === 'UPA_FINALIZING' && (
+                            <Button 
+                                onClick={handleGenerateQR}
+                                disabled={actionLoading}
+                                className="bg-purple-600 hover:bg-purple-700 gap-2"
+                            >
+                                {actionLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <QrCode className="w-4 h-4" />
+                                )}
+                                Generate QR Code
+                            </Button>
+                        )}
+
+                        {/* Selesaikan Button (UPA) - finalize after QR */}
+                        {isUPA && detail.status === 'UPA_FINALIZING' && (
+                            <Button 
+                                onClick={handleFinalize}
+                                disabled={actionLoading}
+                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                            >
+                                {actionLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <CheckCircle2 className="w-4 h-4" />
+                                )}
+                                Selesaikan
+                            </Button>
+                        )}
+
                         {/* === DEKAN/WADEK SIGNING BUTTONS === */}
                         
                         {/* Tanda Tangan SK/ST Button (Dekan/Wadek) */}
@@ -1344,6 +1522,17 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 description="Pilih metode untuk menandatangani dokumen SK/ST"
                 isLoading={actionLoading}
             />
+
+            {/* Numbering Modal - for UPA to assign nomor surat */}
+            {suratHasilDoc && (
+                <NumberingModal
+                    open={numberingModalOpen}
+                    onOpenChange={setNumberingModalOpen}
+                    documentId={suratHasilDoc.id}
+                    documentType={suratHasilDoc.type}
+                    onSuccess={handleNumberingSuccess}
+                />
+            )}
         </>
     );
 }
