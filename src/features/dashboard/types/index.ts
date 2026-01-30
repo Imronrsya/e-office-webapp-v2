@@ -76,6 +76,7 @@ export interface DashboardParams {
   limit?: number;
   search?: string;
   status?: string;
+  displayStatus?: string;
   type?: string;
   dateFrom?: string;
   dateTo?: string;

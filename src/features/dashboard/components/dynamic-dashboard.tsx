@@ -141,13 +141,12 @@ export default function DynamicDashboard() {
       setLoading(true);
       setError(null);
 
-      // NOTE: Status filter is handled client-side because backend uses different
-      // LetterStatus enum values that don't match display status
+      // Send displayStatus filter to backend for server-side filtering
       const params = {
         page,
         limit: 5, // 5 rows per page
         search: filters.search || undefined,
-        // status: filters.status || undefined, // Disabled - backend uses LetterStatus enum
+        displayStatus: filters.status || undefined, // Server-side displayStatus filter
         type: config.hasInboxOutbox ? filters.type : undefined,
       };
 
@@ -182,17 +181,7 @@ export default function DynamicDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [page, filters.search, filters.type, config.hasInboxOutbox, router]);
-
-  // Client-side filtered items based on displayStatus
-  const filteredItems = useMemo(() => {
-    if (!data?.items || !filters.status) {
-      return data?.items || [];
-    }
-    return data.items.filter(item =>
-      item.displayStatus?.toUpperCase() === filters.status.toUpperCase()
-    );
-  }, [data?.items, filters.status]);
+  }, [page, filters.search, filters.status, filters.type, config.hasInboxOutbox, router]);
 
   // Load data on mount and when dependencies change
   useEffect(() => {
@@ -246,7 +235,7 @@ export default function DynamicDashboard() {
       {/* Table */}
       <LetterTable
         columns={columns}
-        data={filteredItems}
+        data={data?.items || []}
         loading={loading}
         emptyMessage={
           filters.search
