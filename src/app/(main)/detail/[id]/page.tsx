@@ -1040,7 +1040,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             <>
                 {/* Sub-header dengan Judul Pengajuan */}
                 <h2 className="text-lg font-bold text-black mb-4">
-                    {submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'ST' : 'SK'} - {submissionValues.judulAcara.toUpperCase()}
+                    {submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'ST' : 'SK'} - {(submissionValues.judulAcara || 'Surat').toUpperCase()}
                 </h2>
 
                 {/* Document Tabs with Content */}
