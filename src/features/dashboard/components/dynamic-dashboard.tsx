@@ -141,6 +141,14 @@ export default function DynamicDashboard() {
       setLoading(true);
       setError(null);
 
+      // Format date range untuk API
+      const dateFrom = filters.dateRange.from 
+        ? filters.dateRange.from.toISOString().split('T')[0] 
+        : undefined;
+      const dateTo = filters.dateRange.to 
+        ? filters.dateRange.to.toISOString().split('T')[0] 
+        : undefined;
+
       // Send displayStatus filter to backend for server-side filtering
       const params = {
         page,
@@ -148,6 +156,8 @@ export default function DynamicDashboard() {
         search: filters.search || undefined,
         displayStatus: filters.status || undefined, // Server-side displayStatus filter
         type: config.hasInboxOutbox ? filters.type : undefined,
+        dateFrom,
+        dateTo,
       };
 
       const response = await dashboardService.getDashboard(params);
@@ -181,7 +191,7 @@ export default function DynamicDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [page, filters.search, filters.status, filters.type, config.hasInboxOutbox, router]);
+  }, [page, filters.search, filters.status, filters.type, filters.dateRange, config.hasInboxOutbox, router]);
 
   // Load data on mount and when dependencies change
   useEffect(() => {
@@ -195,7 +205,7 @@ export default function DynamicDashboard() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [filters.search, filters.status, filters.type]);
+  }, [filters.search, filters.status, filters.type, filters.dateRange]);
 
   // Handle filters change
   const handleFiltersChange = useCallback((newFilters: DashboardFilters) => {

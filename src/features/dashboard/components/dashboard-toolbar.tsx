@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
-import { CalendarIcon, Search, Plus, X } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import Link from "next/link";
+import { DateRangePicker } from "rsuite";
+import "rsuite/DateRangePicker/styles/index.css";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
   SelectContent,
@@ -16,11 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 import {
   type ToolbarAction,
@@ -72,7 +66,6 @@ export function DashboardToolbar({
   availableStatuses,
   tabCounts,
 }: DashboardToolbarProps) {
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [buatSuratDialogOpen, setBuatSuratDialogOpen] = useState(false);
 
   // Check if this role is a staff role
@@ -91,31 +84,15 @@ export function DashboardToolbar({
     onFiltersChange({ ...filters, type });
   }, [filters, onFiltersChange]);
 
-  const handleDateSelect = useCallback((range: { from?: Date; to?: Date } | undefined) => {
+  const handleDateRangeChange = useCallback((value: [Date, Date] | null) => {
     onFiltersChange({
       ...filters,
       dateRange: {
-        from: range?.from,
-        to: range?.to,
+        from: value?.[0],
+        to: value?.[1],
       },
     });
   }, [filters, onFiltersChange]);
-
-  const clearDateFilter = useCallback(() => {
-    onFiltersChange({
-      ...filters,
-      dateRange: { from: undefined, to: undefined },
-    });
-  }, [filters, onFiltersChange]);
-
-  // Format tanggal untuk display
-  const formatDateRange = () => {
-    if (!filters.dateRange.from) return "Pilih Tanggal";
-    if (!filters.dateRange.to) {
-      return format(filters.dateRange.from, "dd MMM yyyy", { locale: localeId });
-    }
-    return `${format(filters.dateRange.from, "dd MMM", { locale: localeId })} - ${format(filters.dateRange.to, "dd MMM yyyy", { locale: localeId })}`;
-  };
 
   return (
     <header className="space-y-3">
@@ -201,43 +178,24 @@ export function DashboardToolbar({
 
         {/* Right side filters group - Date, Status, Search */}
         <div className="flex flex-wrap items-center gap-3 ml-auto">
-          {/* Date Range Picker */}
+          {/* Date Range Picker - using rsuite */}
           {hasToolbarAction(role, "filter_date") && (
-            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-[180px] justify-start text-left font-normal bg-white"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  <span className={filters.dateRange.from ? "text-foreground" : "text-muted-foreground"}>
-                    {formatDateRange()}
-                  </span>
-                  {filters.dateRange.from && (
-                    <X
-                      className="ml-auto h-4 w-4 text-muted-foreground hover:text-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearDateFilter();
-                      }}
-                      aria-label="Hapus filter tanggal"
-                    />
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="range"
-                  selected={{
-                    from: filters.dateRange.from,
-                    to: filters.dateRange.to,
-                  }}
-                  onSelect={handleDateSelect}
-                  numberOfMonths={2}
-                  locale={localeId}
-                />
-              </PopoverContent>
-            </Popover>
+            <DateRangePicker
+              format="dd MMM yyyy"
+              character=" - "
+              placeholder="Pilih Tanggal"
+              value={
+                filters.dateRange.from && filters.dateRange.to
+                  ? [filters.dateRange.from, filters.dateRange.to]
+                  : null
+              }
+              onChange={handleDateRangeChange}
+              showOneCalendar={false}
+              cleanable
+              placement="bottomEnd"
+              style={{ width: 240 }}
+              className="[&_.rs-picker-toggle]:!border-input [&_.rs-picker-toggle]:!rounded-md [&_.rs-picker-toggle]:!bg-white [&_.rs-picker-toggle]:!h-9 [&_.rs-picker-toggle]:!text-sm"
+            />
           )}
 
           {/* Status Filter */}

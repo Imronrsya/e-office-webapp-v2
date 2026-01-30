@@ -35,7 +35,7 @@ interface LetterTableProps {
 
 function formatDate(dateString: string): string {
   try {
-    return format(new Date(dateString), "d/M/yyyy", { locale: localeId });
+    return format(new Date(dateString), "dd MMM yyyy", { locale: localeId });
   } catch {
     return dateString;
   }
