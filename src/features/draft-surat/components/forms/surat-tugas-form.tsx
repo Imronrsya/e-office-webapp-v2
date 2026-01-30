@@ -15,18 +15,21 @@ interface SuratTugasFormProps {
 }
 
 export function SuratTugasForm({ initialData }: SuratTugasFormProps) {
-  const { setFormData, nextStep, prevStep } = useDraftSurat();
+  const { state, setFormData, nextStep, prevStep } = useDraftSurat();
   const [showPreview, setShowPreview] = useState(false);
 
+  // Use stored form data from context if available, otherwise use initialData prop
+  const existingData = state.formData as SuratTugasFormData | null;
+
   const [formValues, setFormValues] = useState<SuratTugasFormData>({
-    jenisSurat: initialData?.jenisSurat || 'tugas',
-    jenisSuratText: initialData?.jenisSuratText || 'SURAT TUGAS',
-    nomorSurat: initialData?.nomorSurat || '',
-    namaLengkap: initialData?.namaLengkap || '',
-    nimNip: initialData?.nimNip || '',
-    programStudi: initialData?.programStudi || '',
-    keperluan: initialData?.keperluan || '',
-    judulSurat: initialData?.judulSurat || '',
+    jenisSurat: existingData?.jenisSurat || initialData?.jenisSurat || 'tugas',
+    jenisSuratText: existingData?.jenisSuratText || initialData?.jenisSuratText || 'SURAT TUGAS',
+    nomorSurat: existingData?.nomorSurat || initialData?.nomorSurat || '',
+    namaLengkap: existingData?.namaLengkap || initialData?.namaLengkap || '',
+    nimNip: existingData?.nimNip || initialData?.nimNip || '',
+    programStudi: existingData?.programStudi || initialData?.programStudi || '',
+    keperluan: existingData?.keperluan || initialData?.keperluan || '',
+    judulSurat: existingData?.judulSurat || initialData?.judulSurat || '',
   });
 
   const handleChange = (field: keyof SuratTugasFormData, value: string) => {

@@ -337,25 +337,22 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         <p>Atas perhatian dan kerjasama Saudara kami ucapkan terima kasih.</p>
     </div>
     
-    <div class="ttd-container">
-        <!-- TTD Kaprodi -->
+    <!-- TTD Container - Always hidden, signatures will be overlaid from positioner data -->
+    <div class="ttd-container" style="visibility: hidden;">
+        <!-- TTD Kaprodi placeholder -->
         <div class="ttd-box">
             <p class="jabatan-ttd">Ketua Program Studi</p>
-            <div class="signature-area">
-                ${signatureKaprodi ? `<img src="${signatureKaprodi}" alt="TTD Kaprodi" class="signature-img">` : ''}
-            </div>
-            <p class="nama-pejabat">${namaKaprodi || '...........................'}</p>
-            <p class="nip-pejabat">${nipKaprodi ? `NIP. ${nipKaprodi}` : ''}</p>
+            <div class="signature-area"></div>
+            <p class="nama-pejabat">...</p>
+            <p class="nip-pejabat"></p>
         </div>
         
-        <!-- TTD Kadep -->
+        <!-- TTD Kadep placeholder -->
         <div class="ttd-box">
             <p class="jabatan-ttd">Ketua Departemen</p>
-            <div class="signature-area">
-                ${signatureKadep ? `<img src="${signatureKadep}" alt="TTD Kadep" class="signature-img">` : ''}
-            </div>
-            <p class="nama-pejabat">${namaKadep || '...........................'}</p>
-            <p class="nip-pejabat">${nipKadep ? `NIP. ${nipKadep}` : ''}</p>
+            <div class="signature-area"></div>
+            <p class="nama-pejabat">...</p>
+            <p class="nip-pejabat"></p>
         </div>
     </div>
     

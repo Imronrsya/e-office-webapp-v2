@@ -44,6 +44,7 @@ interface SuratPreviewProps {
         nomorSurat?: string | null;
         tanggalSurat?: string | null;
         perihal?: string | null;
+        content?: Record<string, unknown> | null; // Content data from draft (namaTujuan, jabatanTujuan, etc.)
         contentHtml?: string | null;
         isSigned?: boolean;
         signatures?: Array<{
@@ -51,6 +52,10 @@ interface SuratPreviewProps {
             signerName: string;
             signerNip?: string;
             signatureUrl?: string;
+            // Position data from positioner
+            positionX?: number | null;
+            positionY?: number | null;
+            positionPage?: number | null;
         }>;
     };
     // URL file PDF jika sudah digenerate
@@ -111,21 +116,25 @@ export function SuratPreview({
             return null;
         }
 
-        // Extract signature data
-        const kaprodiSign = documentData?.signatures?.find(s => s.signerRole === 'KAPRODI');
-        const kadepSign = documentData?.signatures?.find(s => s.signerRole === 'KADEP');
+        // Extract content data from document (namaTujuan, jabatanTujuan, alamatTujuan, etc.)
+        const contentData = documentData?.content as {
+            namaTujuan?: string;
+            jabatanTujuan?: string;
+            alamatTujuan?: string;
+            keperluan?: string;
+        } | undefined;
 
-        // Generate dari template
+        // Generate dari template (TTD area will be hidden in template)
         const templateData: SuratPengantarData = {
             nomorSurat: documentData?.nomorSurat || "-",
             tanggalSurat: documentData?.tanggalSurat 
                 ? formatTanggalIndonesia(documentData.tanggalSurat)
                 : formatTanggalIndonesia(new Date()),
             perihal: documentData?.perihal || submissionData.keperluan,
-            namaTujuan: "",
-            jabatanTujuan: "",
-            alamatTujuan: "",
-            keperluan: submissionData.keperluan,
+            namaTujuan: contentData?.namaTujuan || "",
+            jabatanTujuan: contentData?.jabatanTujuan || "",
+            alamatTujuan: contentData?.alamatTujuan || "",
+            keperluan: contentData?.keperluan || submissionData.keperluan,
             namaMahasiswa: submissionData.nama,
             nimMahasiswa: submissionData.nim || submissionData.nip || "-",
             programStudi: submissionData.programStudi,
@@ -134,15 +143,73 @@ export function SuratPreview({
             tanggalMulai: formatTanggalIndonesia(submissionData.tanggalAcara),
             lokasiAcara: submissionData.lokasiAcara,
             durasiAcara: submissionData.durasiAcara,
-            namaKaprodi: kaprodiSign?.signerName,
-            nipKaprodi: kaprodiSign?.signerNip,
-            signatureKaprodi: kaprodiSign?.signatureUrl,
-            namaKadep: kadepSign?.signerName,
-            nipKadep: kadepSign?.signerNip,
-            signatureKadep: kadepSign?.signatureUrl,
+            // Don't pass signature data to template - they will be overlaid based on positions
         };
 
-        return generateSuratPengantarHTML(templateData);
+        let baseHtml = generateSuratPengantarHTML(templateData);
+
+        // Generate signature blocks based on positioner data
+        const signatures = documentData?.signatures || [];
+        if (signatures.length > 0) {
+            // Create signature overlay HTML
+            // The positioner uses max width of 700px, while HTML template uses 21cm (~794px)
+            // The template body has padding: 40px 60px (top/bottom 40px, left/right 60px)
+            // So content width is 794px - 120px = 674px
+            // Positioner coordinates are relative to PDF render (700px max), 
+            // need to adjust for template content area
+            const POSITIONER_WIDTH = 700; // Max width used in positioner
+            const TEMPLATE_CONTENT_WIDTH = 674; // 21cm - 2*60px padding (794 - 120)
+            const TEMPLATE_LEFT_PADDING = 60; // Left padding in template
+            const TEMPLATE_TOP_PADDING = 40; // Top padding in template
+            
+            const signatureOverlayHtml = signatures.map(sig => {
+                // Scale coordinates from positioner width to template content width
+                const rawX = sig.positionX ?? 0;
+                const rawY = sig.positionY ?? 0;
+                
+                // Scale X coordinate and add left padding offset
+                const scaledX = (rawX / POSITIONER_WIDTH) * TEMPLATE_CONTENT_WIDTH + TEMPLATE_LEFT_PADDING;
+                // Scale Y coordinate and add top padding offset  
+                const scaledY = (rawY / POSITIONER_WIDTH) * TEMPLATE_CONTENT_WIDTH + TEMPLATE_TOP_PADDING;
+                
+                const roleLabel = sig.signerRole === 'KAPRODI' ? 'Ketua Program Studi' : 
+                                 sig.signerRole === 'KADEP' ? 'Ketua Departemen' : 
+                                 sig.signerRole === 'DEKAN' ? 'Dekan' :
+                                 sig.signerRole === 'WADEK_1' ? 'Wakil Dekan I' :
+                                 sig.signerRole === 'WADEK_2' ? 'Wakil Dekan II' : sig.signerRole;
+
+                return `
+                    <div style="
+                        position: absolute;
+                        left: ${scaledX}px;
+                        top: ${scaledY}px;
+                        width: 180px;
+                        text-align: center;
+                        font-family: 'Times New Roman', Times, serif;
+                        font-size: 11pt;
+                        z-index: 10;
+                    ">
+                        <p style="margin: 0 0 5px 0;">${roleLabel}</p>
+                        <div style="height: 60px; display: flex; align-items: center; justify-content: center;">
+                            ${sig.signatureUrl ? `<img src="${sig.signatureUrl}" style="max-height: 50px; max-width: 120px;" alt="TTD">` : ''}
+                        </div>
+                        <p style="margin: 5px 0 0 0; font-weight: bold; text-decoration: underline;">${sig.signerName || '...'}</p>
+                        ${sig.signerNip ? `<p style="margin: 0; font-size: 10pt;">NIP. ${sig.signerNip}</p>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            // Inject signature overlay before closing body tag
+            // Also make body position relative for absolute positioning to work
+            baseHtml = baseHtml.replace('</body>', `
+                <style>
+                    body { position: relative; min-height: 29.7cm; }
+                </style>
+                ${signatureOverlayHtml}
+            </body>`);
+        }
+
+        return baseHtml;
     }, [submissionData, documentData]);
 
     // Jika ada file URL (PDF), tampilkan PDF

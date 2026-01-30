@@ -15,25 +15,28 @@ interface SuratPengantarFormProps {
 }
 
 export function SuratPengantarForm({ initialData }: SuratPengantarFormProps) {
-  const { setFormData, nextStep, prevStep } = useDraftSurat();
+  const { state, setFormData, nextStep, prevStep } = useDraftSurat();
   const [showPreview, setShowPreview] = useState(false);
 
+  // Use stored form data from context if available, otherwise use initialData prop
+  const existingData = state.formData as SuratPengantarFormData | null;
+
   const [formValues, setFormValues] = useState<SuratPengantarFormData>({
-    nomorSurat: initialData?.nomorSurat || '',
-    tanggalSurat: initialData?.tanggalSurat || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-    perihal: initialData?.perihal || 'Permohonan Izin Magang Mandiri',
-    namaTujuan: initialData?.namaTujuan || '',
-    jabatanTujuan: initialData?.jabatanTujuan || '',
-    alamatTujuan: initialData?.alamatTujuan || '',
-    keperluan: initialData?.keperluan || 'Magang Mandiri',
-    namaMahasiswa: initialData?.namaMahasiswa || '',
-    nimMahasiswa: initialData?.nimMahasiswa || '',
-    programStudi: initialData?.programStudi || 'Informatika',
-    departemen: initialData?.departemen || 'Informatika',
-    judulAcara: initialData?.judulAcara || '',
-    tanggalMulai: initialData?.tanggalMulai || '',
-    lokasiAcara: initialData?.lokasiAcara || '',
-    durasiAcara: initialData?.durasiAcara || '',
+    nomorSurat: existingData?.nomorSurat || initialData?.nomorSurat || '',
+    tanggalSurat: existingData?.tanggalSurat || initialData?.tanggalSurat || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+    perihal: existingData?.perihal || initialData?.perihal || 'Permohonan Izin Magang Mandiri',
+    namaTujuan: existingData?.namaTujuan || initialData?.namaTujuan || '',
+    jabatanTujuan: existingData?.jabatanTujuan || initialData?.jabatanTujuan || '',
+    alamatTujuan: existingData?.alamatTujuan || initialData?.alamatTujuan || '',
+    keperluan: existingData?.keperluan || initialData?.keperluan || 'Magang Mandiri',
+    namaMahasiswa: existingData?.namaMahasiswa || initialData?.namaMahasiswa || '',
+    nimMahasiswa: existingData?.nimMahasiswa || initialData?.nimMahasiswa || '',
+    programStudi: existingData?.programStudi || initialData?.programStudi || 'Informatika',
+    departemen: existingData?.departemen || initialData?.departemen || 'Informatika',
+    judulAcara: existingData?.judulAcara || initialData?.judulAcara || '',
+    tanggalMulai: existingData?.tanggalMulai || initialData?.tanggalMulai || '',
+    lokasiAcara: existingData?.lokasiAcara || initialData?.lokasiAcara || '',
+    durasiAcara: existingData?.durasiAcara || initialData?.durasiAcara || '',
   });
 
   const handleChange = (field: keyof SuratPengantarFormData, value: string) => {

@@ -1,13 +1,25 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  /* config options here */
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3079';
+let apiHost = 'localhost';
+try {
+  apiHost = new URL(apiUrl).hostname;
+} catch (e) {
+  console.warn("Format URL API di .env salah, default ke localhost");
+}
 
+const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
         protocol: 'http',
-        hostname: 'localhost',
+        hostname: 'localhost', 
+        port: '9000',
+        pathname: '/e-office-storage/**',
+      },
+      {
+        protocol: 'http',
+        hostname: apiHost, 
         port: '9000',
         pathname: '/e-office-storage/**',
       },
@@ -20,10 +32,10 @@ const nextConfig: NextConfig = {
 
   ...(process.env.NODE_ENV === 'development' && {
     allowedDevOrigins: [
-      '10.137.138.81',   // IP Wi-Fi
-      '192.168.253.1',   // ✅ Tambahkan IP VMware ini (sesuai error log)
-      'localhost',
+      apiHost,      
+      'localhost',   
     ],
   }),
 };
+
 export default nextConfig;

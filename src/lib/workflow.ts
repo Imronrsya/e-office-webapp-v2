@@ -12,7 +12,12 @@ const RANK_LEVEL: Record<string, number> = {
 
 /**
  * LOGIC 1: DISPOSISI SURAT MASUK (Top-Down)
- * Aturan: Hanya boleh ke bawahan sesuai jalur (Akademik/SDM/Umum)
+ * Aturan berdasarkan jabatan:
+ * - Dekan: bisa ke semua jabatan di bawahnya
+ * - Wadek 1: hanya ke supervisor akademik dan staf akademik
+ * - Wadek 2: hanya ke supervisor sumber daya dan staf sumber daya
+ * - Manajer TU: ke supervisor dan staf sesuai kategori
+ * - Supervisor: ke staf di bawahnya
  */
 export const getDisposisiTargets = (
   currentRole: UserRole, 
@@ -20,18 +25,24 @@ export const getDisposisiTargets = (
 ): UserRole[] => {
   switch (currentRole) {
     case 'dekan':
-      if (kategori === 'Akademik') return ['wadek1', 'manajer_tu']; // Boleh lompat
-      if (kategori === 'SDM') return ['wadek2', 'manajer_tu'];
-      return ['wadek1', 'wadek2', 'manajer_tu']; // Umum
+      // Dekan bisa ke semua jabatan di bawahnya
+      if (kategori === 'Akademik') return ['wadek1', 'manajer_tu', 'spv_akademik', 'staf_akademik'];
+      if (kategori === 'SDM') return ['wadek2', 'manajer_tu', 'spv_sdm', 'staf_sdm'];
+      // Umum - bisa ke semua
+      return ['wadek1', 'wadek2', 'manajer_tu', 'spv_akademik', 'spv_sdm', 'staf_akademik', 'staf_sdm'];
 
     case 'wadek1':
+      // Wadek 1 hanya bisa ke supervisor akademik dan staf akademik
+      return ['spv_akademik', 'staf_akademik'];
+
     case 'wadek2':
-      return ['manajer_tu'];
+      // Wadek 2 hanya bisa ke supervisor sumber daya dan staf sumber daya
+      return ['spv_sdm', 'staf_sdm'];
 
     case 'manajer_tu':
-      if (kategori === 'Akademik') return ['spv_akademik'];
-      if (kategori === 'SDM') return ['spv_sdm'];
-      return ['spv_akademik', 'spv_sdm']; // Umum
+      if (kategori === 'Akademik') return ['spv_akademik', 'staf_akademik'];
+      if (kategori === 'SDM') return ['spv_sdm', 'staf_sdm'];
+      return ['spv_akademik', 'spv_sdm', 'staf_akademik', 'staf_sdm'];
 
     case 'spv_akademik': return ['staf_akademik'];
     case 'spv_sdm': return ['staf_sdm'];

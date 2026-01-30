@@ -27,6 +27,7 @@ import {
   type RoleDashboardConfig,
   hasToolbarAction
 } from "../config/dashboard-config";
+import { BuatSuratDialog } from "./buat-surat-dialog";
 
 // ============================================================================
 // TYPES
@@ -60,6 +61,9 @@ interface DashboardToolbarProps {
 // COMPONENT
 // ============================================================================
 
+// Roles that should use the BuatSuratDialog instead of direct link
+const STAFF_ROLES = ["STAF_AKADEMIK", "STAF_SUMBER_DAYA"];
+
 export function DashboardToolbar({
   role,
   config,
@@ -69,6 +73,10 @@ export function DashboardToolbar({
   tabCounts,
 }: DashboardToolbarProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [buatSuratDialogOpen, setBuatSuratDialogOpen] = useState(false);
+
+  // Check if this role is a staff role
+  const isStaffRole = STAFF_ROLES.includes(role);
 
   // Handlers
   const handleSearchChange = useCallback((value: string) => {
@@ -114,12 +122,30 @@ export function DashboardToolbar({
       {/* Row 1: Buat Surat Button (di atas, lebar sama dengan tabs) */}
       {config.hasInboxOutbox && hasToolbarAction(role, "buat_surat") && (
         <div>
-          <Button asChild className="w-[320px] bg-[#2B2B2B] hover:bg-[#2B2B2B]/90 text-white">
-            <Link href="/pengajuan/buat">
-              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-              Buat Surat
-            </Link>
-          </Button>
+          {isStaffRole ? (
+            // Staff roles: Show dialog with category/template selection
+            <>
+              <Button 
+                onClick={() => setBuatSuratDialogOpen(true)}
+                className="w-[320px] bg-[#2B2B2B] hover:bg-[#2B2B2B]/90 text-white"
+              >
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                Buat Surat
+              </Button>
+              <BuatSuratDialog 
+                open={buatSuratDialogOpen} 
+                onOpenChange={setBuatSuratDialogOpen} 
+              />
+            </>
+          ) : (
+            // Other roles: Direct link to pengajuan form
+            <Button asChild className="w-[320px] bg-[#2B2B2B] hover:bg-[#2B2B2B]/90 text-white">
+              <Link href="/pengajuan/buat">
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                Buat Surat
+              </Link>
+            </Button>
+          )}
         </div>
       )}
 

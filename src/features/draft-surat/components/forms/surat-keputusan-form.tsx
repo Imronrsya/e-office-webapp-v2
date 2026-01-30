@@ -16,19 +16,22 @@ interface SuratKeputusanFormProps {
 }
 
 export function SuratKeputusanForm({ initialData }: SuratKeputusanFormProps) {
-  const { setFormData, nextStep, prevStep } = useDraftSurat();
+  const { state, setFormData, nextStep, prevStep } = useDraftSurat();
   const [showPreview, setShowPreview] = useState(false);
 
+  // Use stored form data from context if available, otherwise use initialData prop
+  const existingData = state.formData as SuratKeputusanFormData | null;
+
   const [formValues, setFormValues] = useState<SuratKeputusanFormData>({
-    nomorSurat: initialData?.nomorSurat || '',
-    tentang: initialData?.tentang || '',
-    menimbang: initialData?.menimbang || [''],
-    mengingat: initialData?.mengingat || [''],
-    menetapkan: initialData?.menetapkan || '',
-    keputusan: initialData?.keputusan || [{ label: 'KESATU', content: '' }],
-    tanggalDitetapkan: initialData?.tanggalDitetapkan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-    lampiran: initialData?.lampiran || false,
-    dataPeserta: initialData?.dataPeserta || [{ nama: '', nim: '' }],
+    nomorSurat: existingData?.nomorSurat || initialData?.nomorSurat || '',
+    tentang: existingData?.tentang || initialData?.tentang || '',
+    menimbang: existingData?.menimbang || initialData?.menimbang || [''],
+    mengingat: existingData?.mengingat || initialData?.mengingat || [''],
+    menetapkan: existingData?.menetapkan || initialData?.menetapkan || '',
+    keputusan: existingData?.keputusan || initialData?.keputusan || [{ label: 'KESATU', content: '' }],
+    tanggalDitetapkan: existingData?.tanggalDitetapkan || initialData?.tanggalDitetapkan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+    lampiran: existingData?.lampiran ?? initialData?.lampiran ?? false,
+    dataPeserta: existingData?.dataPeserta || initialData?.dataPeserta || [{ nama: '', nim: '' }],
   });
 
   const handleChange = (field: keyof SuratKeputusanFormData, value: string | boolean) => {

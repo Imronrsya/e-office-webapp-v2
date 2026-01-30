@@ -14,15 +14,18 @@ interface SuratTugasTableFormProps {
 }
 
 export function SuratTugasTableForm({ initialData }: SuratTugasTableFormProps) {
-  const { setFormData, nextStep, prevStep } = useDraftSurat();
+  const { state, setFormData, nextStep, prevStep } = useDraftSurat();
   const [showPreview, setShowPreview] = useState(false);
 
+  // Use stored form data from context if available, otherwise use initialData prop
+  const existingData = state.formData as SuratTugasTableFormData | null;
+
   const [formValues, setFormValues] = useState<SuratTugasTableFormData>({
-    nomorSurat: initialData?.nomorSurat || '',
-    dataMahasiswa: initialData?.dataMahasiswa || [{ nama: '', nim: '', prodi: '' }],
-    keterangan: initialData?.keterangan || '',
-    tanggalMulai: initialData?.tanggalMulai || '',
-    tanggalSelesai: initialData?.tanggalSelesai || '',
+    nomorSurat: existingData?.nomorSurat || initialData?.nomorSurat || '',
+    dataMahasiswa: existingData?.dataMahasiswa || initialData?.dataMahasiswa || [{ nama: '', nim: '', prodi: '' }],
+    keterangan: existingData?.keterangan || initialData?.keterangan || '',
+    tanggalMulai: existingData?.tanggalMulai || initialData?.tanggalMulai || '',
+    tanggalSelesai: existingData?.tanggalSelesai || initialData?.tanggalSelesai || '',
   });
 
   const handleChange = (field: keyof SuratTugasTableFormData, value: string) => {

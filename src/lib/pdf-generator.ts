@@ -15,6 +15,7 @@ export interface SignerPlaceholder {
     role: string;
     name: string;
     nip?: string;
+    prefix?: string; // Awalan/keterangan seperti "Mengetahui,"
     x: number;
     y: number;
     page: number;
@@ -185,10 +186,14 @@ export async function embedSignaturePlaceholders(
         const pageWidth = page.getWidth();  // 595.28 for A4
         const pageHeight = page.getHeight(); // 841.89 for A4
 
-        // Calculate scale factors
-        // The rendered view has a certain width, we need to scale to PDF points
+        // Calculate the rendered height based on the actual page aspect ratio
+        // This is crucial because the positioner renders the PDF maintaining aspect ratio
+        const pageAspectRatio = pageHeight / pageWidth;
+        const renderedHeight = renderedWidth * pageAspectRatio;
+
+        // Calculate scale factors from rendered pixels to PDF points
         const scaleX = pageWidth / renderedWidth;
-        const scaleY = pageHeight / (renderedWidth * 1.414); // A4 aspect ratio is ~1.414
+        const scaleY = pageHeight / renderedHeight;
 
         // Scale coordinates from rendered pixels to PDF points
         const scaledX = signer.x * scaleX;
@@ -202,6 +207,18 @@ export async function embedSignaturePlaceholders(
         try {
             const x = scaledX;
             let currentY = pdfY + scaledBlockHeight - 12; // Start from top of block
+
+            // Draw prefix if provided (e.g., "Mengetahui,")
+            if (signer.prefix && signer.prefix.trim()) {
+                page.drawText(signer.prefix, {
+                    x,
+                    y: currentY,
+                    size: 10,
+                    font: font,
+                    color: rgb(0, 0, 0),
+                });
+                currentY -= 14;
+            }
 
             // Draw role/position title (e.g., "Dekan", "Wakil Dekan 1")
             page.drawText(signer.role, {
@@ -320,7 +337,7 @@ export async function embedSignaturePlaceholders(
 
     // Save and return as blob
     const modifiedPdfBytes = await pdfDoc.save();
-    return new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+    return new Blob([modifiedPdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
 }
 
 /**
@@ -440,7 +457,7 @@ export async function embedQRCodeToAllPages(
 
     // Save and return as blob
     const modifiedPdfBytes = await pdfDoc.save();
-    return new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+    return new Blob([modifiedPdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
 }
 
 /**

@@ -34,6 +34,7 @@ import {
     Stamp,
     QrCode,
     CheckCircle2,
+    Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -145,6 +146,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const [numberingModalOpen, setNumberingModalOpen] = useState(false);
     const [verifyNotes, setVerifyNotes] = useState("");
     const [returnSuratReason, setReturnSuratReason] = useState("");
+    const [attachmentPreviewOpen, setAttachmentPreviewOpen] = useState(false);
+    const [previewAttachment, setPreviewAttachment] = useState<{id: string, fileName: string, fileUrl: string, mimeType: string | null} | null>(null);
 
     // User's current role
     const currentUserRole = user?.role?.toUpperCase() || "";
@@ -187,23 +190,33 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         fetchDetail();
     }, [fetchDetail]);
 
-    // Download attachment handler
-    const handleDownloadAttachment = async (attachmentId: string, fileName: string) => {
+    // Download attachment handler - use fileUrl directly
+    const handleDownloadAttachment = (fileName: string, fileUrl: string) => {
         if (!detail) return;
         try {
-            const blob = await suratService.downloadAttachment(detail.id, attachmentId);
-            if (blob) {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = fileName;
-                a.click();
-                window.URL.revokeObjectURL(url);
-            }
+            const a = document.createElement("a");
+            a.href = fileUrl;
+            a.download = fileName;
+            a.target = "_blank"; // Open in new tab as fallback
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         } catch (err) {
             console.error("Download failed:", err);
             toast.error("Gagal mengunduh file");
         }
+    };
+
+    // Preview attachment handler - use fileUrl from attachment data directly
+    const handlePreviewAttachment = (attachmentId: string, fileName: string, mimeType: string | null, fileUrl: string) => {
+        if (!detail) return;
+        setPreviewAttachment({
+            id: attachmentId,
+            fileName,
+            fileUrl,
+            mimeType
+        });
+        setAttachmentPreviewOpen(true);
     };
 
     // ========================================================================
@@ -415,6 +428,24 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         if (!detail) return;
         setDraftSuratDialogOpen(false);
         router.push(`/draft-surat/${detail.id}?type=${type}`);
+    };
+
+    // Edit Draft Handler - navigates to draft page with existing document type
+    const handleEditDraft = () => {
+        if (!detail) return;
+        
+        // Find existing SK/ST document to determine type
+        const existingDoc = detail.documents?.find(d => 
+            d.type === 'SURAT_TUGAS' || 
+            d.type === 'SURAT_TUGAS_TABEL' || 
+            d.type === 'SURAT_KEPUTUSAN'
+        );
+        
+        if (existingDoc) {
+            router.push(`/draft-surat/${detail.id}?type=${existingDoc.type}`);
+        } else {
+            toast.error("Dokumen tidak ditemukan");
+        }
     };
 
     // Check if user can draft surat (Admin Prodi, Staf, Supervisor)
@@ -870,13 +901,24 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         <p className="text-sm text-zinc-400">{formatFileSize(att.fileSize)}</p>
                                     </div>
                                 </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDownloadAttachment(att.id, att.fileName)}
-                                >
-                                    <Download className="w-5 h-5" />
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handlePreviewAttachment(att.id, att.fileName, att.mimeType, att.fileUrl)}
+                                        title="Preview"
+                                    >
+                                        <Eye className="w-5 h-5" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDownloadAttachment(att.fileName, att.fileUrl)}
+                                        title="Download"
+                                    >
+                                        <Download className="w-5 h-5" />
+                                    </Button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -938,6 +980,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             nomorSurat: suratPengantarDoc.nomorSurat,
             tanggalSurat: suratPengantarDoc.tanggalSurat,
             perihal: suratPengantarDoc.perihal,
+            content: suratPengantarDoc.content, // Include content data from draft
             contentHtml: null, // Gunakan template
             isSigned: suratPengantarDoc.isSigned,
             signatures: suratPengantarDoc.signatures?.map(s => ({
@@ -945,6 +988,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 signerName: s.signerName,
                 signerNip: s.signerNip || "",
                 signatureUrl: s.signatureUrl || undefined,
+                // Include position data from positioner
+                positionX: s.positionX,
+                positionY: s.positionY,
+                positionPage: s.positionPage,
             })),
         } : undefined;
         
@@ -1031,6 +1078,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 judulSurat={submissionValues.judulAcara}
                                 keperluan={submissionValues.keperluan}
                             />
+
+                            {/* Lampiran */}
+                            <LampiranCard />
                         </div>
                     </div>
                 </Tabs>
@@ -1066,7 +1116,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 rightContent={
                     <div className="flex items-center gap-3">
                         {/* Buat Surat Pengantar Button - Admin Prodi (only when no document exists) */}
-                        {permissions.canDraft && !hasSuratPengantar && (
+                        {/* {permissions.canDraft && !hasSuratPengantar && (
                             <Button 
                                 onClick={handleCreateDraft}
                                 disabled={actionLoading}
@@ -1079,7 +1129,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 )}
                                 Buat Surat Pengantar
                             </Button>
-                        )}
+                        )} */}
 
                         {/* Ajukan untuk TTD Button - Admin Prodi (after draft created) */}
                         {permissions.canSubmitDraft && hasSuratPengantar && (
@@ -1163,6 +1213,18 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
+                        {/* Edit Draft Button (Staf/Supervisor) - edit existing draft */}
+                        {permissions.canEditDraft && (isStaf || isSupervisor) && (
+                            <Button 
+                                onClick={handleEditDraft}
+                                disabled={actionLoading}
+                                className="bg-amber-600 hover:bg-amber-700 gap-2"
+                            >
+                                <FileText className="w-4 h-4" />
+                                Edit Draft
+                            </Button>
+                        )}
+
                         {/* Submit for Verification Button (Staf) - after draft created */}
                         {permissions.canSubmitVerification && isStaf && (
                             <Button 
@@ -1181,6 +1243,18 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                         {/* === SUPERVISOR/MANAJER TU VERIFICATION BUTTONS === */}
                         
+                        {/* Edit Draft Button (Supervisor/Manajer TU) - during verification */}
+                        {permissions.canEditDraftInVerification && (isSupervisor || isManajerTU) && (
+                            <Button 
+                                onClick={handleEditDraft}
+                                disabled={actionLoading}
+                                className="bg-blue-600 hover:bg-blue-700 gap-2"
+                            >
+                                <FileText className="w-4 h-4" />
+                                Edit Draft
+                            </Button>
+                        )}
+
                         {/* Verifikasi Button (Supervisor/Manajer TU) */}
                         {permissions.canVerifySuratHasil && (isSupervisor || isManajerTU) && (
                             <Button 
@@ -1404,7 +1478,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 loading={actionLoading}
                 mode={isAdminFakultas ? "forward" : "disposition"}
                 currentUserRole={currentUserRole}
-                letterCategory={(detail?.category || detail?.letterType?.category) as "AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null}
+                letterCategory={detail?.letterType?.category as "AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null}
             />
 
             {/* Complete Dialog - for Pejabat to finish processing */}
@@ -1544,6 +1618,85 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     onSuccess={handleNumberingSuccess}
                 />
             )}
+
+            {/* Attachment Preview Modal */}
+            <Dialog open={attachmentPreviewOpen} onOpenChange={setAttachmentPreviewOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Preview: {previewAttachment?.fileName}</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        {previewAttachment && (
+                            <>
+                                {previewAttachment.mimeType?.startsWith('image/') ? (
+                                    // Preview untuk image files
+                                    <div className="w-full flex justify-center">
+                                        <img 
+                                            src={previewAttachment.fileUrl} 
+                                            alt={previewAttachment.fileName}
+                                            className="max-w-full max-h-[500px]"
+                                        />
+                                    </div>
+                                ) : previewAttachment.mimeType === 'application/pdf' ? (
+                                    // Preview untuk PDF
+                                    <div className="w-full">
+                                        <iframe
+                                            src={`${previewAttachment.fileUrl}#toolbar=0`}
+                                            className="w-full h-[600px] border border-zinc-400 rounded"
+                                            title={previewAttachment.fileName}
+                                        />
+                                    </div>
+                                ) : previewAttachment.mimeType?.startsWith('text/') ? (
+                                    // Preview untuk text files
+                                    <div className="w-full">
+                                        <iframe
+                                            src={previewAttachment.fileUrl}
+                                            className="w-full h-[600px] border border-zinc-400 rounded"
+                                            title={previewAttachment.fileName}
+                                        />
+                                    </div>
+                                ) : (
+                                    // File type tidak bisa di-preview, tampilkan link download
+                                    <div className="py-8 text-center">
+                                        <FileText className="w-16 h-16 mx-auto text-zinc-400 mb-4" />
+                                        <p className="text-sm text-zinc-600 mb-4">
+                                            File jenis {previewAttachment.mimeType || 'unknown'} tidak bisa di-preview di browser
+                                        </p>
+                                        <Button
+                                            onClick={() => handleDownloadAttachment(previewAttachment.fileName, previewAttachment.fileUrl)}
+                                            className="bg-zinc-800 hover:bg-zinc-900"
+                                        >
+                                            <Download className="w-4 h-4 mr-2" />
+                                            Download File
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button 
+                            variant="outline"
+                            onClick={() => setAttachmentPreviewOpen(false)}
+                        >
+                            Tutup
+                        </Button>
+                        {previewAttachment && (
+                            <Button
+                                onClick={() => {
+                                    if (previewAttachment) {
+                                        handleDownloadAttachment(previewAttachment.fileName, previewAttachment.fileUrl);
+                                    }
+                                }}
+                                className="bg-zinc-800 hover:bg-zinc-900"
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                Download
+                            </Button>
+                        )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

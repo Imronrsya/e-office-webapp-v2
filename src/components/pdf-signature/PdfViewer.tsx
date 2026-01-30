@@ -35,7 +35,7 @@ export interface PdfViewerProps {
     width?: number;
     onLoadSuccess?: (numPages: number) => void;
     onLoadError?: (error: Error) => void;
-    renderMode?: 'canvas' | 'svg';
+    renderMode?: 'canvas' | 'custom' | 'none';
     className?: string;
     pageClassName?: string;
 }

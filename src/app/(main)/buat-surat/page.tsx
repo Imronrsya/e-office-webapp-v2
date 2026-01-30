@@ -1,12 +1,11 @@
 "use client";
 
-import { use, useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
     Select,
@@ -37,23 +36,23 @@ import BottomNav from "@/components/layout/bottom-nav";
 import { suratService } from "@/services/surat.service";
 import PdfSignaturePositioner, { SignerPosition } from "@/components/pdf-signature/PdfSignaturePositioner";
 import { generatePdfBlobUrl, generatePdfWithSignatures, SignerPlaceholder } from "@/lib/pdf-generator";
+import { Suspense } from "react";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-type SuratType = "SURAT_PENGANTAR" | "SURAT_TUGAS" | "SURAT_TUGAS_TABEL" | "SURAT_KEPUTUSAN";
-
+type SuratType = "SURAT_TUGAS" | "SURAT_TUGAS_TABEL" | "SURAT_KEPUTUSAN";
+type Category = "AKADEMIK" | "SUMBER_DAYA";
 
 interface SignerItem {
     id: string;
     role: string;
     order: number;
     isRequired: boolean;
-    // Position data for PDF signature placement
     name?: string;
     nip?: string;
-    prefix?: string; // Awalan/keterangan seperti "Mengetahui,"
+    prefix?: string;
     x?: number;
     y?: number;
     page?: number;
@@ -81,27 +80,9 @@ interface KeputusanItem {
 
 type Step = "form" | "signature" | "tembusan" | "review";
 
-// Form data for each surat type
-interface SuratPengantarForm {
-    nomorSurat: string;
-    tanggalSurat: string;
-    perihal: string;
-    namaTujuan: string;
-    jabatanTujuan: string;
-    alamatTujuan: string;
-    namaMahasiswa: string;
-    nimMahasiswa: string;
-    kegiatanMagang: string;
-    judulProposal: string;
-    tanggalMulai: string;
-    namaPejabat: string;
-    nipPejabat: string;
-    tembusan: string;
-}
-
+// Form data types
 interface SuratTugasForm {
     jenisSuratText: string;
-    tanggalSurat: string;
     namaLengkap: string;
     nimNip: string;
     programStudi: string;
@@ -111,7 +92,6 @@ interface SuratTugasForm {
 
 interface SuratTugasTabelForm {
     jenisSuratText: string;
-    tanggalSurat: string;
     keperluan: string;
     judulSurat: string;
     pelaksana: PelaksanaItem[];
@@ -133,7 +113,6 @@ interface SuratKeputusanForm {
 // CONSTANTS
 // ============================================================================
 
-// All available signer roles
 const ALL_SIGNER_ROLES = [
     { value: "KAPRODI", label: "Ketua Prodi" },
     { value: "KADEP", label: "Ketua Departemen" },
@@ -142,69 +121,44 @@ const ALL_SIGNER_ROLES = [
     { value: "WADEK_2", label: "Wakil Dekan II" },
 ];
 
-// Signer roles for surat pengantar - Admin Prodi can always choose KAPRODI and/or KADEP
-const SURAT_PENGANTAR_ROLES = [
-    { value: "KAPRODI", label: "Ketua Prodi" },
-    { value: "KADEP", label: "Ketua Departemen" },
-];
-
-const ROLE_LABELS: Record<string, string> = {
-    KAPRODI: "Ketua Prodi",
-    KADEP: "Ketua Departemen",
-    DEKAN: "Dekan",
-    WADEK_1: "Wakil Dekan I",
-    WADEK_2: "Wakil Dekan II",
-    MANAJER_TU: "Manajer Tata Usaha",
-    SUPERVISOR_AKADEMIK: "Supervisor Akademik",
-    SUPERVISOR_SUMBER_DAYA: "Supervisor Sumber Daya",
-    STAF_AKADEMIK: "Staf Akademik",
-    STAF_SUMBER_DAYA: "Staf Sumber Daya",
-};
-
 const SURAT_TYPE_LABELS: Record<SuratType, string> = {
-    SURAT_PENGANTAR: "Surat Pengantar",
     SURAT_TUGAS: "Surat Tugas",
     SURAT_TUGAS_TABEL: "Surat Tugas (Tabel)",
     SURAT_KEPUTUSAN: "Surat Keputusan",
+};
+
+const CATEGORY_LABELS: Record<Category, string> = {
+    AKADEMIK: "Akademik",
+    SUMBER_DAYA: "Sumber Daya",
+};
+
+// Map URL params to internal types
+const TYPE_MAP: Record<string, SuratType> = {
+    'surat-tugas': 'SURAT_TUGAS',
+    'surat-tugas-table': 'SURAT_TUGAS_TABEL',
+    'surat-keputusan': 'SURAT_KEPUTUSAN',
 };
 
 // ============================================================================
 // MAIN PAGE COMPONENT
 // ============================================================================
 
-export default function DraftSuratPage({ params }: { params: Promise<{ id: string }> }) {
-    const resolvedParams = use(params);
+function BuatSuratContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     
-    // Get type from query params
-    const suratType = searchParams.get("type") as SuratType | null;
+    // Get params from URL
+    const categoryParam = searchParams.get("category") as Category | null;
+    const typeParam = searchParams.get("type");
+    const suratType = typeParam ? TYPE_MAP[typeParam] : null;
     
     // State
     const [submitting, setSubmitting] = useState(false);
     const [currentStep, setCurrentStep] = useState<Step>("form");
     
-    // Form states for each surat type
-    const [suratPengantarForm, setSuratPengantarForm] = useState<SuratPengantarForm>({
-        nomorSurat: "",
-        tanggalSurat: "",
-        perihal: "",
-        namaTujuan: "",
-        jabatanTujuan: "",
-        alamatTujuan: "",
-        namaMahasiswa: "",
-        nimMahasiswa: "",
-        kegiatanMagang: "",
-        judulProposal: "",
-        tanggalMulai: "",
-        namaPejabat: "",
-        nipPejabat: "",
-        tembusan: "",
-    });
-
+    // Form states
     const [suratTugasForm, setSuratTugasForm] = useState<SuratTugasForm>({
         jenisSuratText: "SURAT TUGAS",
-        tanggalSurat: "",
         namaLengkap: "",
         nimNip: "",
         programStudi: "",
@@ -214,10 +168,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
     const [suratTugasTabelForm, setSuratTugasTabelForm] = useState<SuratTugasTabelForm>({
         jenisSuratText: "SURAT TUGAS",
-        tanggalSurat: "",
         keperluan: "",
         judulSurat: "",
-        pelaksana: [],
+        pelaksana: [{ key: "1", nama: "", nimNip: "", jabatan: "" }],
     });
 
     const [suratKeputusanForm, setSuratKeputusanForm] = useState<SuratKeputusanForm>({
@@ -232,299 +185,41 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         nipPejabat: "",
     });
     
-    // Signature state with position data
+    // Signature state
     const [signers, setSigners] = useState<SignerItem[]>([
         { 
             id: "1", 
-            role: suratType === "SURAT_PENGANTAR" ? "KADEP" : "DEKAN", 
+            role: "DEKAN", 
             order: 1, 
             isRequired: true,
             name: "",
             nip: "",
-            x: 0,
-            y: 0,
+            x: 350,
+            y: 500,
             page: 1
         }
     ]);
 
-    // PDF preview URL for signature positioning
+    // PDF state
     const [draftPdfUrl, setDraftPdfUrl] = useState<string | undefined>(undefined);
-    const [showPositioner, setShowPositioner] = useState(true); // Auto-show positioner
     const [generatingPdf, setGeneratingPdf] = useState(false);
-    // Track the rendered PDF width for coordinate scaling
     const [renderedPdfWidth, setRenderedPdfWidth] = useState<number>(600);
     
     // Tembusan state
     const [tembusan, setTembusan] = useState<TembusanItem[]>([]);
     const [newTembusanText, setNewTembusanText] = useState("");
-    const [includePengaju, setIncludePengaju] = useState(true);
-    
-    // Loading state for fetching existing data
-    const [loading, setLoading] = useState(true);
-    
-    // Edit mode tracking - true if draft already exists and we're editing
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [existingDocumentId, setExistingDocumentId] = useState<string | null>(null);
-    
-    // Verification mode - true if supervisor/manajer TU is editing during verification
-    const [isVerificationMode, setIsVerificationMode] = useState(false);
 
-    // Redirect if no type specified
+    // Redirect if no valid params
     useEffect(() => {
-        if (!suratType) {
-            toast.error("Jenis surat tidak ditemukan");
-            router.back();
+        if (!categoryParam || !suratType || (categoryParam !== 'AKADEMIK' && categoryParam !== 'SUMBER_DAYA')) {
+            toast.error("Parameter tidak valid");
+            router.push("/dashboard");
         }
-    }, [suratType, router]);
-
-    // Fetch existing data and populate forms
-    useEffect(() => {
-        async function fetchExistingData() {
-            if (!resolvedParams.id) {
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const detail = await suratService.getDetail(resolvedParams.id);
-                if (!detail) {
-                    setLoading(false);
-                    return;
-                }
-
-                // Find existing document based on type
-                let existingDoc;
-                if (suratType === "SURAT_PENGANTAR") {
-                    existingDoc = detail.documents.find(d => d.type === "SURAT_PENGANTAR");
-                } else if (suratType === "SURAT_TUGAS") {
-                    existingDoc = detail.documents.find(d => d.type === "SURAT_TUGAS");
-                } else if (suratType === "SURAT_TUGAS_TABEL") {
-                    // SURAT_TUGAS_TABEL may be stored as SURAT_TUGAS with table data
-                    existingDoc = detail.documents.find(d => d.type === "SURAT_TUGAS_TABEL" || d.type === "SURAT_TUGAS");
-                } else if (suratType === "SURAT_KEPUTUSAN") {
-                    existingDoc = detail.documents.find(d => d.type === "SURAT_KEPUTUSAN");
-                }
-
-                // Set edit mode if existing document found
-                if (existingDoc) {
-                    setIsEditMode(true);
-                    setExistingDocumentId(existingDoc.id);
-                }
-
-                // Check if in verification mode (supervisor/manajer editing during verification)
-                if (detail.status === 'FAKULTAS_VERIFICATION' && existingDoc) {
-                    setIsVerificationMode(true);
-                }
-
-                // Populate surat pengantar form from existing content
-                if (suratType === "SURAT_PENGANTAR" && existingDoc?.content) {
-                    const content = existingDoc.content as Record<string, unknown>;
-                    setSuratPengantarForm(prev => ({
-                        ...prev,
-                        nomorSurat: (content.nomorSurat as string) || "",
-                        tanggalSurat: (content.tanggalSurat as string) || "",
-                        perihal: (content.perihal as string) || detail.submissionValues.keperluan || "",
-                        namaTujuan: (content.namaTujuan as string) || "",
-                        jabatanTujuan: (content.jabatanTujuan as string) || "",
-                        alamatTujuan: (content.alamatTujuan as string) || "",
-                        namaMahasiswa: (content.namaMahasiswa as string) || detail.submissionValues.nama || "",
-                        nimMahasiswa: (content.nimMahasiswa as string) || detail.submissionValues.nim || "",
-                        kegiatanMagang: (content.kegiatanMagang as string) || detail.submissionValues.keperluan || "",
-                        judulProposal: (content.judulProposal as string) || detail.submissionValues.judulAcara || "",
-                        tanggalMulai: (content.tanggalMulai as string) || detail.submissionValues.tanggalAcara || "",
-                    }));
-                } else if (suratType === "SURAT_PENGANTAR" && detail.submissionValues) {
-                    // No existing document, populate from submission values
-                    setSuratPengantarForm(prev => ({
-                        ...prev,
-                        perihal: detail.submissionValues.keperluan || "",
-                        namaMahasiswa: detail.submissionValues.nama || "",
-                        nimMahasiswa: detail.submissionValues.nim || "",
-                        kegiatanMagang: detail.submissionValues.keperluan || "",
-                        judulProposal: detail.submissionValues.judulAcara || "",
-                        tanggalMulai: detail.submissionValues.tanggalAcara || "",
-                    }));
-                }
-
-                // Populate SURAT_TUGAS form from existing content
-                if (suratType === "SURAT_TUGAS" && existingDoc?.content) {
-                    const content = existingDoc.content as Record<string, unknown>;
-                    setSuratTugasForm(prev => ({
-                        ...prev,
-                        jenisSuratText: (content.jenisSuratText as string) || "SURAT TUGAS",
-                        tanggalSurat: (content.tanggalSurat as string) || "",
-                        namaLengkap: (content.namaLengkap as string) || detail.submissionValues.nama || "",
-                        nimNip: (content.nimNip as string) || detail.submissionValues.nim || detail.submissionValues.nip || "",
-                        programStudi: (content.programStudi as string) || detail.submissionValues.programStudi || "",
-                        keperluan: (content.keperluan as string) || detail.submissionValues.keperluan || "",
-                        judulSurat: (content.judulSurat as string) || detail.submissionValues.judulAcara || "",
-                    }));
-                } else if (suratType === "SURAT_TUGAS" && !existingDoc && detail.submissionValues) {
-                    // No existing document, populate from submission values
-                    setSuratTugasForm(prev => ({
-                        ...prev,
-                        namaLengkap: detail.submissionValues.nama || "",
-                        nimNip: detail.submissionValues.nim || detail.submissionValues.nip || "",
-                        programStudi: detail.submissionValues.programStudi || "",
-                        keperluan: detail.submissionValues.keperluan || "",
-                        judulSurat: detail.submissionValues.judulAcara || "",
-                    }));
-                }
-
-                // Populate SURAT_TUGAS_TABEL form from existing content
-                if (suratType === "SURAT_TUGAS_TABEL" && existingDoc?.content) {
-                    const content = existingDoc.content as Record<string, unknown>;
-                    const existingPelaksana = (content.pelaksana as Array<{ nama: string; nimNip: string; jabatan?: string }>) || [];
-                    setSuratTugasTabelForm(prev => ({
-                        ...prev,
-                        jenisSuratText: (content.jenisSuratText as string) || "SURAT TUGAS",
-                        tanggalSurat: (content.tanggalSurat as string) || "",
-                        keperluan: (content.keperluan as string) || detail.submissionValues.keperluan || "",
-                        judulSurat: (content.judulSurat as string) || detail.submissionValues.judulAcara || "",
-                        pelaksana: existingPelaksana.map((p, index) => ({
-                            key: String(index + 1),
-                            nama: p.nama || "",
-                            nimNip: p.nimNip || "",
-                            jabatan: p.jabatan || ""
-                        }))
-                    }));
-                } else if (suratType === "SURAT_TUGAS_TABEL" && !existingDoc && detail.submissionValues) {
-                    // No existing document, populate from submission values with one initial row
-                    setSuratTugasTabelForm(prev => ({
-                        ...prev,
-                        keperluan: detail.submissionValues.keperluan || "",
-                        judulSurat: detail.submissionValues.judulAcara || "",
-                        pelaksana: [{
-                            key: "1",
-                            nama: detail.submissionValues.nama || "",
-                            nimNip: detail.submissionValues.nim || detail.submissionValues.nip || "",
-                            jabatan: ""
-                        }]
-                    }));
-                }
-
-                // Populate SURAT_KEPUTUSAN form from existing content
-                if (suratType === "SURAT_KEPUTUSAN" && existingDoc?.content) {
-                    const content = existingDoc.content as Record<string, unknown>;
-                    const existingKeputusan = (content.keputusan as Array<{ label: string; content: string }>) || [];
-                    setSuratKeputusanForm(prev => ({
-                        ...prev,
-                        nomorSurat: (content.nomorSurat as string) || "",
-                        tentang: (content.tentang as string) || detail.submissionValues.keperluan || "",
-                        menimbang: (content.menimbang as string[]) || [""],
-                        mengingat: (content.mengingat as string[]) || [""],
-                        menetapkan: (content.menetapkan as string) || "",
-                        keputusan: existingKeputusan.length > 0 
-                            ? existingKeputusan.map((k, index) => ({ key: String(index + 1), label: k.label, content: k.content }))
-                            : [{ key: "1", label: "KESATU", content: "" }],
-                        tanggalDitetapkan: (content.tanggalDitetapkan as string) || "",
-                        namaPejabat: (content.namaPejabat as string) || "",
-                        nipPejabat: (content.nipPejabat as string) || "",
-                    }));
-                } else if (suratType === "SURAT_KEPUTUSAN" && !existingDoc && detail.submissionValues) {
-                    // No existing document, populate from submission values
-                    setSuratKeputusanForm(prev => ({
-                        ...prev,
-                        tentang: detail.submissionValues.keperluan || "",
-                    }));
-                }
-
-                // Populate signers from existing signatures
-                if (existingDoc?.signatures && existingDoc.signatures.length > 0) {
-                    const existingSigners: SignerItem[] = existingDoc.signatures.map((sig, index) => ({
-                        id: String(index + 1),
-                        role: sig.signerRole,
-                        order: sig.order || index + 1,
-                        isRequired: true,
-                        name: sig.signerName || "",
-                        nip: sig.signerNip || "",
-                        x: sig.positionX || 0,
-                        y: sig.positionY || 0,
-                        page: sig.positionPage || 1
-                    }));
-                    setSigners(existingSigners);
-                } else if (suratType === "SURAT_PENGANTAR" && detail.signatureConfig) {
-                    // No existing signatures, initialize based on signatureConfig
-                    const needsKadep = detail.signatureConfig.requestKadepSign || false;
-                    const initialSigners: SignerItem[] = [
-                        {
-                            id: "1",
-                            role: "KAPRODI",
-                            order: 1,
-                            isRequired: true,
-                            name: "",
-                            nip: "",
-                            x: needsKadep ? 100 : 350,
-                            y: 500,
-                            page: 1
-                        }
-                    ];
-                    if (needsKadep) {
-                        initialSigners.push({
-                            id: "2",
-                            role: "KADEP",
-                            order: 2,
-                            isRequired: true,
-                            name: "",
-                            nip: "",
-                            x: 350,
-                            y: 500,
-                            page: 1
-                        });
-                    }
-                    setSigners(initialSigners);
-                } else if (!existingDoc && suratType !== "SURAT_PENGANTAR") {
-                    // For SK/ST without existing doc, initialize with DEKAN as default signer
-                    setSigners([{
-                        id: "1",
-                        role: "DEKAN",
-                        order: 1,
-                        isRequired: true,
-                        name: "",
-                        nip: "",
-                        x: 350,
-                        y: 500,
-                        page: 1
-                    }]);
-                }
-
-                // Load tembusan from existing document
-                if (existingDoc?.content) {
-                    const content = existingDoc.content as Record<string, unknown>;
-                    const existingTembusan = (content.tembusan as string[]) || [];
-                    
-                    // Check if "Pengaju" is in the list
-                    const hasPengaju = existingTembusan.some(t => t.toLowerCase() === "pengaju");
-                    setIncludePengaju(hasPengaju);
-                    
-                    // Set tembusan excluding "Pengaju" (it's handled separately)
-                    const tembusanItems: TembusanItem[] = existingTembusan
-                        .filter(t => t.toLowerCase() !== "pengaju")
-                        .map((t, index) => ({
-                            id: String(index + 1),
-                            type: "TEXT" as const,
-                            value: t
-                        }));
-                    setTembusan(tembusanItems);
-                }
-
-            } catch (error) {
-                console.error("Error fetching existing data:", error);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        fetchExistingData();
-    }, [resolvedParams.id, suratType]);
+    }, [categoryParam, suratType, router]);
 
     // ========================================================================
     // FORM HANDLERS
     // ========================================================================
-
-    const updateSuratPengantar = (field: keyof SuratPengantarForm, value: string) => {
-        setSuratPengantarForm(prev => ({ ...prev, [field]: value }));
-    };
 
     const updateSuratTugas = (field: keyof SuratTugasForm, value: string) => {
         setSuratTugasForm(prev => ({ ...prev, [field]: value }));
@@ -538,7 +233,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         setSuratKeputusanForm(prev => ({ ...prev, [field]: value }));
     };
 
-    // Pelaksana handlers for Surat Tugas Tabel
+    // Pelaksana handlers
     const addPelaksana = () => {
         const newKey = String(Date.now());
         setSuratTugasTabelForm(prev => ({
@@ -561,7 +256,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         }));
     };
 
-    // Menimbang/Mengingat handlers for SK
+    // Menimbang/Mengingat handlers
     const addMenimbang = () => {
         setSuratKeputusanForm(prev => ({ ...prev, menimbang: [...prev.menimbang, ""] }));
     };
@@ -598,7 +293,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         }));
     };
 
-    // Keputusan handlers for SK
+    // Keputusan handlers
     const addKeputusan = () => {
         const labels = ["KESATU", "KEDUA", "KETIGA", "KEEMPAT", "KELIMA", "KEENAM", "KETUJUH", "KEDELAPAN", "KESEMBILAN", "KESEPULUH"];
         const newIndex = suratKeputusanForm.keputusan.length;
@@ -657,7 +352,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         setSigners(signers.map(s => s.id === id ? { ...s, role, name: roleLabel } : s));
     };
 
-    // Handler for PDF signature positioner
     const handleSignerPositionsChange = (positions: SignerPosition[]) => {
         setSigners(positions.map(pos => ({
             id: pos.id,
@@ -666,21 +360,20 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             isRequired: true,
             name: pos.name,
             nip: pos.nip,
-            prefix: pos.prefix, // Include prefix for signature label
+            prefix: pos.prefix,
             x: pos.x,
             y: pos.y,
             page: pos.page
         })));
     };
 
-    // Convert signers to SignerPosition for the positioner
     const getSignerPositions = (): SignerPosition[] => {
         return signers.map(s => ({
             id: s.id,
             role: s.role,
             name: s.name || ALL_SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
             nip: s.nip,
-            prefix: s.prefix, // Include prefix for signature label
+            prefix: s.prefix,
             x: s.x || 0,
             y: s.y || 0,
             page: s.page || 1,
@@ -715,15 +408,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // ========================================================================
 
     const validateFormStep = (): boolean => {
-        if (suratType === "SURAT_PENGANTAR") {
-            const required = ["nomorSurat", "tanggalSurat", "perihal", "namaTujuan", "namaMahasiswa", "nimMahasiswa"] as const;
-            const missing = required.filter(field => !suratPengantarForm[field].trim());
-            if (missing.length > 0) {
-                toast.error("Lengkapi semua field yang wajib diisi");
-                return false;
-            }
-        } else if (suratType === "SURAT_TUGAS") {
-            // Removed tanggalSurat from required - will be assigned by UPA
+        if (suratType === "SURAT_TUGAS") {
             const required = ["namaLengkap", "nimNip", "keperluan"] as const;
             const missing = required.filter(field => !suratTugasForm[field].trim());
             if (missing.length > 0) {
@@ -731,17 +416,21 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 return false;
             }
         } else if (suratType === "SURAT_TUGAS_TABEL") {
-            // Removed tanggalSurat from required - will be assigned by UPA
             if (!suratTugasTabelForm.keperluan) {
-                toast.error("Lengkapi semua field yang wajib diisi");
+                toast.error("Lengkapi keperluan surat");
                 return false;
             }
             if (suratTugasTabelForm.pelaksana.length === 0) {
                 toast.error("Tambahkan minimal 1 pelaksana");
                 return false;
             }
+            const emptyPelaksana = suratTugasTabelForm.pelaksana.some(p => !p.nama.trim() || !p.nimNip.trim());
+            if (emptyPelaksana) {
+                toast.error("Lengkapi data semua pelaksana");
+                return false;
+            }
         } else if (suratType === "SURAT_KEPUTUSAN") {
-            if (!suratKeputusanForm.nomorSurat || !suratKeputusanForm.tentang || !suratKeputusanForm.tanggalDitetapkan) {
+            if (!suratKeputusanForm.tentang || !suratKeputusanForm.tanggalDitetapkan) {
                 toast.error("Lengkapi semua field yang wajib diisi");
                 return false;
             }
@@ -762,9 +451,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // ========================================================================
 
     const getFormDataForPdf = useCallback((): Record<string, unknown> => {
-        if (suratType === "SURAT_PENGANTAR") {
-            return { ...suratPengantarForm };
-        } else if (suratType === "SURAT_TUGAS") {
+        if (suratType === "SURAT_TUGAS") {
             return {
                 ...suratTugasForm,
                 jenisSurat: 'tugas',
@@ -786,7 +473,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             };
         }
         return {};
-    }, [suratType, suratPengantarForm, suratTugasForm, suratTugasTabelForm, suratKeputusanForm]);
+    }, [suratType, suratTugasForm, suratTugasTabelForm, suratKeputusanForm]);
 
     const generatePdfPreview = useCallback(async () => {
         if (!suratType) return;
@@ -805,60 +492,30 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         }
     }, [suratType, getFormDataForPdf]);
 
-    // ========================================================================
-    // NAVIGATION
-    // ========================================================================
-
-    const goToNextStep = async () => {
-        if (currentStep === "form") {
-            if (!validateFormStep()) return;
-            // Generate PDF preview before moving to signature step
-            setCurrentStep("signature");
-            // Generate PDF in background
-            generatePdfPreview();
-        } else if (currentStep === "signature") {
-            const hasEmptyRole = signers.some(s => !s.role);
-            if (hasEmptyRole) {
-                toast.error("Semua penanda tangan harus dipilih");
-                return;
-            }
-            // Regenerate PDF with signature blocks embedded
-            await regeneratePdfWithSignatures();
-            setCurrentStep("tembusan");
-        } else if (currentStep === "tembusan") {
-            setCurrentStep("review");
-        }
-    };
-
-    // Regenerate PDF with signature placeholder blocks embedded
     const regeneratePdfWithSignatures = useCallback(async () => {
         if (!suratType) return;
         
         setGeneratingPdf(true);
         try {
             const formData = getFormDataForPdf();
-            // Convert signers to SignerPlaceholder format
             const signerPlaceholders: SignerPlaceholder[] = signers.map(s => ({
                 id: s.id,
                 role: ALL_SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
                 name: s.name || ALL_SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
                 nip: s.nip,
-                prefix: s.prefix, // Include prefix/awalan
+                prefix: s.prefix,
                 x: s.x || 0,
                 y: s.y || 0,
                 page: s.page || 1,
                 order: s.order
             }));
             
-            // Generate PDF with signatures embedded, using the actual rendered width
             const pdfBlob = await generatePdfWithSignatures(suratType, formData, signerPlaceholders, renderedPdfWidth);
             
-            // Clean up old URL
             if (draftPdfUrl) {
                 URL.revokeObjectURL(draftPdfUrl);
             }
             
-            // Create new URL
             const newPdfUrl = URL.createObjectURL(pdfBlob);
             setDraftPdfUrl(newPdfUrl);
         } catch (error) {
@@ -869,10 +526,31 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         }
     }, [suratType, signers, getFormDataForPdf, draftPdfUrl, renderedPdfWidth]);
 
+    // ========================================================================
+    // NAVIGATION
+    // ========================================================================
+
+    const goToNextStep = async () => {
+        if (currentStep === "form") {
+            if (!validateFormStep()) return;
+            setCurrentStep("signature");
+            generatePdfPreview();
+        } else if (currentStep === "signature") {
+            const hasEmptyRole = signers.some(s => !s.role);
+            if (hasEmptyRole) {
+                toast.error("Semua penanda tangan harus dipilih");
+                return;
+            }
+            await regeneratePdfWithSignatures();
+            setCurrentStep("tembusan");
+        } else if (currentStep === "tembusan") {
+            setCurrentStep("review");
+        }
+    };
+
     const goToPrevStep = () => {
         if (currentStep === "signature") {
             setCurrentStep("form");
-            // Clean up PDF URL when going back
             if (draftPdfUrl) {
                 URL.revokeObjectURL(draftPdfUrl);
                 setDraftPdfUrl(undefined);
@@ -884,7 +562,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         }
     };
 
-    // Cleanup PDF URL on unmount
+    // Cleanup
     useEffect(() => {
         return () => {
             if (draftPdfUrl) {
@@ -898,16 +576,16 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // ========================================================================
 
     const handleSubmit = async () => {
-        if (!suratType) return;
+        if (!suratType || !categoryParam || (categoryParam !== 'AKADEMIK' && categoryParam !== 'SUMBER_DAYA')) {
+            toast.error("Kategori tidak valid");
+            return;
+        }
         
         setSubmitting(true);
         try {
-            // Build form content based on surat type
             let content: Record<string, unknown> = {};
             
-            if (suratType === "SURAT_PENGANTAR") {
-                content = { ...suratPengantarForm };
-            } else if (suratType === "SURAT_TUGAS") {
+            if (suratType === "SURAT_TUGAS") {
                 content = { ...suratTugasForm };
             } else if (suratType === "SURAT_TUGAS_TABEL") {
                 content = { 
@@ -923,15 +601,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 };
             }
 
-            // Build signatories array for API with position data
-            // Sort by hierarchy for signing order:
-            // For Surat Pengantar: KAPRODI (1) -> KADEP (2)
-            // For Surat Hasil: WADEK_2 (1) -> WADEK_1 (2) -> DEKAN (3)
+            // Build signatories
             const SIGNER_HIERARCHY: Record<string, number> = {
-                // Surat Pengantar hierarchy
-                'KAPRODI': 1,
-                'KADEP': 2,
-                // Surat Hasil hierarchy (Wadek signs before Dekan)
                 'WADEK_2': 1,
                 'WADEK_1': 2,
                 'DEKAN': 3,
@@ -942,86 +613,42 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     signerRole: s.role,
                     signerName: s.name || ALL_SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
                     signerNip: s.nip || "",
-                    prefix: s.prefix || "", // Include prefix/awalan
+                    prefix: s.prefix || "",
                     hierarchyOrder: SIGNER_HIERARCHY[s.role] ?? 99,
-                    // Include position data if available
                     x: s.x || 0,
                     y: s.y || 0,
                     page: s.page || 1
                 }))
-                // Sort by hierarchy
                 .sort((a, b) => a.hierarchyOrder - b.hierarchyOrder)
-                // Assign correct order based on hierarchy
                 .map((s, idx) => ({
                     ...s,
                     order: idx + 1
                 }));
 
-            // Build tembusan array
+            // Build tembusan
             const tembusanList: string[] = [];
-            if (includePengaju) {
-                tembusanList.push("Pengaju");
-            }
             tembusan.forEach(t => {
                 tembusanList.push(t.value);
             });
 
-            let response;
-            
-            if (suratType === "SURAT_PENGANTAR") {
-                // Admin Prodi - use department-approval API
-                response = await suratService.savePengantarDraft(
-                    resolvedParams.id,
-                    {
-                        content,
-                        tembusan: tembusanList,
-                        signatories,
-                    }
-                );
-            } else {
-                // Staff/Supervisor - use surat-hasil API
-                // Check if supervisor is editing during verification
-                if (isVerificationMode) {
-                    // Supervisor/Manajer TU editing during verification
-                    response = await suratService.updateDraftAsSupervisor(
-                        resolvedParams.id,
-                        {
-                            content,
-                            tembusan: tembusanList,
-                        }
-                    );
-                } else if (isEditMode && existingDocumentId) {
-                    // Staff editing existing draft (after return)
-                    response = await suratService.updateDraftSuratHasil(
-                        existingDocumentId,
-                        {
-                            content,
-                            tembusan: tembusanList,
-                        }
-                    );
-                } else {
-                    // Create new draft
-                    response = await suratService.createDraftSuratHasil(
-                        resolvedParams.id,
-                        {
-                            documentType: suratType === "SURAT_TUGAS_TABEL" ? "SURAT_TUGAS_TABEL" : suratType,
-                            signatories,
-                            tembusan: tembusanList,
-                            content,
-                        }
-                    );
-                }
-            }
+            // Create the surat using staff API - cast to ensure valid category
+            const response = await suratService.createStaffSurat({
+                category: categoryParam as 'AKADEMIK' | 'SUMBER_DAYA',
+                documentType: suratType,
+                signatories,
+                tembusan: tembusanList,
+                content,
+            });
 
             if (response.success) {
-                toast.success(isEditMode ? "Draft surat berhasil diperbarui" : "Draft surat berhasil dibuat");
-                router.push(`/detail/${resolvedParams.id}`);
+                toast.success("Surat berhasil dibuat");
+                router.push(`/detail/${response.data?.id || ''}`);
             } else {
-                toast.error(response.message || "Gagal menyimpan draft surat");
+                toast.error(response.message || "Gagal membuat surat");
             }
         } catch (error) {
             console.error("Submit failed:", error);
-            toast.error("Gagal membuat draft surat");
+            toast.error("Gagal membuat surat");
         } finally {
             setSubmitting(false);
         }
@@ -1031,8 +658,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // RENDER
     // ========================================================================
 
-    if (!suratType) {
-        return null;
+    if (!suratType || !categoryParam) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="w-8 h-8 animate-spin" />
+            </div>
+        );
     }
 
     const steps = [
@@ -1044,33 +675,19 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
     const currentStepIndex = steps.findIndex(s => s.key === currentStep);
 
-    // Show loading state while fetching existing data
-    if (loading) {
-        return (
-            <>
-                <div className="flex items-center gap-2 mb-6">
-                    <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
-                    <h1 className="text-2xl font-bold text-black">
-                        Draft {SURAT_TYPE_LABELS[suratType]}
-                    </h1>
-                </div>
-                <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground">
-                    <Loader2 className="w-10 h-10 animate-spin mb-4" />
-                    <p>Memuat data surat...</p>
-                </div>
-                <BottomNav />
-            </>
-        );
-    }
-
     return (
         <>
             {/* Page Title */}
             <div className="flex items-center gap-2 mb-6">
                 <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
-                <h1 className="text-2xl font-bold text-black">
-                    Draft {SURAT_TYPE_LABELS[suratType]}
-                </h1>
+                <div>
+                    <h1 className="text-2xl font-bold text-black">
+                        Buat {SURAT_TYPE_LABELS[suratType]}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        Kategori: {CATEGORY_LABELS[categoryParam]}
+                    </p>
+                </div>
             </div>
 
             {/* Step Indicator */}
@@ -1128,140 +745,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 {/* Step 1: Form */}
                 {currentStep === "form" && (
                     <div className="space-y-6">
-                        {/* Surat Pengantar Form */}
-                        {suratType === "SURAT_PENGANTAR" && (
-                            <>
-                                <Card className="bg-neutral-50 border-zinc-400">
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Informasi Surat</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="nomorSurat">Nomor Surat <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    id="nomorSurat"
-                                                    value={suratPengantarForm.nomorSurat}
-                                                    onChange={(e) => updateSuratPengantar("nomorSurat", e.target.value)}
-                                                    placeholder="963/UN7.F8.1/AK/2025"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="tanggalSurat">Tanggal Surat <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    id="tanggalSurat"
-                                                    value={suratPengantarForm.tanggalSurat}
-                                                    onChange={(e) => updateSuratPengantar("tanggalSurat", e.target.value)}
-                                                    placeholder="28 Januari 2026"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="perihal">Perihal <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                id="perihal"
-                                                value={suratPengantarForm.perihal}
-                                                onChange={(e) => updateSuratPengantar("perihal", e.target.value)}
-                                                placeholder="Permohonan Izin Magang Mandiri"
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card className="bg-neutral-50 border-zinc-400">
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Tujuan Surat</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="namaTujuan">Nama Tujuan <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                id="namaTujuan"
-                                                value={suratPengantarForm.namaTujuan}
-                                                onChange={(e) => updateSuratPengantar("namaTujuan", e.target.value)}
-                                                placeholder="Nama penerima surat"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="jabatanTujuan">Jabatan Tujuan</Label>
-                                            <Input
-                                                id="jabatanTujuan"
-                                                value={suratPengantarForm.jabatanTujuan}
-                                                onChange={(e) => updateSuratPengantar("jabatanTujuan", e.target.value)}
-                                                placeholder="Jabatan penerima surat"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="alamatTujuan">Alamat Tujuan</Label>
-                                            <Textarea
-                                                id="alamatTujuan"
-                                                value={suratPengantarForm.alamatTujuan}
-                                                onChange={(e) => updateSuratPengantar("alamatTujuan", e.target.value)}
-                                                placeholder="Alamat lengkap instansi tujuan"
-                                                rows={2}
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card className="bg-neutral-50 border-zinc-400">
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Data Mahasiswa</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="namaMahasiswa">Nama Mahasiswa <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    id="namaMahasiswa"
-                                                    value={suratPengantarForm.namaMahasiswa}
-                                                    onChange={(e) => updateSuratPengantar("namaMahasiswa", e.target.value)}
-                                                    placeholder="Nama lengkap mahasiswa"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="nimMahasiswa">NIM <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    id="nimMahasiswa"
-                                                    value={suratPengantarForm.nimMahasiswa}
-                                                    onChange={(e) => updateSuratPengantar("nimMahasiswa", e.target.value)}
-                                                    placeholder="24060122xxxxxx"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="kegiatanMagang">Judul Kegiatan</Label>
-                                            <Input
-                                                id="kegiatanMagang"
-                                                value={suratPengantarForm.kegiatanMagang}
-                                                onChange={(e) => updateSuratPengantar("kegiatanMagang", e.target.value)}
-                                                placeholder="Magang Mandiri"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="judulProposal">Judul Proposal</Label>
-                                            <Textarea
-                                                id="judulProposal"
-                                                value={suratPengantarForm.judulProposal}
-                                                onChange={(e) => updateSuratPengantar("judulProposal", e.target.value)}
-                                                placeholder="Judul lengkap proposal magang"
-                                                rows={2}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="tanggalMulai">Periode Pelaksanaan</Label>
-                                            <Input
-                                                id="tanggalMulai"
-                                                value={suratPengantarForm.tanggalMulai}
-                                                onChange={(e) => updateSuratPengantar("tanggalMulai", e.target.value)}
-                                                placeholder="1 Juli s.d. 31 Agustus 2025"
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </>
-                        )}
-
                         {/* Surat Tugas Form */}
                         {suratType === "SURAT_TUGAS" && (
                             <Card className="bg-neutral-50 border-zinc-400">
@@ -1402,14 +885,16 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                         placeholder="Jabatan (opsional)"
                                                     />
                                                 </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => removePelaksana(p.key)}
-                                                    className="text-destructive hover:text-destructive"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
+                                                {suratTugasTabelForm.pelaksana.length > 1 && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => removePelaksana(p.key)}
+                                                        className="text-destructive hover:text-destructive"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                )}
                                             </div>
                                         ))}
                                         <Button variant="outline" onClick={addPelaksana} className="w-full">
@@ -1429,15 +914,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         <CardTitle className="text-lg">Informasi Dasar</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="nomorSurat">Nomor Surat <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                id="nomorSurat"
-                                                value={suratKeputusanForm.nomorSurat}
-                                                onChange={(e) => updateSuratKeputusan("nomorSurat", e.target.value)}
-                                                placeholder="363/UN7.F8/HK/IX/2025"
-                                            />
-                                        </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="tentang">Tentang <span className="text-red-500">*</span></Label>
                                             <Textarea
@@ -1579,32 +1055,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         </Button>
                                     </CardContent>
                                 </Card>
-
-                                <Card className="bg-neutral-50 border-zinc-400">
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Penandatangan</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="namaPejabat">Nama Pejabat</Label>
-                                            <Input
-                                                id="namaPejabat"
-                                                value={suratKeputusanForm.namaPejabat}
-                                                onChange={(e) => updateSuratKeputusan("namaPejabat", e.target.value)}
-                                                placeholder="Nama pejabat penandatangan"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="nipPejabat">NIP Pejabat</Label>
-                                            <Input
-                                                id="nipPejabat"
-                                                value={suratKeputusanForm.nipPejabat}
-                                                onChange={(e) => updateSuratKeputusan("nipPejabat", e.target.value)}
-                                                placeholder="NIP. 197403171998021001"
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
                             </>
                         )}
                     </div>
@@ -1627,9 +1077,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 <Alert>
                                     <Info className="h-4 w-4" />
                                     <AlertDescription>
-                                        {suratType === "SURAT_PENGANTAR" 
-                                            ? "Penanda tangan default berdasarkan pilihan pengaju. Anda dapat mengubah konfigurasi jika diperlukan."
-                                            : "Surat akan diverifikasi secara berurutan sebelum ditandatangani."}
+                                        Surat akan diverifikasi secara berurutan sebelum ditandatangani.
                                     </AlertDescription>
                                 </Alert>
 
@@ -1646,7 +1094,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 <SelectValue placeholder="Pilih Pejabat" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {(suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : ALL_SIGNER_ROLES).map((role) => (
+                                                {ALL_SIGNER_ROLES.map((role) => (
                                                     <SelectItem 
                                                         key={role.value} 
                                                         value={role.value}
@@ -1670,7 +1118,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     </div>
                                 ))}
 
-                                {signers.length < (suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : ALL_SIGNER_ROLES).length && (
+                                {signers.length < ALL_SIGNER_ROLES.length && (
                                     <Button
                                         variant="outline"
                                         onClick={addSigner}
@@ -1683,7 +1131,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             </CardContent>
                         </Card>
 
-                        {/* PDF Signature Positioner - Always shown */}
+                        {/* PDF Signature Positioner */}
                         <Card className="bg-neutral-50 border-zinc-400">
                             <CardHeader>
                                 <CardTitle className="text-lg flex items-center gap-2">
@@ -1710,13 +1158,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         pdfUrl={draftPdfUrl}
                                         signers={getSignerPositions()}
                                         onSignersChange={handleSignerPositionsChange}
-                                        signerRoles={suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : ALL_SIGNER_ROLES}
+                                        signerRoles={ALL_SIGNER_ROLES}
                                         readOnly={false}
                                         onRenderedWidthChange={setRenderedPdfWidth}
                                     />
                                 )}
                                 
-                                {/* Regenerate PDF button */}
                                 {!generatingPdf && (
                                     <div className="mt-4 flex justify-center">
                                         <Button
@@ -1748,28 +1195,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                <Checkbox
-                                    id="pengaju"
-                                    checked={includePengaju}
-                                    onCheckedChange={(checked) => setIncludePengaju(checked === true)}
-                                />
-                                <div className="flex-1">
-                                    <Label htmlFor="pengaju" className="font-medium cursor-pointer">
-                                        Pengaju Surat
-                                    </Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Pengaju akan mendapat salinan surat yang sudah jadi
-                                    </p>
-                                </div>
-                                <Badge variant="secondary">Disarankan</Badge>
-                            </div>
-
-                            <Separator />
-
                             {tembusan.length > 0 && (
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium">Tembusan Tambahan</Label>
+                                    <Label className="text-sm font-medium">Tembusan</Label>
                                     {tembusan.map((item, index) => (
                                         <div
                                             key={item.id}
@@ -1822,13 +1250,19 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             <CardHeader>
                                 <CardTitle className="text-lg flex items-center gap-2">
                                     <FileText className="w-5 h-5" />
-                                    Ringkasan Draft Surat
+                                    Ringkasan Surat
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div>
-                                    <Label className="text-sm text-muted-foreground">Jenis Surat</Label>
-                                    <p className="font-medium">{SURAT_TYPE_LABELS[suratType]}</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label className="text-sm text-muted-foreground">Jenis Surat</Label>
+                                        <p className="font-medium">{SURAT_TYPE_LABELS[suratType]}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-sm text-muted-foreground">Kategori</Label>
+                                        <p className="font-medium">{CATEGORY_LABELS[categoryParam]}</p>
+                                    </div>
                                 </div>
 
                                 <Separator />
@@ -1861,15 +1295,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Tembusan ({(includePengaju ? 1 : 0) + tembusan.length})
+                                        Tembusan ({tembusan.length})
                                     </Label>
                                     <div className="space-y-2">
-                                        {includePengaju && (
-                                            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                                <Users className="w-5 h-5 text-blue-600" />
-                                                <span className="font-medium">Pengaju Surat</span>
-                                            </div>
-                                        )}
                                         {tembusan.map((item) => (
                                             <div
                                                 key={item.id}
@@ -1879,7 +1307,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 <span>{item.value}</span>
                                             </div>
                                         ))}
-                                        {!includePengaju && tembusan.length === 0 && (
+                                        {tembusan.length === 0 && (
                                             <p className="text-sm text-muted-foreground italic">
                                                 Tidak ada tembusan
                                             </p>
@@ -1889,10 +1317,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Separator />
 
-                                {/* PDF Preview with Signature Blocks */}
+                                {/* PDF Preview */}
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Preview Surat (dengan Blok Tanda Tangan)
+                                        Preview Surat
                                     </Label>
                                     {draftPdfUrl ? (
                                         <div className="border rounded-lg overflow-hidden bg-gray-100">
@@ -1917,7 +1345,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         <Alert className="border-blue-200 bg-blue-50">
                             <Info className="h-4 w-4 text-blue-600" />
                             <AlertDescription className="text-blue-800">
-                                Setelah draft dibuat, surat akan melalui alur verifikasi sebelum ditandatangani.
+                                Setelah surat dibuat, surat akan melalui alur verifikasi sebelum ditandatangani.
                             </AlertDescription>
                         </Alert>
                     </div>
@@ -1929,7 +1357,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 leftContent={
                     <Button
                         variant="outline"
-                        onClick={currentStep === "form" ? () => router.back() : goToPrevStep}
+                        onClick={currentStep === "form" ? () => router.push("/dashboard") : goToPrevStep}
                         className="border-zinc-800 text-zinc-800 gap-2"
                     >
                         <ArrowLeft className="w-4 h-4" />
@@ -1948,7 +1376,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             ) : (
                                 <CheckCircle className="w-4 h-4" />
                             )}
-                            Buat Draft Surat
+                            Buat Surat
                         </Button>
                     ) : (
                         <Button
@@ -1962,5 +1390,17 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 }
             />
         </>
+    );
+}
+
+export default function BuatSuratPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-[500px]">
+                <Loader2 className="w-8 h-8 animate-spin" />
+            </div>
+        }>
+            <BuatSuratContent />
+        </Suspense>
     );
 }

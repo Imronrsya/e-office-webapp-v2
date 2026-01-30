@@ -100,6 +100,7 @@ export interface SubmissionPermissions {
     // Surat Hasil (Staf)
     canDraftSuratHasil?: boolean;
     canEditDraft?: boolean;
+    canEditDraftInVerification?: boolean;
     canSubmitVerification?: boolean;
     // Verification actions (Pejabat)
     canVerifySuratHasil?: boolean;
@@ -390,6 +391,36 @@ export const suratService = {
     },
 
     // ========================================================================
+    // STAFF CREATE SURAT (tanpa submission)
+    // ========================================================================
+
+    /**
+     * Staf creates new surat directly (without submission)
+     */
+    async createStaffSurat(data: {
+        category: 'AKADEMIK' | 'SUMBER_DAYA';
+        documentType: 'SURAT_TUGAS' | 'SURAT_KEPUTUSAN' | 'SURAT_TUGAS_TABEL';
+        signatories: Array<{
+            signerRole: string;
+            signerName: string;
+            signerNip?: string;
+            order: number;
+            x?: number;
+            y?: number;
+            page?: number;
+        }>;
+        tembusan?: string[];
+        content?: Record<string, unknown>;
+        perihal?: string;
+    }): Promise<ApiResponse<{ id: string; documentId: string }>> {
+        const response = await api.post<ApiResponse<{ id: string; documentId: string }>>(
+            '/api/surat-hasil/create',
+            data
+        );
+        return response.data;
+    },
+
+    // ========================================================================
     // SURAT HASIL (SK/ST) ACTIONS
     // ========================================================================
 
@@ -434,6 +465,25 @@ export const suratService = {
     ): Promise<ApiResponse<unknown>> {
         const response = await api.put<ApiResponse<unknown>>(
             `/api/surat-hasil/document/${documentId}`,
+            data
+        );
+        return response.data;
+    },
+
+    /**
+     * Supervisor/Manajer TU updates draft during verification
+     * Uses letterId (not documentId)
+     */
+    async updateDraftAsSupervisor(
+        letterId: string,
+        data: {
+            content?: Record<string, unknown>;
+            tembusan?: string[];
+            perihal?: string;
+        }
+    ): Promise<ApiResponse<unknown>> {
+        const response = await api.put<ApiResponse<unknown>>(
+            `/api/surat-hasil/${letterId}/supervisor-edit`,
             data
         );
         return response.data;

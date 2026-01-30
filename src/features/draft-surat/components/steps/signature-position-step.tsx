@@ -24,11 +24,8 @@ const Page = dynamic(
   { ssr: false }
 );
 
-// Import styles conditionally on client side
-if (typeof window !== 'undefined') {
-  import('react-pdf/dist/Page/AnnotationLayer.css');
-  import('react-pdf/dist/Page/TextLayer.css');
-}
+// Import styles for react-pdf
+// Note: These styles are now handled via CSS in global.css or imported in layout
 
 // Import templates
 import { generateSuratPengantarHTML as suratPengantarTemplate } from '@/lib/templates/surat-pengantar';

@@ -115,6 +115,42 @@ const DISPOSITION_OPTIONS: Record<LetterCategory, string[]> = {
     ]
 };
 
+// Specific disposition targets per role
+// Dekan: bisa ke semua jabatan di bawahnya
+// Wadek 1: hanya ke SUPERVISOR_AKADEMIK dan STAF_AKADEMIK
+// Wadek 2: hanya ke SUPERVISOR_SUMBER_DAYA dan STAF_SUMBER_DAYA
+const ROLE_DISPOSITION_TARGETS: Record<string, string[]> = {
+    DEKAN: [
+        "WADEK_1",
+        "WADEK_2",
+        "MANAJER_TU",
+        "SUPERVISOR_AKADEMIK",
+        "SUPERVISOR_SUMBER_DAYA",
+        "STAF_AKADEMIK",
+        "STAF_SUMBER_DAYA"
+    ],
+    WADEK_1: [
+        "SUPERVISOR_AKADEMIK",
+        "STAF_AKADEMIK"
+    ],
+    WADEK_2: [
+        "SUPERVISOR_SUMBER_DAYA",
+        "STAF_SUMBER_DAYA"
+    ],
+    MANAJER_TU: [
+        "SUPERVISOR_AKADEMIK",
+        "SUPERVISOR_SUMBER_DAYA",
+        "STAF_AKADEMIK",
+        "STAF_SUMBER_DAYA"
+    ],
+    SUPERVISOR_AKADEMIK: [
+        "STAF_AKADEMIK"
+    ],
+    SUPERVISOR_SUMBER_DAYA: [
+        "STAF_SUMBER_DAYA"
+    ],
+};
+
 const ROLE_LABELS: Record<string, string> = {
     DEKAN: "Dekan",
     WADEK_1: "Wakil Dekan I",
@@ -176,15 +212,15 @@ export function DispositionDialog({
             // Admin Fakultas - can forward to anyone in category
             return FORWARD_OPTIONS[category];
         } else {
-            // Pejabat - can only disposition to LOWER hierarchy
-            const categoryRoles = DISPOSITION_OPTIONS[category];
-            const currentLevel = currentUserRole ? ROLE_HIERARCHY[currentUserRole] ?? 0 : 0;
+            // Pejabat - use specific disposition targets based on role
+            // First get the allowed targets for current user role
+            const roleTargets = currentUserRole ? ROLE_DISPOSITION_TARGETS[currentUserRole] || [] : [];
             
-            // Filter: only roles with LOWER hierarchy level
-            return categoryRoles.filter(role => {
-                const targetLevel = ROLE_HIERARCHY[role] ?? 0;
-                return targetLevel < currentLevel;
-            });
+            // Filter by category options too
+            const categoryRoles = DISPOSITION_OPTIONS[category];
+            
+            // Return intersection: roles that are both allowed for user AND valid for category
+            return roleTargets.filter(role => categoryRoles.includes(role));
         }
     }, [category, isForwardMode, currentUserRole]);
 
