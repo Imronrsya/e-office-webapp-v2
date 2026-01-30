@@ -473,7 +473,7 @@ export function PengajuanForm() {
                             )}
                         </div>
                         <p className="text-xs text-gray-500">
-                            Secara default surat akan ditandatangani oleh Dekan. Pilih opsi di atas jika surat memerlukan verifikasi berjenjang dari Departemen.
+                            Secara default surat akan ditandatangani oleh Ketua Departemen. Pilih opsi di atas jika surat memerlukan verifikasi berjenjang hingga Ketua Departemen.
                         </p>
                     </div>
 
