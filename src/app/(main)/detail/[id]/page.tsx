@@ -1522,7 +1522,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 loading={actionLoading}
                 mode={isAdminFakultas ? "forward" : "disposition"}
                 currentUserRole={currentUserRole}
-                letterCategory={detail?.letterType?.category as "AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null}
+                letterCategory={(detail?.category || detail?.letterType?.category) as "AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null}
             />
 
             {/* Complete Dialog - for Pejabat to finish processing */}

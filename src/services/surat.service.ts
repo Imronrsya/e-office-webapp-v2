@@ -115,6 +115,7 @@ export interface SubmissionDetail {
     priority: string;
     currentActiveRole: string | null;
     signatureConfig: SignatureConfig | null;
+    category: "AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null; // Category yang dipilih saat Admin Fakultas forward
     letterType: {
         id: string;
         name: string;

@@ -253,7 +253,8 @@ export function DispositionDialog({
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
-                    {/* Pilih Jenis Surat - Always show for Admin Fakultas, show as info for Pejabat */}
+                    {/* Pilih Jenis Surat - Always show for Admin Fakultas */}
+                    {/* For Pejabat: show as info if letterCategory exists, otherwise show dropdown */}
                     {isForwardMode ? (
                         <div className="space-y-2">
                             <Label htmlFor="category">
@@ -273,13 +274,34 @@ export function DispositionDialog({
                                 </SelectContent>
                             </Select>
                         </div>
-                    ) : letterCategory && (
+                    ) : letterCategory ? (
+                        // Disposition mode with existing category - show as read-only info
                         <Alert>
                             <Info className="h-4 w-4" />
                             <AlertDescription>
                                 Kategori surat: <strong>{CATEGORY_LABELS[letterCategory]}</strong>
                             </AlertDescription>
                         </Alert>
+                    ) : (
+                        // Disposition mode without category - allow selection (fallback)
+                        <div className="space-y-2">
+                            <Label htmlFor="category">
+                                Jenis Surat <span className="text-destructive">*</span>
+                            </Label>
+                            <Select 
+                                value={category} 
+                                onValueChange={(val) => setCategory(val as LetterCategory)}
+                            >
+                                <SelectTrigger id="category">
+                                    <SelectValue placeholder="Pilih Jenis Surat" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="AKADEMIK">Akademik</SelectItem>
+                                    <SelectItem value="SUMBER_DAYA">Sumber Daya</SelectItem>
+                                    <SelectItem value="UMUM">Umum</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     )}
 
                     {/* Info Box for disposition mode */}
