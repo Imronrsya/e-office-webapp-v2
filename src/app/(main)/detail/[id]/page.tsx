@@ -1539,6 +1539,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 onOpenChange={setReturnDialogOpen}
                 onSubmit={handleReturn}
                 loading={actionLoading}
+                returnTargets={detail?.returnTargets}
             />
 
             {/* Draft Surat Dialog - for Admin Prodi, Staf, Supervisor to select surat type */}

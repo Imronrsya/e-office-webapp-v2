@@ -41,6 +41,7 @@ interface ReturnDialogProps {
 // ============================================================================
 
 const ROLE_LABELS: Record<string, string> = {
+    ADMIN_PRODI: "Admin Prodi",
     ADMIN_FAKULTAS: "Admin Surat Fakultas",
     DEKAN: "Dekan",
     WADEK_1: "Wakil Dekan I",
@@ -52,8 +53,8 @@ const ROLE_LABELS: Record<string, string> = {
     STAF_SUMBER_DAYA: "Staf Sumber Daya"
 };
 
-// Default return target if no history
-const DEFAULT_RETURN_TARGETS = ["ADMIN_FAKULTAS"];
+// Default return target is ADMIN_PRODI (dead end - letter goes back to prodi)
+const DEFAULT_RETURN_TARGETS = ["ADMIN_PRODI"];
 
 // ============================================================================
 // COMPONENT
@@ -69,13 +70,13 @@ export function ReturnDialog({
     const [targetRole, setTargetRole] = useState<string>("");
     const [reason, setReason] = useState<string>("");
 
-    // Reset when dialog closes
+    // Reset when dialog closes, auto-select ADMIN_PRODI as default
     useEffect(() => {
         if (!open) {
             setTargetRole("");
             setReason("");
-        } else if (returnTargets.length === 1) {
-            // Auto-select if only one option
+        } else if (returnTargets.length > 0) {
+            // Auto-select first target (ADMIN_PRODI is always first from backend)
             setTargetRole(returnTargets[0]);
         }
     }, [open, returnTargets]);
@@ -93,9 +94,10 @@ export function ReturnDialog({
         await onSubmit(targetRole, reason.trim());
     };
 
-    // Ensure ADMIN_FAKULTAS is always available
+    // Use returnTargets directly from backend (already includes ADMIN_PRODI as first)
+    // Fallback to default if empty
     const availableTargets = returnTargets.length > 0 
-        ? (returnTargets.includes("ADMIN_FAKULTAS") ? returnTargets : ["ADMIN_FAKULTAS", ...returnTargets])
+        ? returnTargets
         : DEFAULT_RETURN_TARGETS;
 
     return (
@@ -112,7 +114,7 @@ export function ReturnDialog({
                     <Alert variant="default" className="border-amber-200 bg-amber-50">
                         <Info className="h-4 w-4 text-amber-600" />
                         <AlertDescription className="text-amber-800">
-                            Surat akan dikembalikan ke pejabat sebelumnya. Default pengembalian adalah ke Admin Surat Fakultas.
+                            Default pengembalian adalah ke Admin Prodi. Anda juga dapat mengembalikan ke role lain yang sudah pernah memproses surat ini.
                         </AlertDescription>
                     </Alert>
 
