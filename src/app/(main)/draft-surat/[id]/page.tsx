@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useCallback } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,8 +35,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import BottomNav from "@/components/layout/bottom-nav";
 import { suratService } from "@/services/surat.service";
-import PdfSignaturePositioner, { SignerPosition } from "@/components/pdf-signature/PdfSignaturePositioner";
-import { generatePdfBlobUrl, generatePdfWithSignatures, SignerPlaceholder } from "@/lib/pdf-generator";
+import { TemplatePreview } from "@/components/surat-preview";
 
 // ============================================================================
 // TYPES
@@ -91,11 +90,13 @@ interface SuratPengantarForm {
     alamatTujuan: string;
     namaMahasiswa: string;
     nimMahasiswa: string;
-    kegiatanMagang: string;
-    judulProposal: string;
+    programStudi: string;
+    departemen: string;
+    keperluan: string;
+    judulAcara: string;
     tanggalMulai: string;
-    namaPejabat: string;
-    nipPejabat: string;
+    lokasiAcara: string;
+    durasiAcara: string;
     tembusan: string;
 }
 
@@ -194,11 +195,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         alamatTujuan: "",
         namaMahasiswa: "",
         nimMahasiswa: "",
-        kegiatanMagang: "",
-        judulProposal: "",
+        programStudi: "",
+        departemen: "",
+        keperluan: "",
+        judulAcara: "",
         tanggalMulai: "",
-        namaPejabat: "",
-        nipPejabat: "",
+        lokasiAcara: "",
+        durasiAcara: "",
         tembusan: "",
     });
 
@@ -232,7 +235,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         nipPejabat: "",
     });
     
-    // Signature state with position data
+    // Signature state - position data no longer needed with template-based positioning
     const [signers, setSigners] = useState<SignerItem[]>([
         { 
             id: "1", 
@@ -241,18 +244,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             isRequired: true,
             name: "",
             nip: "",
-            x: 0,
-            y: 0,
-            page: 1
         }
     ]);
-
-    // PDF preview URL for signature positioning
-    const [draftPdfUrl, setDraftPdfUrl] = useState<string | undefined>(undefined);
-    const [showPositioner, setShowPositioner] = useState(true); // Auto-show positioner
-    const [generatingPdf, setGeneratingPdf] = useState(false);
-    // Track the rendered PDF width for coordinate scaling
-    const [renderedPdfWidth, setRenderedPdfWidth] = useState<number>(600);
     
     // Tembusan state
     const [tembusan, setTembusan] = useState<TembusanItem[]>([]);
@@ -329,9 +322,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         alamatTujuan: (content.alamatTujuan as string) || "",
                         namaMahasiswa: (content.namaMahasiswa as string) || detail.submissionValues.nama || "",
                         nimMahasiswa: (content.nimMahasiswa as string) || detail.submissionValues.nim || "",
-                        kegiatanMagang: (content.kegiatanMagang as string) || detail.submissionValues.keperluan || "",
-                        judulProposal: (content.judulProposal as string) || detail.submissionValues.judulAcara || "",
+                        programStudi: (content.programStudi as string) || detail.submissionValues.programStudi || "",
+                        departemen: (content.departemen as string) || detail.submissionValues.departemen || "",
+                        keperluan: (content.keperluan as string) || detail.submissionValues.keperluan || "",
+                        judulAcara: (content.judulAcara as string) || detail.submissionValues.judulAcara || "",
                         tanggalMulai: (content.tanggalMulai as string) || detail.submissionValues.tanggalAcara || "",
+                        lokasiAcara: (content.lokasiAcara as string) || detail.submissionValues.lokasiAcara || "",
+                        durasiAcara: (content.durasiAcara as string) || "",
                     }));
                 } else if (suratType === "SURAT_PENGANTAR" && detail.submissionValues) {
                     // No existing document, populate from submission values
@@ -340,9 +337,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         perihal: detail.submissionValues.keperluan || "",
                         namaMahasiswa: detail.submissionValues.nama || "",
                         nimMahasiswa: detail.submissionValues.nim || "",
-                        kegiatanMagang: detail.submissionValues.keperluan || "",
-                        judulProposal: detail.submissionValues.judulAcara || "",
+                        programStudi: detail.submissionValues.programStudi || "",
+                        departemen: detail.submissionValues.departemen || "",
+                        keperluan: detail.submissionValues.keperluan || "",
+                        judulAcara: detail.submissionValues.judulAcara || "",
                         tanggalMulai: detail.submissionValues.tanggalAcara || "",
+                        lokasiAcara: detail.submissionValues.lokasiAcara || "",
                     }));
                 }
 
@@ -657,35 +657,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         setSigners(signers.map(s => s.id === id ? { ...s, role, name: roleLabel } : s));
     };
 
-    // Handler for PDF signature positioner
-    const handleSignerPositionsChange = (positions: SignerPosition[]) => {
-        setSigners(positions.map(pos => ({
-            id: pos.id,
-            role: pos.role,
-            order: pos.order,
-            isRequired: true,
-            name: pos.name,
-            nip: pos.nip,
-            prefix: pos.prefix, // Include prefix for signature label
-            x: pos.x,
-            y: pos.y,
-            page: pos.page
-        })));
-    };
-
-    // Convert signers to SignerPosition for the positioner
-    const getSignerPositions = (): SignerPosition[] => {
-        return signers.map(s => ({
-            id: s.id,
-            role: s.role,
-            name: s.name || ALL_SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
-            nip: s.nip,
-            prefix: s.prefix, // Include prefix for signature label
-            x: s.x || 0,
-            y: s.y || 0,
-            page: s.page || 1,
-            order: s.order
-        }));
+    const updateSignerPrefix = (id: string, prefix: string) => {
+        setSigners(signers.map(s => s.id === id ? { ...s, prefix } : s));
     };
 
     // ========================================================================
@@ -716,7 +689,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
     const validateFormStep = (): boolean => {
         if (suratType === "SURAT_PENGANTAR") {
-            const required = ["nomorSurat", "tanggalSurat", "perihal", "namaTujuan", "namaMahasiswa", "nimMahasiswa"] as const;
+            const required = ["nomorSurat", "tanggalSurat", "perihal", "namaTujuan", "namaMahasiswa", "nimMahasiswa", "keperluan"] as const;
             const missing = required.filter(field => !suratPengantarForm[field].trim());
             if (missing.length > 0) {
                 toast.error("Lengkapi semua field yang wajib diisi");
@@ -758,140 +731,34 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     };
 
     // ========================================================================
-    // PDF GENERATION
-    // ========================================================================
-
-    const getFormDataForPdf = useCallback((): Record<string, unknown> => {
-        if (suratType === "SURAT_PENGANTAR") {
-            return { ...suratPengantarForm };
-        } else if (suratType === "SURAT_TUGAS") {
-            return {
-                ...suratTugasForm,
-                jenisSurat: 'tugas',
-                nomorSurat: '-',
-            };
-        } else if (suratType === "SURAT_TUGAS_TABEL") {
-            return {
-                ...suratTugasTabelForm,
-                jenisSurat: 'tugas',
-                nomorSurat: '-',
-                pelaksana: suratTugasTabelForm.pelaksana.map(({ key, ...rest }) => rest),
-            };
-        } else if (suratType === "SURAT_KEPUTUSAN") {
-            return {
-                ...suratKeputusanForm,
-                menimbang: suratKeputusanForm.menimbang.filter(m => m.trim()),
-                mengingat: suratKeputusanForm.mengingat.filter(m => m.trim()),
-                keputusan: suratKeputusanForm.keputusan.filter(k => k.content.trim()).map(({ key, ...rest }) => rest),
-            };
-        }
-        return {};
-    }, [suratType, suratPengantarForm, suratTugasForm, suratTugasTabelForm, suratKeputusanForm]);
-
-    const generatePdfPreview = useCallback(async () => {
-        if (!suratType) return;
-        
-        setGeneratingPdf(true);
-        try {
-            const formData = getFormDataForPdf();
-            const pdfUrl = await generatePdfBlobUrl(suratType, formData);
-            setDraftPdfUrl(pdfUrl);
-            toast.success("Draft PDF berhasil dibuat");
-        } catch (error) {
-            console.error("Error generating PDF:", error);
-            toast.error("Gagal membuat draft PDF");
-        } finally {
-            setGeneratingPdf(false);
-        }
-    }, [suratType, getFormDataForPdf]);
-
-    // ========================================================================
     // NAVIGATION
     // ========================================================================
 
     const goToNextStep = async () => {
         if (currentStep === "form") {
             if (!validateFormStep()) return;
-            // Generate PDF preview before moving to signature step
             setCurrentStep("signature");
-            // Generate PDF in background
-            generatePdfPreview();
         } else if (currentStep === "signature") {
             const hasEmptyRole = signers.some(s => !s.role);
             if (hasEmptyRole) {
                 toast.error("Semua penanda tangan harus dipilih");
                 return;
             }
-            // Regenerate PDF with signature blocks embedded
-            await regeneratePdfWithSignatures();
             setCurrentStep("tembusan");
         } else if (currentStep === "tembusan") {
             setCurrentStep("review");
         }
     };
 
-    // Regenerate PDF with signature placeholder blocks embedded
-    const regeneratePdfWithSignatures = useCallback(async () => {
-        if (!suratType) return;
-        
-        setGeneratingPdf(true);
-        try {
-            const formData = getFormDataForPdf();
-            // Convert signers to SignerPlaceholder format
-            const signerPlaceholders: SignerPlaceholder[] = signers.map(s => ({
-                id: s.id,
-                role: ALL_SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
-                name: s.name || ALL_SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
-                nip: s.nip,
-                prefix: s.prefix, // Include prefix/awalan
-                x: s.x || 0,
-                y: s.y || 0,
-                page: s.page || 1,
-                order: s.order
-            }));
-            
-            // Generate PDF with signatures embedded, using the actual rendered width
-            const pdfBlob = await generatePdfWithSignatures(suratType, formData, signerPlaceholders, renderedPdfWidth);
-            
-            // Clean up old URL
-            if (draftPdfUrl) {
-                URL.revokeObjectURL(draftPdfUrl);
-            }
-            
-            // Create new URL
-            const newPdfUrl = URL.createObjectURL(pdfBlob);
-            setDraftPdfUrl(newPdfUrl);
-        } catch (error) {
-            console.error("Error generating PDF with signatures:", error);
-            toast.error("Gagal membuat PDF dengan tanda tangan");
-        } finally {
-            setGeneratingPdf(false);
-        }
-    }, [suratType, signers, getFormDataForPdf, draftPdfUrl, renderedPdfWidth]);
-
     const goToPrevStep = () => {
         if (currentStep === "signature") {
             setCurrentStep("form");
-            // Clean up PDF URL when going back
-            if (draftPdfUrl) {
-                URL.revokeObjectURL(draftPdfUrl);
-                setDraftPdfUrl(undefined);
-            }
         } else if (currentStep === "tembusan") {
             setCurrentStep("signature");
         } else if (currentStep === "review") {
             setCurrentStep("tembusan");
         }
     };
-
-    // Cleanup PDF URL on unmount
-    useEffect(() => {
-        return () => {
-            if (draftPdfUrl) {
-                URL.revokeObjectURL(draftPdfUrl);
-            }
-        };
-    }, [draftPdfUrl]);
 
     // ========================================================================
     // SUBMIT
@@ -1229,32 +1096,72 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 />
                                             </div>
                                         </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="programStudi">Program Studi</Label>
+                                                <Input
+                                                    id="programStudi"
+                                                    value={suratPengantarForm.programStudi}
+                                                    onChange={(e) => updateSuratPengantar("programStudi", e.target.value)}
+                                                    placeholder="S1 Informatika"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="departemen">Departemen</Label>
+                                                <Input
+                                                    id="departemen"
+                                                    value={suratPengantarForm.departemen}
+                                                    onChange={(e) => updateSuratPengantar("departemen", e.target.value)}
+                                                    placeholder="Informatika"
+                                                />
+                                            </div>
+                                        </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="kegiatanMagang">Judul Kegiatan</Label>
+                                            <Label htmlFor="keperluan">Keperluan/Jenis Kegiatan <span className="text-red-500">*</span></Label>
                                             <Input
-                                                id="kegiatanMagang"
-                                                value={suratPengantarForm.kegiatanMagang}
-                                                onChange={(e) => updateSuratPengantar("kegiatanMagang", e.target.value)}
+                                                id="keperluan"
+                                                value={suratPengantarForm.keperluan}
+                                                onChange={(e) => updateSuratPengantar("keperluan", e.target.value)}
                                                 placeholder="Magang Mandiri"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="judulProposal">Judul Proposal</Label>
+                                            <Label htmlFor="judulAcara">Judul Kegiatan/Proposal</Label>
                                             <Textarea
-                                                id="judulProposal"
-                                                value={suratPengantarForm.judulProposal}
-                                                onChange={(e) => updateSuratPengantar("judulProposal", e.target.value)}
-                                                placeholder="Judul lengkap proposal magang"
+                                                id="judulAcara"
+                                                value={suratPengantarForm.judulAcara}
+                                                onChange={(e) => updateSuratPengantar("judulAcara", e.target.value)}
+                                                placeholder="Judul lengkap kegiatan atau proposal"
                                                 rows={2}
                                             />
                                         </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="lokasiAcara">Lokasi Kegiatan</Label>
+                                                <Input
+                                                    id="lokasiAcara"
+                                                    value={suratPengantarForm.lokasiAcara}
+                                                    onChange={(e) => updateSuratPengantar("lokasiAcara", e.target.value)}
+                                                    placeholder="PT. XYZ, Jakarta"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="tanggalMulai">Tanggal Mulai</Label>
+                                                <Input
+                                                    id="tanggalMulai"
+                                                    value={suratPengantarForm.tanggalMulai}
+                                                    onChange={(e) => updateSuratPengantar("tanggalMulai", e.target.value)}
+                                                    placeholder="10 Januari 2026"
+                                                />
+                                            </div>
+                                        </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="tanggalMulai">Periode Pelaksanaan</Label>
+                                            <Label htmlFor="durasiAcara">Durasi (opsional)</Label>
                                             <Input
-                                                id="tanggalMulai"
-                                                value={suratPengantarForm.tanggalMulai}
-                                                onChange={(e) => updateSuratPengantar("tanggalMulai", e.target.value)}
-                                                placeholder="1 Juli s.d. 31 Agustus 2025"
+                                                id="durasiAcara"
+                                                value={suratPengantarForm.durasiAcara}
+                                                onChange={(e) => updateSuratPengantar("durasiAcara", e.target.value)}
+                                                placeholder="6 bulan"
                                             />
                                         </div>
                                     </CardContent>
@@ -1634,39 +1541,50 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 </Alert>
 
                                 {signers.map((signer, index) => (
-                                    <div key={signer.id} className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-sm font-medium">
-                                            {index + 1}
-                                        </div>
-                                        <Select
-                                            value={signer.role}
-                                            onValueChange={(value) => updateSignerRole(signer.id, value)}
-                                        >
-                                            <SelectTrigger className="flex-1">
-                                                <SelectValue placeholder="Pilih Pejabat" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {(suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : ALL_SIGNER_ROLES).map((role) => (
-                                                    <SelectItem 
-                                                        key={role.value} 
-                                                        value={role.value}
-                                                        disabled={signers.some(s => s.role === role.value && s.id !== signer.id)}
-                                                    >
-                                                        {role.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {signers.length > 1 && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => removeSigner(signer.id)}
-                                                className="text-destructive hover:text-destructive"
+                                    <div key={signer.id} className="space-y-2 p-3 bg-white rounded-lg border">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-sm font-medium">
+                                                {index + 1}
+                                            </div>
+                                            <Select
+                                                value={signer.role}
+                                                onValueChange={(value) => updateSignerRole(signer.id, value)}
                                             >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        )}
+                                                <SelectTrigger className="flex-1">
+                                                    <SelectValue placeholder="Pilih Pejabat" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {(suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : ALL_SIGNER_ROLES).map((role) => (
+                                                        <SelectItem 
+                                                            key={role.value} 
+                                                            value={role.value}
+                                                            disabled={signers.some(s => s.role === role.value && s.id !== signer.id)}
+                                                        >
+                                                            {role.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {signers.length > 1 && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => removeSigner(signer.id)}
+                                                    className="text-destructive hover:text-destructive"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                        {/* Input Awalan/Prefix */}
+                                        <div className="ml-11">
+                                            <Input
+                                                placeholder="Awalan (opsional), contoh: Mengetahui,"
+                                                value={signer.prefix || ""}
+                                                onChange={(e) => updateSignerPrefix(signer.id, e.target.value)}
+                                                className="text-sm"
+                                            />
+                                        </div>
                                     </div>
                                 ))}
 
@@ -1688,48 +1606,29 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             <CardHeader>
                                 <CardTitle className="text-lg flex items-center gap-2">
                                     <FileText className="w-5 h-5" />
-                                    Atur Posisi Tanda Tangan pada PDF
-                                    {generatingPdf && (
-                                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                                    )}
+                                    Preview Dokumen dengan Tanda Tangan
                                 </CardTitle>
                                 <CardDescription>
-                                    {generatingPdf 
-                                        ? "Sedang membuat draft PDF..."
-                                        : "Drag kotak tanda tangan ke posisi yang diinginkan pada dokumen."}
+                                    Posisi tanda tangan akan otomatis disesuaikan berdasarkan template surat.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {generatingPdf ? (
-                                    <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground">
-                                        <Loader2 className="w-10 h-10 animate-spin mb-4" />
-                                        <p>Membuat draft PDF dari formulir...</p>
-                                    </div>
-                                ) : (
-                                    <PdfSignaturePositioner
-                                        pdfUrl={draftPdfUrl}
-                                        signers={getSignerPositions()}
-                                        onSignersChange={handleSignerPositionsChange}
-                                        signerRoles={suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : ALL_SIGNER_ROLES}
-                                        readOnly={false}
-                                        onRenderedWidthChange={setRenderedPdfWidth}
-                                    />
-                                )}
-                                
-                                {/* Regenerate PDF button */}
-                                {!generatingPdf && (
-                                    <div className="mt-4 flex justify-center">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={generatePdfPreview}
-                                            disabled={generatingPdf}
-                                        >
-                                            <Loader2 className={cn("w-4 h-4 mr-2", generatingPdf && "animate-spin")} />
-                                            Regenerate PDF
-                                        </Button>
-                                    </div>
-                                )}
+                                <TemplatePreview
+                                    suratType={suratType as "SURAT_PENGANTAR" | "SURAT_TUGAS" | "SURAT_TUGAS_TABEL" | "SURAT_KEPUTUSAN"}
+                                    signers={signers.map(s => ({
+                                        id: s.id,
+                                        role: s.role,
+                                        name: s.name || ALL_SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
+                                        nip: s.nip,
+                                        prefix: s.prefix
+                                    }))}
+                                    formData={
+                                        suratType === "SURAT_PENGANTAR" ? suratPengantarForm :
+                                        suratType === "SURAT_TUGAS" ? suratTugasForm :
+                                        suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
+                                        suratKeputusanForm
+                                    }
+                                />
                             </CardContent>
                         </Card>
                     </div>
@@ -1889,27 +1788,27 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Separator />
 
-                                {/* PDF Preview with Signature Blocks */}
+                                {/* Template Preview with Signatures */}
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Preview Surat (dengan Blok Tanda Tangan)
+                                        Preview Surat
                                     </Label>
-                                    {draftPdfUrl ? (
-                                        <div className="border rounded-lg overflow-hidden bg-gray-100">
-                                            <iframe
-                                                src={draftPdfUrl}
-                                                className="w-full h-[500px]"
-                                                title="Preview Surat"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="border rounded-lg p-8 text-center bg-gray-50">
-                                            <FileText className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                                            <p className="text-sm text-muted-foreground">
-                                                PDF preview tidak tersedia
-                                            </p>
-                                        </div>
-                                    )}
+                                    <TemplatePreview
+                                        suratType={suratType as "SURAT_PENGANTAR" | "SURAT_TUGAS" | "SURAT_TUGAS_TABEL" | "SURAT_KEPUTUSAN"}
+                                        signers={signers.map(s => ({
+                                            id: s.id,
+                                            role: s.role,
+                                            name: s.name || ALL_SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
+                                            nip: s.nip,
+                                            prefix: s.prefix
+                                        }))}
+                                        formData={
+                                            suratType === "SURAT_PENGANTAR" ? suratPengantarForm :
+                                            suratType === "SURAT_TUGAS" ? suratTugasForm :
+                                            suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
+                                            suratKeputusanForm
+                                        }
+                                    />
                                 </div>
                             </CardContent>
                         </Card>

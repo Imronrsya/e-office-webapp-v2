@@ -55,6 +55,11 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         tembusan,
     } = data;
 
+    // Determine signature layout based on which signers are present (check names, not signatures)
+    const hasKaprodi = !!namaKaprodi;
+    const hasKadep = !!namaKadep;
+    const tingkatTTD = hasKaprodi && hasKadep ? "dua" : hasKaprodi ? "kaprodi" : hasKadep ? "kadep" : "";
+
     return `
 <!DOCTYPE html>
 <html lang="id">
@@ -87,9 +92,12 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         .header-container {
             display: flex;
             align-items: flex-start;
-            border-bottom: 3px solid #000000;
             padding-bottom: 10px;
             margin-bottom: 5px;
+        }
+        .header-divider {
+            border-bottom: 1px solid #000000;
+            margin-bottom: 20px;
         }
         .logo-container {
             width: 12%;
@@ -110,7 +118,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             font-weight: normal;
             letter-spacing: 0.3px;
             line-height: 1.3;
-            color: #000000;
+            color: #3e4ba8;
         }
         .kop-surat h2 {
             margin: 2px 0;
@@ -123,10 +131,10 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             width: 35%;
             text-align: right;
             font-size: 6.5pt;
-            color: #000000;
+            color: #3e4ba8;
         }
         .alamat-kontak p {
-            color: #000000;
+            color: #3e4ba8;
             line-height: 1.4;
             margin: 0;
         }
@@ -179,13 +187,26 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             text-align: justify;
         }
         .ttd-container {
-            margin-top: 40px;
+            margin-top: 60px;
             display: flex;
+            width: 100%;
+            clear: both;
+        }
+        
+        /* JIKA DUA TTD: Kaprodi di kiri, Kadep di kanan */
+        .ttd-container.dua {
             justify-content: space-between;
         }
+        
+        /* JIKA HANYA SATU TTD: di kanan bawah */
+        .ttd-container.kaprodi,
+        .ttd-container.kadep {
+            justify-content: flex-end;
+        }
+        
         .ttd-box {
-            text-align: center;
             width: 45%;
+            text-align: center;
         }
         .ttd-box p {
             margin: 3px 0;
@@ -337,23 +358,53 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         <p>Atas perhatian dan kerjasama Saudara kami ucapkan terima kasih.</p>
     </div>
     
-    <!-- TTD Container - Always hidden, signatures will be overlaid from positioner data -->
-    <div class="ttd-container" style="visibility: hidden;">
-        <!-- TTD Kaprodi placeholder -->
-        <div class="ttd-box">
+    <!-- TTD Container - Dynamic based on signers -->
+    <div class="ttd-container ${tingkatTTD}">
+    
+        ${tingkatTTD === "dua" ? `
+        <!-- Dua TTD: Kaprodi di kiri, Kadep di kanan -->
+        <div class="ttd-box kaprodi">
             <p class="jabatan-ttd">Ketua Program Studi</p>
-            <div class="signature-area"></div>
-            <p class="nama-pejabat">...</p>
-            <p class="nip-pejabat"></p>
+            <div class="signature-area">
+                ${signatureKaprodi ? `<img src="${signatureKaprodi}" alt="TTD Kaprodi" class="signature-img" />` : ''}
+            </div>
+            <p class="nama-pejabat">${namaKaprodi || '...'}</p>
+            <p class="nip-pejabat">${nipKaprodi ? `NIP. ${nipKaprodi}` : ''}</p>
         </div>
-        
-        <!-- TTD Kadep placeholder -->
-        <div class="ttd-box">
+        <div class="ttd-box kadep">
             <p class="jabatan-ttd">Ketua Departemen</p>
-            <div class="signature-area"></div>
-            <p class="nama-pejabat">...</p>
-            <p class="nip-pejabat"></p>
+            <div class="signature-area">
+                ${signatureKadep ? `<img src="${signatureKadep}" alt="TTD Kadep" class="signature-img" />` : ''}
+            </div>
+            <p class="nama-pejabat">${namaKadep || '...'}</p>
+            <p class="nip-pejabat">${nipKadep ? `NIP. ${nipKadep}` : ''}</p>
         </div>
+        ` : ''}
+    
+        ${tingkatTTD === "kaprodi" ? `
+        <!-- Hanya Kaprodi: di kanan -->
+        <div class="ttd-box kaprodi">
+            <p class="jabatan-ttd">Ketua Program Studi</p>
+            <div class="signature-area">
+                ${signatureKaprodi ? `<img src="${signatureKaprodi}" alt="TTD Kaprodi" class="signature-img" />` : ''}
+            </div>
+            <p class="nama-pejabat">${namaKaprodi || '...'}</p>
+            <p class="nip-pejabat">${nipKaprodi ? `NIP. ${nipKaprodi}` : ''}</p>
+        </div>
+        ` : ''}
+    
+        ${tingkatTTD === "kadep" ? `
+        <!-- Hanya Kadep: di kanan -->
+        <div class="ttd-box kadep">
+            <p class="jabatan-ttd">Ketua Departemen</p>
+            <div class="signature-area">
+                ${signatureKadep ? `<img src="${signatureKadep}" alt="TTD Kadep" class="signature-img" />` : ''}
+            </div>
+            <p class="nama-pejabat">${namaKadep || '...'}</p>
+            <p class="nip-pejabat">${nipKadep ? `NIP. ${nipKadep}` : ''}</p>
+        </div>
+        ` : ''}
+    
     </div>
     
     ${tembusan ? `

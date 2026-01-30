@@ -64,7 +64,7 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
     iframe.style.position = 'absolute';
     iframe.style.left = '-9999px';
     iframe.style.width = '210mm'; // A4 width
-    iframe.style.height = '297mm'; // A4 height
+    iframe.style.height = 'auto'; // Let content determine height
     document.body.appendChild(iframe);
 
     try {
@@ -80,6 +80,14 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
         // Wait for images to load
         await new Promise(resolve => setTimeout(resolve, 500));
 
+        // Get the actual content height
+        const contentHeight = iframeDoc.body.scrollHeight;
+        const contentWidth = 794; // A4 width in pixels at 96 DPI
+        const a4HeightPixels = 1123; // A4 height in pixels at 96 DPI
+        
+        // Calculate number of pages needed
+        const numPages = Math.ceil(contentHeight / a4HeightPixels);
+
         // Use html2canvas to capture the content
         const html2canvas = (await import('html2canvas')).default;
         const canvas = await html2canvas(iframeDoc.body, {
@@ -87,8 +95,10 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
             useCORS: true,
             logging: false,
             backgroundColor: '#ffffff',
-            width: 794, // A4 width in pixels at 96 DPI
-            height: 1123, // A4 height in pixels at 96 DPI
+            width: contentWidth,
+            height: contentHeight, // Capture full content height
+            windowWidth: contentWidth,
+            windowHeight: contentHeight,
         });
 
         // Convert canvas to PDF using jsPDF
@@ -99,11 +109,34 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
             format: 'a4',
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        
+        // If content fits in one page
+        if (numPages <= 1) {
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        } else {
+            // Split content across multiple pages
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const imgWidth = pdfWidth;
+            const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            let heightLeft = imgHeight;
+            let position = 0;
+            
+            // First page
+            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pdfHeight;
+            
+            // Add more pages if needed
+            while (heightLeft > 0) {
+                position = -pdfHeight + (imgHeight - heightLeft - pdfHeight);
+                pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+        }
 
         // Return as blob
         return pdf.output('blob');

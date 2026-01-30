@@ -7,6 +7,7 @@ export interface SignatureBlock {
   signerNip?: string;
   signatureUrl?: string;
   signedAt?: string;
+  prefix?: string;         // Awalan seperti "Mengetahui,"
 }
 
 export interface MahasiswaData {
@@ -43,6 +44,7 @@ const renderSignatureBlock = (signature: SignatureBlock): string => {
   
   return `
     <div class="signature-block" style="text-align: center; min-width: 200px;">
+      ${signature.prefix ? `<p style="margin: 0 0 5px 0; color: #000000 !important; font-style: italic;">${signature.prefix}</p>` : ''}
       <p style="margin: 0 0 5px 0; color: #000000 !important;">${signature.signerRole}</p>
       ${signatureImage}
       <p style="margin: 5px 0 0 0; color: #000000 !important; font-weight: bold; text-decoration: underline;">${signature.signerName}</p>
@@ -52,21 +54,28 @@ const renderSignatureBlock = (signature: SignatureBlock): string => {
 };
 
 /**
- * Helper untuk render semua blok tanda tangan
+ * Helper untuk render semua blok tanda tangan dengan layout berdasarkan jumlah
  */
 const renderSignatures = (signatures?: SignatureBlock[]): string => {
   if (!signatures || signatures.length === 0) {
     return `
-      <div class="ttd-box">
-        <p style="color: #ffffff;"></p>
-        <p style="color: #ffffff;"></p>
-        <p class="nama-pejabat" style="color: #ffffff;"></p>
-        <p style="color: #ffffff;"></p>
+      <div class="ttd-count-1">
+        <div class="ttd-box">
+          <p style="color: #ffffff;"></p>
+          <p style="color: #ffffff;"></p>
+          <p class="nama-pejabat" style="color: #ffffff;"></p>
+          <p style="color: #ffffff;"></p>
+        </div>
       </div>
     `;
   }
   
-  return signatures.map(sig => renderSignatureBlock(sig)).join('');
+  const count = signatures.length;
+  const countClass = `ttd-count-${Math.min(count, 4)}`;
+  
+  const signatureBlocks = signatures.map(sig => renderSignatureBlock(sig)).join('');
+  
+  return `<div class="${countClass}">${signatureBlocks}</div>`;
 };
 
 /**
@@ -211,11 +220,52 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
     }
     .ttd-container {
       margin-top: 50px;
+    }
+    
+    /* 1 TTD → kanan */
+    .ttd-count-1 {
       display: flex;
       justify-content: flex-end;
-      flex-wrap: wrap;
+    }
+
+    /* 2 TTD → kiri & kanan */
+    .ttd-count-2 {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* 3 TTD: 2 di atas (kiri-kanan), 1 di bawah tengah */
+    .ttd-count-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "t1 t2"
+        "t3 t3";
       gap: 30px;
     }
+
+    .ttd-count-3 .signature-block:nth-child(1) {
+      grid-area: t1;
+      justify-self: start;
+    }
+
+    .ttd-count-3 .signature-block:nth-child(2) {
+      grid-area: t2;
+      justify-self: end;
+    }
+
+    .ttd-count-3 .signature-block:nth-child(3) {
+      grid-area: t3;
+      justify-self: center;
+    }
+
+    /* 4 TTD → grid 2x2 */
+    .ttd-count-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
     .ttd-box {
       text-align: center;
       min-width: 200px;

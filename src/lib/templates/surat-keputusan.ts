@@ -7,6 +7,7 @@ export interface SignatureBlock {
   signerNip?: string;
   signatureUrl?: string;
   signedAt?: string;
+  prefix?: string;         // Awalan seperti "Mengetahui,"
 }
 
 export interface PesertaData {
@@ -48,6 +49,7 @@ const renderSignatureBlock = (signature: SignatureBlock): string => {
   
   return `
     <div class="signature-block" style="text-align: center; min-width: 200px;">
+      ${signature.prefix ? `<p style="margin: 0 0 5px 0; font-style: italic;">${signature.prefix}</p>` : ''}
       <p style="margin: 0 0 5px 0;">${signature.signerRole}</p>
       ${signatureImage}
       <p style="margin: 5px 0 0 0; font-weight: bold; text-decoration: underline;">${signature.signerName}</p>
@@ -57,19 +59,26 @@ const renderSignatureBlock = (signature: SignatureBlock): string => {
 };
 
 /**
- * Helper untuk render semua blok tanda tangan
+ * Helper untuk render semua blok tanda tangan dengan layout berdasarkan jumlah
  */
 const renderSignatures = (signatures?: SignatureBlock[]): string => {
   if (!signatures || signatures.length === 0) {
     return `
-      <p class="ttd-text" style="color: white"></p>
-      <p class="ttd-text" style="color: white"></p>
-      <p class="nama-pejabat" style="color: white"></p>
-      <p class="ttd-text" style="color: white"></p>
+      <div class="ttd-count-1">
+        <p class="ttd-text" style="color: white"></p>
+        <p class="ttd-text" style="color: white"></p>
+        <p class="nama-pejabat" style="color: white"></p>
+        <p class="ttd-text" style="color: white"></p>
+      </div>
     `;
   }
   
-  return signatures.map(sig => renderSignatureBlock(sig)).join('');
+  const count = signatures.length;
+  const countClass = `ttd-count-${Math.min(count, 4)}`;
+  
+  const signatureBlocks = signatures.map(sig => renderSignatureBlock(sig)).join('');
+  
+  return `<div class="${countClass}">${signatureBlocks}</div>`;
 };
 
 /**
@@ -226,6 +235,51 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       margin-top: 40px;
       text-align: center;
     }
+    
+    /* 1 TTD → kanan bawah */
+    .ttd-count-1 {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* 2 TTD → kiri & kanan (yang lebih tinggi di kanan) */
+    .ttd-count-2 {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* 3 TTD: Wadek2 kiri atas, Dekan kanan atas, Wadek1 bawah tengah */
+    .ttd-count-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "t1 t2"
+        "t3 t3";
+      gap: 30px;
+    }
+
+    .ttd-count-3 .signature-block:nth-child(1) {
+      grid-area: t1;
+      justify-self: start;
+    }
+
+    .ttd-count-3 .signature-block:nth-child(2) {
+      grid-area: t2;
+      justify-self: end;
+    }
+
+    .ttd-count-3 .signature-block:nth-child(3) {
+      grid-area: t3;
+      justify-self: center;
+    }
+
+    /* 4 TTD → grid 2x2 */
+    .ttd-count-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
     .signature-block {
       display: inline-block;
       text-align: center;
