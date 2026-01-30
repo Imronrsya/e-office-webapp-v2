@@ -1,5 +1,37 @@
 import { api } from '@/lib/api';
 
+// Profile types for Mahasiswa and Pegawai
+export interface ProgramStudiInfo {
+    id: string;
+    name: string;
+    code: string;
+}
+
+export interface DepartemenInfo {
+    id: string;
+    name: string;
+    code: string;
+}
+
+export interface MahasiswaProfile {
+    nim: string;
+    departemenId: string;
+    programStudiId: string;
+    departemen?: DepartemenInfo;
+    programStudi?: ProgramStudiInfo;
+}
+
+export interface PegawaiProfile {
+    nip: string;
+    jabatan: string;
+    departemenId: string;
+    programStudiId: string;
+    departemen?: DepartemenInfo;
+    programStudi?: ProgramStudiInfo;
+}
+
+export type UserProfile = MahasiswaProfile | PegawaiProfile | null;
+
 export interface User {
     id: string;
     email: string;
@@ -12,7 +44,8 @@ export interface User {
     programStudi?: string;
     role?: string;
     roles?: string[];
-    profile?: Record<string, unknown>;
+    profile?: UserProfile;
+    departemen?: DepartemenInfo | null;
 }
 
 export interface Session {
@@ -35,7 +68,9 @@ export interface MeResponse {
     email: string;
     role: string;        // primary role
     roles: string[];     // semua role jika multi-role
-    profile?: Record<string, unknown>;
+    profile?: UserProfile;
+    departemen?: DepartemenInfo | null;
+    programStudi?: ProgramStudiInfo | null;
 }
 
 export const authService = {

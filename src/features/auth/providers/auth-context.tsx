@@ -41,6 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     role,
                     roles: meData?.roles || [role],
                     profile: meData?.profile,
+                    departemen: meData?.departemen,
+                    programStudi: meData?.programStudi?.name,
                 });
             } else {
                 setUser(null);
@@ -69,6 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 role,
                 roles: meData?.roles || [role],
                 profile: meData?.profile,
+                departemen: meData?.departemen,
+                programStudi: meData?.programStudi?.name,
             };
 
             setUser(userWithRole);

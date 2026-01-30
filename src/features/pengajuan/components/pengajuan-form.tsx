@@ -10,6 +10,10 @@ import {
     type CreateSubmissionJSON,
     type LetterType
 } from "@/services/submission.service";
+import { 
+    type MahasiswaProfile, 
+    type PegawaiProfile 
+} from "@/services/auth.service";
 import { FileUpload } from "./file-upload";
 import BottomNav from "@/components/layout/bottom-nav";
 
@@ -25,6 +29,15 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+
+// Type guards for profile types
+function isMahasiswaProfile(profile: unknown): profile is MahasiswaProfile {
+    return profile !== null && typeof profile === 'object' && 'nim' in profile;
+}
+
+function isPegawaiProfile(profile: unknown): profile is PegawaiProfile {
+    return profile !== null && typeof profile === 'object' && 'nip' in profile;
+}
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -90,10 +103,31 @@ export function PengajuanForm() {
     // 2. Auto-fill data diri user jika sudah login
     useEffect(() => {
         if (user) {
+            // Extract NIM/NIP and Program Studi from user profile
+            let nimNip = "";
+            let programStudiName = "";
+
+            // Get NIM/NIP from profile
+            if (user.profile) {
+                if (isMahasiswaProfile(user.profile)) {
+                    nimNip = user.profile.nim || "";
+                    programStudiName = user.profile.programStudi?.name || "";
+                } else if (isPegawaiProfile(user.profile)) {
+                    nimNip = user.profile.nip || "";
+                    programStudiName = user.profile.programStudi?.name || "";
+                }
+            }
+
+            // Fallback to top-level programStudi if profile doesn't have it
+            if (!programStudiName && user.programStudi) {
+                programStudiName = user.programStudi;
+            }
+
             setFormState((prev) => ({
                 ...prev,
                 namaLengkap: user.name || "",
-                // Jika di masa depan profile user menyimpan NIP/NIM/Prodi, isi di sini
+                nimNip: nimNip,
+                programStudi: programStudiName,
             }));
         }
     }, [user]);
