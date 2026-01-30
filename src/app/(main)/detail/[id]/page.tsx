@@ -747,59 +747,100 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     <div className="h-8 w-24 bg-zinc-200 rounded animate-pulse" />
                 </div>
 
-                {/* Cards Skeleton */}
-                <div className="space-y-6">
-                    {/* Riwayat Proses Skeleton */}
-                    <div className="bg-neutral-50 border border-zinc-400 rounded-xl p-6">
-                        <div className="h-5 w-32 bg-zinc-200 rounded mb-6 animate-pulse" />
-                        <div className="space-y-4">
-                            <div className="flex gap-4">
-                                <div className="w-10 h-10 bg-zinc-200 rounded-full animate-pulse" />
-                                <div className="flex-1 space-y-2">
-                                    <div className="h-4 w-48 bg-zinc-200 rounded animate-pulse" />
-                                    <div className="h-4 w-64 bg-zinc-200 rounded animate-pulse" />
+                {/* Sub-header Skeleton */}
+                <div className="h-6 w-64 bg-zinc-200 rounded animate-pulse mb-4" />
+
+                {/* Tab Buttons Skeleton */}
+                <div className="flex gap-2 mb-6">
+                    <div className="h-9 w-32 bg-zinc-200 rounded-lg animate-pulse" />
+                    <div className="h-9 w-28 bg-zinc-200 rounded-lg animate-pulse" />
+                </div>
+
+                {/* 2-Column Layout Skeleton */}
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-6">
+                    {/* Left Column - PDF Preview Skeleton */}
+                    <div className="bg-neutral-50 border border-zinc-400 rounded-xl p-4">
+                        <div className="aspect-[3/4] bg-zinc-200 rounded animate-pulse" />
+                    </div>
+
+                    {/* Right Column - Info Cards Skeleton */}
+                    <div className="space-y-6">
+                        {/* Riwayat Proses Skeleton */}
+                        <div className="bg-neutral-50 border border-zinc-400 rounded-xl p-6">
+                            <div className="h-5 w-32 bg-zinc-200 rounded mb-6 animate-pulse" />
+                            <div className="space-y-4">
+                                <div className="flex gap-4">
+                                    <div className="w-10 h-10 bg-zinc-200 rounded-full animate-pulse" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-4 w-48 bg-zinc-200 rounded animate-pulse" />
+                                        <div className="h-4 w-64 bg-zinc-200 rounded animate-pulse" />
+                                    </div>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="w-10 h-10 bg-zinc-200 rounded-full animate-pulse" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-4 w-48 bg-zinc-200 rounded animate-pulse" />
+                                        <div className="h-4 w-64 bg-zinc-200 rounded animate-pulse" />
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex gap-4">
-                                <div className="w-10 h-10 bg-zinc-200 rounded-full animate-pulse" />
-                                <div className="flex-1 space-y-2">
-                                    <div className="h-4 w-48 bg-zinc-200 rounded animate-pulse" />
-                                    <div className="h-4 w-64 bg-zinc-200 rounded animate-pulse" />
+                        </div>
+
+                        {/* Detail Surat Skeleton */}
+                        <div className="bg-neutral-50 border border-zinc-400 rounded-xl p-6">
+                            <div className="h-5 w-28 bg-zinc-200 rounded mb-4 animate-pulse" />
+                            <div className="space-y-4">
+                                {/* Jenis Surat Row */}
+                                <div className="py-3 border-b border-zinc-300">
+                                    <div className="h-3 w-20 bg-zinc-200 rounded animate-pulse mb-2" />
+                                    <div className="h-4 w-24 bg-zinc-200 rounded animate-pulse" />
+                                </div>
+                                {/* Judul Surat Row */}
+                                <div className="py-3 border-b border-zinc-300">
+                                    <div className="h-3 w-20 bg-zinc-200 rounded animate-pulse mb-2" />
+                                    <div className="h-4 w-32 bg-zinc-200 rounded animate-pulse" />
+                                </div>
+                                {/* Keperluan Row */}
+                                <div className="py-3">
+                                    <div className="h-3 w-20 bg-zinc-200 rounded animate-pulse mb-2" />
+                                    <div className="h-4 w-40 bg-zinc-200 rounded animate-pulse" />
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Detail Surat Skeleton */}
-                    <div className="bg-neutral-50 border border-zinc-400 rounded-xl p-6">
-                        <div className="h-5 w-28 bg-zinc-200 rounded mb-4 animate-pulse" />
-                        <div className="space-y-4">
-                            <div className="h-4 w-full bg-zinc-200 rounded animate-pulse" />
-                            <div className="h-4 w-3/4 bg-zinc-200 rounded animate-pulse" />
-                            <div className="h-4 w-5/6 bg-zinc-200 rounded animate-pulse" />
-                        </div>
-                    </div>
-
-                    {/* Identitas Pemohon Skeleton */}
-                    <div className="bg-neutral-50 border border-zinc-400 rounded-xl p-6">
-                        <div className="h-5 w-36 bg-zinc-200 rounded mb-4 animate-pulse" />
-                        <div className="space-y-4">
-                            <div className="h-4 w-full bg-zinc-200 rounded animate-pulse" />
-                            <div className="h-4 w-2/3 bg-zinc-200 rounded animate-pulse" />
-                            <div className="h-4 w-1/2 bg-zinc-200 rounded animate-pulse" />
-                        </div>
-                    </div>
-
-                    {/* Lampiran Skeleton */}
-                    <div className="bg-neutral-50 border border-zinc-400 rounded-xl p-6">
-                        <div className="h-5 w-24 bg-zinc-200 rounded mb-4 animate-pulse" />
-                        <div className="flex items-center gap-3 p-3.5 bg-white rounded-lg border border-zinc-400">
-                            <div className="w-10 h-10 bg-red-100 rounded-lg" />
-                            <div className="flex-1 space-y-2">
-                                <div className="h-4 w-48 bg-zinc-200 rounded animate-pulse" />
-                                <div className="h-3 w-20 bg-zinc-200 rounded animate-pulse" />
+                        {/* Identitas Pemohon Skeleton */}
+                        <div className="bg-neutral-50 border border-zinc-400 rounded-xl p-6">
+                            <div className="h-5 w-36 bg-zinc-200 rounded mb-4 animate-pulse" />
+                            <div className="space-y-4">
+                                {/* Nama Lengkap Row */}
+                                <div className="py-3 border-b border-zinc-300">
+                                    <div className="h-3 w-24 bg-zinc-200 rounded animate-pulse mb-2" />
+                                    <div className="h-4 w-40 bg-zinc-200 rounded animate-pulse" />
+                                </div>
+                                {/* NIM/NIP Row */}
+                                <div className="py-3 border-b border-zinc-300">
+                                    <div className="h-3 w-12 bg-zinc-200 rounded animate-pulse mb-2" />
+                                    <div className="h-4 w-32 bg-zinc-200 rounded animate-pulse" />
+                                </div>
+                                {/* Program Studi Row */}
+                                <div className="py-3">
+                                    <div className="h-3 w-24 bg-zinc-200 rounded animate-pulse mb-2" />
+                                    <div className="h-4 w-28 bg-zinc-200 rounded animate-pulse" />
+                                </div>
                             </div>
-                            <div className="w-6 h-6 bg-zinc-200 rounded animate-pulse" />
+                        </div>
+
+                        {/* Lampiran Skeleton */}
+                        <div className="bg-neutral-50 border border-zinc-400 rounded-xl p-6">
+                            <div className="h-5 w-24 bg-zinc-200 rounded mb-4 animate-pulse" />
+                            <div className="flex items-center gap-3 p-3.5 bg-white rounded-lg border border-zinc-400">
+                                <div className="w-10 h-10 bg-red-100 rounded-lg" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-4 w-48 bg-zinc-200 rounded animate-pulse" />
+                                    <div className="h-3 w-20 bg-zinc-200 rounded animate-pulse" />
+                                </div>
+                                <div className="w-6 h-6 bg-zinc-200 rounded animate-pulse" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1078,6 +1119,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 judulSurat={submissionValues.judulAcara}
                                 keperluan={submissionValues.keperluan}
                             />
+
+                            {/* Identitas Pemohon */}
+                            <IdentitasPemohonCard />
 
                             {/* Lampiran */}
                             <LampiranCard />
