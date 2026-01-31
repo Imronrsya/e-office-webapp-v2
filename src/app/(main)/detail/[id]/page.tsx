@@ -198,17 +198,29 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         fetchDetail();
     }, [fetchDetail]);
 
-    // Download attachment handler - use fileUrl directly
-    const handleDownloadAttachment = (fileName: string, fileUrl: string) => {
+    // Download attachment handler - force download without opening in browser
+    const handleDownloadAttachment = async (fileName: string, fileUrl: string) => {
         if (!detail) return;
         try {
+            // Fetch file as blob to force download
+            const response = await fetch(fileUrl);
+            if (!response.ok) throw new Error('Download failed');
+            
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            
             const a = document.createElement("a");
-            a.href = fileUrl;
+            a.href = blobUrl;
             a.download = fileName;
-            a.target = "_blank"; // Open in new tab as fallback
+            a.style.display = "none";
             document.body.appendChild(a);
             a.click();
+            
+            // Cleanup
             document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+            
+            toast.success(`Berhasil mengunduh ${fileName}`);
         } catch (err) {
             console.error("Download failed:", err);
             toast.error("Gagal mengunduh file");
