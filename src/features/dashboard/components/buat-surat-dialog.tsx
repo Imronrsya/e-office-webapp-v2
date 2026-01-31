@@ -37,6 +37,8 @@ export type TemplateTypeOption = "surat-tugas" | "surat-tugas-table" | "surat-ke
 interface BuatSuratDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** User role to filter available categories */
+    userRole?: string;
 }
 
 // ============================================================================
@@ -95,11 +97,28 @@ const TEMPLATES = [
 // COMPONENT
 // ============================================================================
 
-export function BuatSuratDialog({ open, onOpenChange }: BuatSuratDialogProps) {
+export function BuatSuratDialog({ open, onOpenChange, userRole = "" }: BuatSuratDialogProps) {
     const router = useRouter();
     const [step, setStep] = useState<1 | 2>(1);
     const [selectedCategory, setSelectedCategory] = useState<LetterCategory | "">("");
     const [selectedTemplate, setSelectedTemplate] = useState<TemplateTypeOption | "">("");
+
+    // Filter categories based on user role
+    // STAF_AKADEMIK / SUPERVISOR_AKADEMIK → AKADEMIK, UMUM
+    // STAF_SUMBER_DAYA / SUPERVISOR_SUMBER_DAYA → SUMBER_DAYA, UMUM
+    const availableCategories = CATEGORIES.filter((category) => {
+        const isAkademikRole = ["STAF_AKADEMIK", "SUPERVISOR_AKADEMIK"].includes(userRole);
+        const isSumberDayaRole = ["STAF_SUMBER_DAYA", "SUPERVISOR_SUMBER_DAYA"].includes(userRole);
+        
+        if (isAkademikRole) {
+            return category.id === "AKADEMIK" || category.id === "UMUM";
+        }
+        if (isSumberDayaRole) {
+            return category.id === "SUMBER_DAYA" || category.id === "UMUM";
+        }
+        // Default: show all categories
+        return true;
+    });
 
     const handleCategorySelect = (category: LetterCategory) => {
         setSelectedCategory(category);
@@ -180,7 +199,7 @@ export function BuatSuratDialog({ open, onOpenChange }: BuatSuratDialogProps) {
                             onValueChange={(value) => handleCategorySelect(value as LetterCategory)}
                             className="grid grid-cols-1 gap-3"
                         >
-                            {CATEGORIES.map((category) => {
+                            {availableCategories.map((category) => {
                                 const IconComponent = category.icon;
                                 const isSelected = selectedCategory === category.id;
                                 const colorClasses = getColorClasses(category.color, isSelected);

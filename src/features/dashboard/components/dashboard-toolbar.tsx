@@ -111,7 +111,8 @@ export function DashboardToolbar({
               </Button>
               <BuatSuratDialog 
                 open={buatSuratDialogOpen} 
-                onOpenChange={setBuatSuratDialogOpen} 
+                onOpenChange={setBuatSuratDialogOpen}
+                userRole={role}
               />
             </>
           ) : (
