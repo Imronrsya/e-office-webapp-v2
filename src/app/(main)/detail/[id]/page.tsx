@@ -967,7 +967,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     value={submissionValues.nama} 
                 />
                 <InfoRow 
-                    label={submissionValues.nim ? "NIM" : "NIP/NIK"} 
+                    label={submissionValues.nim ? "NIM" : "NIP"} 
                     value={submissionValues.nim || submissionValues.nip || "-"} 
                 />
                 <InfoRow 

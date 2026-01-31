@@ -255,6 +255,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Loading state for fetching existing data
     const [loading, setLoading] = useState(true);
     
+    // State untuk menentukan apakah pengaju adalah Mahasiswa atau Dosen
+    // True = Mahasiswa (punya NIM), False = Dosen (punya NIP)
+    const [isPengajuMahasiswa, setIsPengajuMahasiswa] = useState(true);
+    
     // Edit mode tracking - true if draft already exists and we're editing
     const [isEditMode, setIsEditMode] = useState(false);
     const [existingDocumentId, setExistingDocumentId] = useState<string | null>(null);
@@ -308,6 +312,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 if (detail.status === 'FAKULTAS_VERIFICATION' && existingDoc) {
                     setIsVerificationMode(true);
                 }
+
+                // Determine if pengaju is Mahasiswa or Dosen based on submissionValues
+                // Mahasiswa memiliki NIM, Dosen memiliki NIP
+                const pengajuIsMahasiswa = !!detail.submissionValues?.nim;
+                setIsPengajuMahasiswa(pengajuIsMahasiswa);
 
                 // Populate surat pengantar form from existing content
                 if (suratType === "SURAT_PENGANTAR" && existingDoc?.content) {
@@ -1073,26 +1082,26 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Data Mahasiswa</CardTitle>
+                                        <CardTitle className="text-lg">{isPengajuMahasiswa ? "Data Mahasiswa" : "Data Dosen"}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <Label htmlFor="namaMahasiswa">Nama Mahasiswa <span className="text-red-500">*</span></Label>
+                                                <Label htmlFor="namaMahasiswa">{isPengajuMahasiswa ? "Nama Mahasiswa" : "Nama Dosen"} <span className="text-red-500">*</span></Label>
                                                 <Input
                                                     id="namaMahasiswa"
                                                     value={suratPengantarForm.namaMahasiswa}
                                                     onChange={(e) => updateSuratPengantar("namaMahasiswa", e.target.value)}
-                                                    placeholder="Nama lengkap mahasiswa"
+                                                    placeholder={isPengajuMahasiswa ? "Nama lengkap mahasiswa" : "Nama lengkap dosen"}
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="nimMahasiswa">NIM <span className="text-red-500">*</span></Label>
+                                                <Label htmlFor="nimMahasiswa">{isPengajuMahasiswa ? "NIM" : "NIP"} <span className="text-red-500">*</span></Label>
                                                 <Input
                                                     id="nimMahasiswa"
                                                     value={suratPengantarForm.nimMahasiswa}
                                                     onChange={(e) => updateSuratPengantar("nimMahasiswa", e.target.value)}
-                                                    placeholder="24060122xxxxxx"
+                                                    placeholder={isPengajuMahasiswa ? "24060122xxxxxx" : "198501152010121001"}
                                                 />
                                             </div>
                                         </div>
@@ -1197,12 +1206,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="nimNip">NIM/NIP <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="nimNip">{isPengajuMahasiswa ? "NIM" : "NIP"} <span className="text-red-500">*</span></Label>
                                             <Input
                                                 id="nimNip"
                                                 value={suratTugasForm.nimNip}
                                                 onChange={(e) => updateSuratTugas("nimNip", e.target.value)}
-                                                placeholder="NIM atau NIP"
+                                                placeholder={isPengajuMahasiswa ? "24060122xxxxxx" : "198501152010121001"}
                                             />
                                         </div>
                                     </div>

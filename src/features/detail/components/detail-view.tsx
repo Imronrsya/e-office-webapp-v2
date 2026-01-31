@@ -172,7 +172,7 @@ export function DetailView({ detail, onDownloadAttachment }: DetailViewProps) {
                         value={submissionValues.nama} 
                     />
                     <InfoRow 
-                        label={submissionValues.nim ? "NIM" : "NIP/NIK"} 
+                        label={submissionValues.nim ? "NIM" : "NIP"} 
                         value={submissionValues.nim || submissionValues.nip || "-"} 
                     />
                     <InfoRow 

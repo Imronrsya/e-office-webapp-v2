@@ -355,7 +355,7 @@ export function PengajuanForm() {
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="nimNip" className="text-sm font-medium text-gray-700">
-                                    NIM/NIP <span className="text-red-500">*</span>
+                                    {user?.role?.toUpperCase() === "MAHASISWA" ? "NIM" : "NIP"} <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                     id="nimNip"
