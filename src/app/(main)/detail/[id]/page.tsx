@@ -904,11 +904,25 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // Check if UPA has completed processing (for departemen scope - show SK/ST option)
     const isUpaCompleted = detail.status === 'COMPLETED';
     
+    // Check permission flags from backend
+    const { isVerificationMode, isPreDraftMode, showSuratPengantar } = permissions;
+    
     // Determine what document to show based on scope and filter type
     // FAKULTAS: show based on filter type (masuk = pengantar, keluar = hasil)
     // DEPARTEMEN: show pengantar by default, with option to view hasil if UPA completed
     // UPA: show hasil
-    const getDocumentViewMode = (): 'pengantar' | 'hasil' | 'both' => {
+    // SPECIAL: If in verification mode or pre-draft mode, show form-focused view
+    const getDocumentViewMode = (): 'pengantar' | 'hasil' | 'both' | 'form-only' => {
+        // Jika dalam verification mode atau pre-draft mode, fokus ke form (tanpa dokumen preview)
+        if (isVerificationMode || isPreDraftMode) {
+            return 'form-only';
+        }
+        
+        // Jika showSuratPengantar false dari backend, tidak tampilkan pengantar
+        if (!showSuratPengantar && userScope === 'DEPARTEMEN') {
+            return 'form-only';
+        }
+        
         if (userScope === 'FAKULTAS') {
             // Lingkup Fakultas: berdasarkan filter dari dashboard
             if (filterType === 'keluar') {
@@ -1167,7 +1181,76 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 )}
 
                 {/* Content based on documentViewMode */}
-                {documentViewMode === 'both' ? (
+                {documentViewMode === 'form-only' ? (
+                    /* Mode form-only: Verification mode atau Pre-draft mode - fokus ke data form, bukan dokumen */
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left Column - Info Cards (prioritas utama) */}
+                        <div className="space-y-6">
+                            {/* Riwayat Proses */}
+                            <ProcessHistory 
+                                logs={logs}
+                                isWaiting={isWaiting}
+                                currentActiveRole={detail.currentActiveRole}
+                                userScope={userScope}
+                                filterType={filterType}
+                            />
+
+                            {/* Detail Surat */}
+                            <DetailSuratInfo 
+                                jenisSurat={submissionValues.jenisSurat}
+                                judulSurat={submissionValues.judulAcara}
+                                keperluan={submissionValues.keperluan}
+                            />
+                        </div>
+
+                        {/* Right Column - Identitas dan Lampiran */}
+                        <div className="space-y-6">
+                            {/* Identitas Pemohon */}
+                            <IdentitasPemohonCard />
+
+                            {/* Lampiran */}
+                            <LampiranCard />
+                            
+                            {/* Info untuk user tentang mode ini */}
+                            {isVerificationMode && (
+                                <Card className="bg-blue-50 border-blue-200 rounded-xl">
+                                    <CardContent className="p-4">
+                                        <div className="flex items-start gap-3">
+                                            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-medium text-blue-800">
+                                                    Mode Verifikasi
+                                                </p>
+                                                <p className="text-xs text-blue-600 mt-1">
+                                                    Fokus pada data formulir dan lampiran untuk proses verifikasi.
+                                                    Preview surat akan tersedia setelah proses drafting selesai.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                            {isPreDraftMode && !isVerificationMode && (
+                                <Card className="bg-amber-50 border-amber-200 rounded-xl">
+                                    <CardContent className="p-4">
+                                        <div className="flex items-start gap-3">
+                                            <Clock className="w-5 h-5 text-amber-600 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-medium text-amber-800">
+                                                    Menunggu Proses
+                                                </p>
+                                                <p className="text-xs text-amber-600 mt-1">
+                                                    Surat pengantar belum digenerate. 
+                                                    Dokumen akan tersedia setelah proses drafting oleh Admin Prodi.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                    </div>
+                ) : documentViewMode === 'both' ? (
                     /* Lingkup Departemen dengan tabs (jika UPA sudah selesai) */
                     <Tabs defaultValue={defaultTab} className="w-full">
                         {/* Tab Buttons */}
