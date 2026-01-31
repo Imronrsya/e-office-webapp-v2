@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
     Select,
     SelectContent,
@@ -753,7 +754,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 toast.error("Semua penanda tangan harus dipilih");
                 return;
             }
-            setCurrentStep("tembusan");
+            // Skip tembusan for Surat Pengantar
+            if (suratType === "SURAT_PENGANTAR") {
+                setCurrentStep("review");
+            } else {
+                setCurrentStep("tembusan");
+            }
         } else if (currentStep === "tembusan") {
             setCurrentStep("review");
         }
@@ -765,7 +771,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         } else if (currentStep === "tembusan") {
             setCurrentStep("signature");
         } else if (currentStep === "review") {
-            setCurrentStep("tembusan");
+            // Skip tembusan for Surat Pengantar
+            if (suratType === "SURAT_PENGANTAR") {
+                setCurrentStep("signature");
+            } else {
+                setCurrentStep("tembusan");
+            }
         }
     };
 
@@ -911,17 +922,25 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         return null;
     }
 
+    // Surat Pengantar tidak memiliki tembusan, skip step tembusan
+    const isSuratPengantar = suratType === "SURAT_PENGANTAR";
+    
     const steps = [
-        { key: "form", label: "Formulir", icon: ClipboardList },
-        { key: "signature", label: "Tanda Tangan", icon: PenTool },
-        { key: "tembusan", label: "Tembusan", icon: Users },
-        { key: "review", label: "Review", icon: CheckCircle },
+        { key: "form", label: "Formulir", icon: ClipboardList, disabled: false },
+        { key: "signature", label: "Tanda Tangan", icon: PenTool, disabled: false },
+        { key: "tembusan", label: "Tembusan", icon: Users, disabled: isSuratPengantar },
+        { key: "review", label: "Review", icon: CheckCircle, disabled: false },
     ];
 
-    const currentStepIndex = steps.findIndex(s => s.key === currentStep);
+    // Filter out disabled steps for navigation
+    const activeSteps = steps.filter(s => !s.disabled);
+    const currentStepIndex = activeSteps.findIndex(s => s.key === currentStep);
 
     // Show loading state while fetching existing data
     if (loading) {
+        // Calculate steps to show in skeleton (3 for Surat Pengantar, 4 for others)
+        const skeletonStepCount = isSuratPengantar ? 3 : 4;
+        
         return (
             <>
                 <div className="flex items-center gap-2 mb-6">
@@ -930,10 +949,74 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         Draft {SURAT_TYPE_LABELS[suratType]}
                     </h1>
                 </div>
-                <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground">
-                    <Loader2 className="w-10 h-10 animate-spin mb-4" />
-                    <p>Memuat data surat...</p>
+                
+                {/* Skeleton Stepper */}
+                <div className="mb-8">
+                    <div className="flex justify-center">
+                        <div className="flex items-start w-full max-w-2xl">
+                            {Array.from({ length: skeletonStepCount }).map((_, index) => {
+                                const isLast = index === skeletonStepCount - 1;
+                                return (
+                                    <div key={index} className={cn("flex items-start", isLast ? "flex-none" : "flex-1")}>
+                                        {/* Skeleton Step Circle and Label */}
+                                        <div className="flex flex-col items-center">
+                                            <Skeleton className="w-10 h-10 rounded-full" />
+                                            <Skeleton className="h-4 w-16 mt-2" />
+                                        </div>
+                                        {/* Skeleton Connector Line */}
+                                        {!isLast && (
+                                            <div className="flex-1 flex items-center px-3 mt-5">
+                                                <Skeleton className="h-0.5 w-full" />
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
+                
+                {/* Skeleton Content */}
+                <div className="space-y-6 pb-24">
+                    <Card className="bg-neutral-50 border-zinc-400">
+                        <CardHeader>
+                            <Skeleton className="h-6 w-40" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-10 w-full" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-10 w-full" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-neutral-50 border-zinc-400">
+                        <CardHeader>
+                            <Skeleton className="h-6 w-32" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-24" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-28" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+                
                 <BottomNav />
             </>
         );
@@ -949,53 +1032,60 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 </h1>
             </div>
 
-            {/* Step Indicator */}
+            {/* Step Indicator - Only show active steps */}
             <div className="mb-8">
-                <div className="flex items-center justify-between">
-                    {steps.map((step, index) => {
-                        const Icon = step.icon;
-                        const isActive = step.key === currentStep;
-                        const isCompleted = index < currentStepIndex;
-                        
-                        return (
-                            <div key={step.key} className="flex items-center flex-1">
-                                <div className="flex flex-col items-center flex-1">
-                                    <div
-                                        className={cn(
-                                            "w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-colors",
-                                            isActive
-                                                ? "bg-blue-600 text-white"
-                                                : isCompleted
-                                                    ? "bg-emerald-600 text-white"
-                                                    : "bg-zinc-200 text-zinc-500"
-                                        )}
-                                    >
-                                        {isCompleted ? (
-                                            <CheckCircle className="w-5 h-5" />
-                                        ) : (
-                                            <Icon className="w-5 h-5" />
-                                        )}
+                <div className="flex justify-center">
+                    <div className="flex items-start w-full max-w-2xl">
+                        {activeSteps.map((step, index) => {
+                            const Icon = step.icon;
+                            const isActive = step.key === currentStep;
+                            const isCompleted = index < currentStepIndex;
+                            const isLast = index === activeSteps.length - 1;
+                            
+                            return (
+                                <div key={step.key} className={cn("flex items-start", isLast ? "flex-none" : "flex-1")}>
+                                    {/* Step Circle and Label */}
+                                    <div className="flex flex-col items-center">
+                                        <div
+                                            className={cn(
+                                                "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                                                isActive
+                                                    ? "bg-blue-600 text-white"
+                                                    : isCompleted
+                                                        ? "bg-emerald-600 text-white"
+                                                        : "bg-zinc-200 text-zinc-500"
+                                            )}
+                                        >
+                                            {isCompleted ? (
+                                                <CheckCircle className="w-5 h-5" />
+                                            ) : (
+                                                <Icon className="w-5 h-5" />
+                                            )}
+                                        </div>
+                                        <span
+                                            className={cn(
+                                                "text-sm font-medium text-center mt-2 whitespace-nowrap",
+                                                isActive ? "text-blue-600" : isCompleted ? "text-emerald-600" : "text-zinc-500"
+                                            )}
+                                        >
+                                            {step.label}
+                                        </span>
                                     </div>
-                                    <span
-                                        className={cn(
-                                            "text-sm font-medium",
-                                            isActive ? "text-blue-600" : isCompleted ? "text-emerald-600" : "text-zinc-500"
-                                        )}
-                                    >
-                                        {step.label}
-                                    </span>
+                                    {/* Connector Line */}
+                                    {!isLast && (
+                                        <div className="flex-1 flex items-center px-3 mt-5">
+                                            <div
+                                                className={cn(
+                                                    "h-0.5 w-full",
+                                                    index < currentStepIndex ? "bg-emerald-600" : "bg-zinc-200"
+                                                )}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
-                                {index < steps.length - 1 && (
-                                    <div
-                                        className={cn(
-                                            "h-0.5 flex-1 mx-2 mb-6",
-                                            index < currentStepIndex ? "bg-emerald-600" : "bg-zinc-200"
-                                        )}
-                                    />
-                                )}
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
