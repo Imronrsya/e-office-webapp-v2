@@ -1295,14 +1295,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 rightContent={
                     /* 
                      * Untuk lingkup Fakultas dengan filter surat masuk:
-                     * Semua aksi disembunyikan karena surat masuk bersifat view-only
-                     * (aksi hanya dapat dilakukan di detail surat keluar)
-                     * 
-                     * Jika surat keluar (SK/ST) sudah dibuat, aksi di surat masuk juga disembunyikan
-                     * karena proses sudah berlanjut ke tahap surat keluar
+                     * Aksi disembunyikan HANYA jika surat keluar (SK/ST) sudah dibuat.
+                     * Jika surat keluar belum dibuat, role masih dapat melakukan aksi.
                      */
-                    (userScope === 'FAKULTAS' && filterType === 'masuk') || 
-                    (userScope === 'FAKULTAS' && hasSuratHasil && filterType !== 'keluar') ? (
+                    (userScope === 'FAKULTAS' && filterType === 'masuk' && hasSuratHasil) ? (
                         null
                     ) : (
                     <div className="flex items-center gap-3">
