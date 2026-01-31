@@ -1775,6 +1775,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 onOpenChange={setDraftSuratDialogOpen}
                 onSubmit={handleDraftSurat}
                 userRole={currentUserRole}
+                letterTypeCode={detail?.letterType?.code}
             />
 
             {/* Verify Surat Hasil Dialog - for Supervisor/Manajer TU */}
