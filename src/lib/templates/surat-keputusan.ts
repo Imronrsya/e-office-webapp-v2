@@ -20,6 +20,14 @@ export interface KeputusanItem {
   content: string;
 }
 
+/**
+ * Interface untuk penerima tembusan
+ */
+export interface TembusanRecipient {
+  name: string;
+  description?: string;
+}
+
 export interface SuratKeputusanData {
   nomorSurat: string;
   tentang: string;
@@ -37,6 +45,9 @@ export interface SuratKeputusanData {
   // QR Code untuk verifikasi
   qrCodeDataUrl?: string;
   verificationUrl?: string;
+  
+  // Tembusan - daftar penerima salinan surat
+  tembusan?: TembusanRecipient[];
 }
 
 /**
@@ -91,6 +102,27 @@ const renderQRCode = (qrCodeDataUrl?: string): string => {
     <div class="qr-code-container" style="position: fixed; bottom: 20px; right: 20px; text-align: center; background: white; padding: 5px; z-index: 1000;">
       <img src="${qrCodeDataUrl}" alt="QR Code Verifikasi" style="width: 80px; height: 80px;" />
       <p style="margin: 2px 0 0 0; font-size: 6pt; color: #666666;">Scan untuk verifikasi</p>
+    </div>
+  `;
+};
+
+/**
+ * Helper untuk render daftar tembusan di kiri bawah
+ */
+const renderTembusan = (tembusan?: TembusanRecipient[]): string => {
+  if (!tembusan || tembusan.length === 0) return '';
+  
+  const recipients = tembusan.map((t, idx) => {
+    const desc = t.description ? ` (${t.description})` : '';
+    return `<li style="color: #000000 !important; margin-bottom: 2px;">${t.name}${desc}</li>`;
+  }).join('\n');
+  
+  return `
+    <div class="tembusan-container">
+      <p style="margin: 0 0 5px 0; color: #000000 !important; font-weight: bold;">Tembusan:</p>
+      <ol style="margin: 0; padding-left: 20px; color: #000000 !important;">
+        ${recipients}
+      </ol>
     </div>
   `;
 };
@@ -302,6 +334,12 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       padding: 5px;
       z-index: 1000;
     }
+    .tembusan-container {
+      margin-top: 40px;
+      max-width: 300px;
+      font-size: 11pt;
+      line-height: 1.4;
+    }
     @media print {
       .qr-code-container {
         position: fixed;
@@ -397,6 +435,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
   <div class="ttd-section">
     ${renderSignatures(data.signatures)}
   </div>
+  ${renderTembusan(data.tembusan)}
   ${renderQRCode(data.qrCodeDataUrl)}
   
   ${data.lampiran && data.dataPeserta ? `

@@ -66,6 +66,21 @@ export interface SuratKeputusanFormData {
   dataPeserta: { nama: string; nim: string }[];
 }
 
+// Tembusan recipient type
+export interface TembusanRecipient {
+  userId: string;
+  name: string;
+  description?: string;
+}
+
+// Submitter info for auto-tembusan
+export interface SubmitterInfo {
+  id: string;
+  name: string;
+  nim?: string;
+  nip?: string;
+}
+
 export type DraftFormData = 
   | SuratPengantarFormData 
   | SuratTugasFormData 
@@ -85,6 +100,12 @@ export interface DraftSuratState {
   // Step 3: Signers configuration
   signers: Signer[];
   
+  // Tembusan configuration
+  tembusan: TembusanRecipient[];
+  
+  // Submitter info (for auto-tembusan)
+  submitterInfo: SubmitterInfo | null;
+  
   // Step 4: Generated PDF blob (for signature positioning)
   generatedPdfBlob: Blob | null;
   generatedPdfUrl: string | null;
@@ -102,6 +123,8 @@ interface DraftSuratContextType {
   addSigner: () => void;
   removeSigner: (id: number) => void;
   updateSigner: (id: number, updates: Partial<Signer>) => void;
+  setTembusan: (recipients: TembusanRecipient[]) => void;
+  setSubmitterInfo: (info: SubmitterInfo | null) => void;
   setGeneratedPdf: (blob: Blob) => void;
   setSubmissionId: (id: string) => void;
   resetDraft: () => void;
@@ -114,6 +137,8 @@ const initialState: DraftSuratState = {
   selectedTemplate: null,
   formData: null,
   signers: [],
+  tembusan: [],
+  submitterInfo: null,
   generatedPdfBlob: null,
   generatedPdfUrl: null,
   submissionId: null,
@@ -203,6 +228,14 @@ export function DraftSuratProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const setTembusan = (recipients: TembusanRecipient[]) => {
+    setState(prev => ({ ...prev, tembusan: recipients }));
+  };
+
+  const setSubmitterInfo = (info: SubmitterInfo | null) => {
+    setState(prev => ({ ...prev, submitterInfo: info }));
+  };
+
   const setGeneratedPdf = (blob: Blob) => {
     // Revoke old URL if exists
     if (state.generatedPdfUrl) {
@@ -252,6 +285,8 @@ export function DraftSuratProvider({ children }: { children: ReactNode }) {
         addSigner,
         removeSigner,
         updateSigner,
+        setTembusan,
+        setSubmitterInfo,
         setGeneratedPdf,
         setSubmissionId,
         resetDraft,

@@ -145,6 +145,27 @@ export const tembusanService = {
   },
 
   /**
+   * Check if user can download a document
+   */
+  async canDownloadDocument(documentId: string): Promise<{ 
+    success: boolean; 
+    data?: { canDownload: boolean; fileUrl?: string };
+    error?: string;
+  }> {
+    try {
+      const response = await api.get<{ 
+        success: boolean; 
+        data?: { canDownload: boolean; fileUrl?: string };
+        error?: string;
+      }>(`/api/tembusan/${documentId}/can-download`);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to check download access:", error);
+      return { success: false, error: "Gagal memeriksa akses unduh" };
+    }
+  },
+
+  /**
    * Download dokumen tembusan
    */
   async downloadDocument(fileUrl: string, fileName: string): Promise<void> {

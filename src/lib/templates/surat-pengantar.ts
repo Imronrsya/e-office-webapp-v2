@@ -1,6 +1,14 @@
 // Template Surat Pengantar - Adapted from kesekiankali project
 // Template ini digunakan untuk generate surat pengantar mahasiswa
 
+/**
+ * Interface untuk penerima tembusan
+ */
+export interface TembusanRecipient {
+    name: string;
+    description?: string;
+}
+
 export interface SuratPengantarData {
     nomorSurat: string;
     tanggalSurat: string;
@@ -25,9 +33,45 @@ export interface SuratPengantarData {
     namaKadep?: string;
     nipKadep?: string;
     signatureKadep?: string;
-    // Tembusan
-    tembusan?: string;
+    // Tembusan - mendukung string (legacy) atau TembusanRecipient[] (baru)
+    tembusan?: string | TembusanRecipient[];
 }
+
+/**
+ * Helper untuk render daftar tembusan
+ */
+const renderTembusan = (tembusan?: string | TembusanRecipient[]): string => {
+    if (!tembusan) return '';
+    
+    // Jika tembusan adalah string (format lama)
+    if (typeof tembusan === 'string') {
+        return `
+        <div class="tembusan">
+            <p style="margin: 0;"><b>Tembusan:</b></p>
+            <p style="margin: 5px 0 0 0;">${tembusan}</p>
+        </div>
+        `;
+    }
+    
+    // Jika tembusan adalah array (format baru)
+    if (Array.isArray(tembusan) && tembusan.length > 0) {
+        const recipients = tembusan.map((t, idx) => {
+            const desc = t.description ? ` (${t.description})` : '';
+            return `<li style="margin-bottom: 2px;">${t.name}${desc}</li>`;
+        }).join('\n');
+        
+        return `
+        <div class="tembusan">
+            <p style="margin: 0;"><b>Tembusan:</b></p>
+            <ol style="margin: 5px 0 0 0; padding-left: 20px;">
+                ${recipients}
+            </ol>
+        </div>
+        `;
+    }
+    
+    return '';
+};
 
 export function generateSuratPengantarHTML(data: SuratPengantarData): string {
     const {
@@ -407,12 +451,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
     
     </div>
     
-    ${tembusan ? `
-    <div class="tembusan">
-        <p style="margin: 0;"><b>Tembusan:</b></p>
-        <p style="margin: 5px 0 0 0;">${tembusan}</p>
-    </div>
-    ` : ''}
+    ${renderTembusan(tembusan)}
 </body>
 </html>
 `;

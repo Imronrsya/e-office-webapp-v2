@@ -166,7 +166,7 @@ export function SignerConfigStep() {
           Kembali
         </Button>
         <Button onClick={handleSubmit} disabled={state.signers.length === 0}>
-          Lanjut - Atur Posisi
+          Lanjut - Atur Posisi TTD
           <ChevronRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
