@@ -100,17 +100,35 @@ export function PDFPreview({
         if (!content || !documentType) return null;
 
         try {
+            // Convert signatures to SignatureBlock format for templates
+            const signatureBlocks = (signatures || []).map(sig => ({
+                signerRole: sig.signerRole,
+                signerName: sig.signerName,
+                signerNip: sig.signerNip || undefined,
+                signatureUrl: sig.signatureUrl || undefined,
+                prefix: undefined,
+            }));
+
             switch (documentType) {
                 case 'SURAT_TUGAS': {
-                    const data = content as unknown as SuratTugasData;
+                    const data = {
+                        ...content as unknown as SuratTugasData,
+                        signatures: signatureBlocks,
+                    };
                     return suratTugasTemplate(data);
                 }
                 case 'SURAT_TUGAS_TABEL': {
-                    const data = content as unknown as SuratTugasTableData;
+                    const data = {
+                        ...content as unknown as SuratTugasTableData,
+                        signatures: signatureBlocks,
+                    };
                     return suratTugasTableTemplate(data);
                 }
                 case 'SURAT_KEPUTUSAN': {
-                    const data = content as unknown as SuratKeputusanData;
+                    const data = {
+                        ...content as unknown as SuratKeputusanData,
+                        signatures: signatureBlocks,
+                    };
                     return suratKeputusanTemplate(data);
                 }
                 default:
@@ -120,7 +138,7 @@ export function PDFPreview({
             console.error('Failed to generate preview:', error);
             return null;
         }
-    }, [content, documentType]);
+    }, [content, documentType, signatures]);
 
     // Generate PDF with signature blocks embedded when we have content and signatures
     // ONLY if fileUrl is NOT available (fileUrl from backend takes priority)
