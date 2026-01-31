@@ -42,7 +42,7 @@ import { Suspense } from "react";
 // ============================================================================
 
 type SuratType = "SURAT_TUGAS" | "SURAT_TUGAS_TABEL" | "SURAT_KEPUTUSAN";
-type Category = "AKADEMIK" | "SUMBER_DAYA";
+type Category = "AKADEMIK" | "SUMBER_DAYA" | "UMUM";
 
 interface SignerItem {
     id: string;
@@ -129,6 +129,7 @@ const SURAT_TYPE_LABELS: Record<SuratType, string> = {
 const CATEGORY_LABELS: Record<Category, string> = {
     AKADEMIK: "Akademik",
     SUMBER_DAYA: "Sumber Daya",
+    UMUM: "Umum",
 };
 
 // Map URL params to internal types
@@ -202,7 +203,7 @@ function BuatSuratContent() {
 
     // Redirect if no valid params
     useEffect(() => {
-        if (!categoryParam || !suratType || (categoryParam !== 'AKADEMIK' && categoryParam !== 'SUMBER_DAYA')) {
+        if (!categoryParam || !suratType || (categoryParam !== 'AKADEMIK' && categoryParam !== 'SUMBER_DAYA' && categoryParam !== 'UMUM')) {
             toast.error("Parameter tidak valid");
             router.push("/dashboard");
         }
@@ -447,7 +448,7 @@ function BuatSuratContent() {
     // ========================================================================
 
     const handleSubmit = async () => {
-        if (!suratType || !categoryParam || (categoryParam !== 'AKADEMIK' && categoryParam !== 'SUMBER_DAYA')) {
+        if (!suratType || !categoryParam || (categoryParam !== 'AKADEMIK' && categoryParam !== 'SUMBER_DAYA' && categoryParam !== 'UMUM')) {
             toast.error("Kategori tidak valid");
             return;
         }
@@ -499,13 +500,24 @@ function BuatSuratContent() {
                 tembusanList.push(t.value);
             });
 
+            // Extract perihal/judul from form
+            let perihal = '';
+            if (suratType === "SURAT_TUGAS") {
+                perihal = suratTugasForm.judulSurat || suratTugasForm.keperluan || 'Surat Tugas';
+            } else if (suratType === "SURAT_TUGAS_TABEL") {
+                perihal = suratTugasTabelForm.judulSurat || suratTugasTabelForm.keperluan || 'Surat Tugas';
+            } else if (suratType === "SURAT_KEPUTUSAN") {
+                perihal = suratKeputusanForm.tentang || 'Surat Keputusan';
+            }
+
             // Create the surat using staff API - cast to ensure valid category
             const response = await suratService.createStaffSurat({
-                category: categoryParam as 'AKADEMIK' | 'SUMBER_DAYA',
+                category: categoryParam as 'AKADEMIK' | 'SUMBER_DAYA' | 'UMUM',
                 documentType: suratType,
                 signatories,
                 tembusan: tembusanList,
                 content,
+                perihal,
             });
 
             if (response.success) {

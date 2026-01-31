@@ -403,7 +403,7 @@ export const suratService = {
      * Staf creates new surat directly (without submission)
      */
     async createStaffSurat(data: {
-        category: 'AKADEMIK' | 'SUMBER_DAYA';
+        category: 'AKADEMIK' | 'SUMBER_DAYA' | 'UMUM';
         documentType: 'SURAT_TUGAS' | 'SURAT_KEPUTUSAN' | 'SURAT_TUGAS_TABEL';
         signatories: Array<{
             signerRole: string;
