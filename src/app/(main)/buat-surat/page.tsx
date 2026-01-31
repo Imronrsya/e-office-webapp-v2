@@ -500,6 +500,16 @@ function BuatSuratContent() {
                 tembusanList.push(t.value);
             });
 
+            // Extract perihal/judul from form
+            let perihal = '';
+            if (suratType === "SURAT_TUGAS") {
+                perihal = suratTugasForm.judulSurat || suratTugasForm.keperluan || 'Surat Tugas';
+            } else if (suratType === "SURAT_TUGAS_TABEL") {
+                perihal = suratTugasTabelForm.judulSurat || suratTugasTabelForm.keperluan || 'Surat Tugas';
+            } else if (suratType === "SURAT_KEPUTUSAN") {
+                perihal = suratKeputusanForm.tentang || 'Surat Keputusan';
+            }
+
             // Create the surat using staff API - cast to ensure valid category
             const response = await suratService.createStaffSurat({
                 category: categoryParam as 'AKADEMIK' | 'SUMBER_DAYA' | 'UMUM',
@@ -507,6 +517,7 @@ function BuatSuratContent() {
                 signatories,
                 tembusan: tembusanList,
                 content,
+                perihal,
             });
 
             if (response.success) {
