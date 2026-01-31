@@ -448,7 +448,7 @@ function BuatSuratContent() {
     // ========================================================================
 
     const handleSubmit = async () => {
-        if (!suratType || !categoryParam || (categoryParam !== 'AKADEMIK' && categoryParam !== 'SUMBER_DAYA')) {
+        if (!suratType || !categoryParam || (categoryParam !== 'AKADEMIK' && categoryParam !== 'SUMBER_DAYA' && categoryParam !== 'UMUM')) {
             toast.error("Kategori tidak valid");
             return;
         }
@@ -502,7 +502,7 @@ function BuatSuratContent() {
 
             // Create the surat using staff API - cast to ensure valid category
             const response = await suratService.createStaffSurat({
-                category: categoryParam as 'AKADEMIK' | 'SUMBER_DAYA',
+                category: categoryParam as 'AKADEMIK' | 'SUMBER_DAYA' | 'UMUM',
                 documentType: suratType,
                 signatories,
                 tembusan: tembusanList,

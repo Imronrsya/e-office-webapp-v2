@@ -458,8 +458,15 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
 }
 
 // Helper function to format date in Indonesian
-export function formatTanggalIndonesia(date: Date | string): string {
+export function formatTanggalIndonesia(date: Date | string | null | undefined): string {
+    if (!date) {
+        return '-';
+    }
     const d = typeof date === 'string' ? new Date(date) : date;
+    // Check if date is valid
+    if (isNaN(d.getTime())) {
+        return '-';
+    }
     const bulan = [
         'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
