@@ -27,6 +27,8 @@ interface LetterTableProps {
   data: DashboardItem[];
   loading?: boolean;
   emptyMessage?: string;
+  /** Filter type untuk lingkup fakultas (masuk/keluar) - akan ditambahkan ke URL detail */
+  filterType?: 'masuk' | 'keluar';
 }
 
 // ============================================================================
@@ -92,9 +94,10 @@ function TableSkeleton({ columns }: { columns: ColumnConfig[] }) {
 interface CellRendererProps {
   column: ColumnConfig;
   item: DashboardItem;
+  filterType?: 'masuk' | 'keluar';
 }
 
-function CellRenderer({ column, item }: CellRendererProps) {
+function CellRenderer({ column, item, filterType }: CellRendererProps) {
   switch (column.key) {
     case "namaPengaju":
       return (
@@ -146,6 +149,10 @@ function CellRenderer({ column, item }: CellRendererProps) {
       );
 
     case "actions":
+      // Jika filterType ada (lingkup fakultas), tambahkan query param ?type=
+      const detailUrl = filterType 
+        ? `/detail/${item.id}?type=${filterType}`
+        : `/detail/${item.id}`;
       return (
         <Button
           variant="outline"
@@ -153,7 +160,7 @@ function CellRenderer({ column, item }: CellRendererProps) {
           asChild
           className="h-8 px-3 text-sm"
         >
-          <Link href={`/detail/${item.id}`}>
+          <Link href={detailUrl}>
             <Eye className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
             Detail
           </Link>
@@ -174,6 +181,7 @@ export function LetterTable({
   data,
   loading = false,
   emptyMessage = "Tidak ada data yang ditemukan",
+  filterType,
 }: LetterTableProps) {
   return (
     <div className="rounded-lg border border-border bg-white shadow-sm overflow-x-auto">
@@ -207,7 +215,7 @@ export function LetterTable({
               <TableRow key={item.id} className="hover:bg-slate-50/50 border-b last:border-0">
                 {columns.map((column) => (
                   <TableCell key={column.key} className={`py-3.5 px-4 ${column.className || ""}`}>
-                    <CellRenderer column={column} item={item} />
+                    <CellRenderer column={column} item={item} filterType={filterType} />
                   </TableCell>
                 ))}
               </TableRow>

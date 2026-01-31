@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/layout/bottom-nav";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { suratService, SubmissionDetail } from "@/services/surat.service";
@@ -35,9 +35,11 @@ import {
     QrCode,
     CheckCircle2,
     Eye,
+    AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getRoleScope } from "@/lib/role-mapper";
 import { DispositionDialog, LetterCategory } from "./components/disposition-dialog";
 import { CompleteDialog } from "./components/complete-dialog";
 import { ReturnDialog } from "./components/return-dialog";
@@ -122,10 +124,16 @@ function InfoRow({ label, value, showSeparator = true }: InfoRowProps) {
 export default function DetailPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user } = useAuth();
     const [detail, setDetail] = useState<SubmissionDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    
+    // Query parameter untuk tipe surat (dari filter dashboard fakultas)
+    // type=masuk -> tampilkan Surat Pengantar
+    // type=keluar -> tampilkan Surat Tugas/Keputusan
+    const filterType = searchParams.get('type') as 'masuk' | 'keluar' | null;
     
     // Action states
     const [actionLoading, setActionLoading] = useState(false);
@@ -881,6 +889,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const suratHasilDoc = detail.documents?.find(d => 
         d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
     );
+    const hasSuratHasil = !!suratHasilDoc;
 
     // Get the primary document to display (SK/ST first, then Surat Pengantar)
     const primaryDocument = suratHasilDoc || suratPengantarDoc;
@@ -888,6 +897,44 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     // User role check for mahasiswa view
     const isMahasiswa = currentUserRole === "MAHASISWA" || !currentUserRole;
+    
+    // Determine user's scope (DEPARTEMEN, FAKULTAS, or UPA)
+    const userScope = getRoleScope(currentUserRole);
+    
+    // Check if UPA has completed processing (for departemen scope - show SK/ST option)
+    const isUpaCompleted = detail.status === 'COMPLETED';
+    
+    // Determine what document to show based on scope and filter type
+    // FAKULTAS: show based on filter type (masuk = pengantar, keluar = hasil)
+    // DEPARTEMEN: show pengantar by default, with option to view hasil if UPA completed
+    // UPA: show hasil
+    const getDocumentViewMode = (): 'pengantar' | 'hasil' | 'both' => {
+        if (userScope === 'FAKULTAS') {
+            // Lingkup Fakultas: berdasarkan filter dari dashboard
+            if (filterType === 'keluar') {
+                return 'hasil';
+            }
+            if (filterType === 'masuk') {
+                return 'pengantar';
+            }
+            // Fallback jika tidak ada filter (akses langsung)
+            return 'pengantar';
+        }
+        
+        if (userScope === 'UPA') {
+            // UPA: selalu lihat surat hasil
+            return 'hasil';
+        }
+        
+        // Lingkup Departemen: tampilkan tabs jika UPA sudah selesai
+        if (isUpaCompleted && hasSuratHasil) {
+            return 'both';
+        }
+        
+        return 'pengantar';
+    };
+    
+    const documentViewMode = getDocumentViewMode();
 
     // ========================================================================
     // RENDER
@@ -978,6 +1025,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 logs={logs}
                 isWaiting={isWaiting}
                 currentActiveRole={detail.currentActiveRole}
+                userScope={userScope}
+                filterType={filterType}
             />
 
             {/* Detail Surat */}
@@ -999,9 +1048,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // MAHASISWA VIEW LAYOUT (dengan preview PDF dan sidebar)
     // ========================================================================
     const MahasiswaViewLayout = () => {
-        // Determine the default tab based on available documents
-        const defaultTab = hasSuratPengantar ? "surat-pengantar" : "surat-hasil";
-        
         // Prepare submission data for template
         const submissionDataForTemplate = {
             nama: submissionValues.nama,
@@ -1036,72 +1082,159 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             })),
         } : undefined;
         
+        // Render Surat Pengantar Preview
+        const renderSuratPengantarPreview = () => (
+            <SuratPreview 
+                submissionData={submissionDataForTemplate}
+                documentData={suratPengantarDocData}
+                fileUrl={suratPengantarDoc?.fileUrl}
+                fileName="Surat Pengantar"
+                onDownload={suratPengantarDoc?.fileUrl ? () => {
+                    const link = document.createElement('a');
+                    link.href = suratPengantarDoc.fileUrl!;
+                    link.download = 'surat-pengantar.pdf';
+                    link.click();
+                } : undefined}
+            />
+        );
+        
+        // Render Surat Hasil Preview
+        const renderSuratHasilPreview = () => {
+            if (!suratHasilDoc) {
+                return (
+                    <Card className="bg-neutral-50 border-zinc-400 rounded-xl p-8 text-center">
+                        <AlertCircle className="w-12 h-12 mx-auto text-zinc-400 mb-4" />
+                        <p className="text-zinc-600 text-sm">
+                            Surat Tugas/Keputusan belum tersedia.
+                        </p>
+                        {userScope === 'DEPARTEMEN' && (
+                            <p className="text-zinc-400 text-xs mt-2">
+                                Surat akan tersedia setelah diproses oleh UPA.
+                            </p>
+                        )}
+                    </Card>
+                );
+            }
+            
+            return (
+                <PDFPreview 
+                    key={`surat-hasil-${pdfRefreshKey}`}
+                    fileUrl={suratHasilDoc.fileUrl || null}
+                    fileName={suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
+                    isSigned={suratHasilDoc.isSigned || false}
+                    content={suratHasilDoc.content}
+                    documentType={suratHasilDoc.type as 'SURAT_PENGANTAR' | 'SURAT_TUGAS' | 'SURAT_TUGAS_TABEL' | 'SURAT_KEPUTUSAN'}
+                    signatures={suratHasilDoc.signatures}
+                    onDownload={suratHasilDoc.fileUrl ? () => {
+                        const link = document.createElement('a');
+                        link.href = suratHasilDoc.fileUrl!;
+                        link.download = `${suratHasilDoc.type.toLowerCase().replace('_', '-')}.pdf`;
+                        link.click();
+                    } : undefined}
+                />
+            );
+        };
+        
+        // Determine the default tab for 'both' mode
+        const defaultTab = hasSuratPengantar ? "surat-pengantar" : "surat-hasil";
+        
         return (
             <>
                 {/* Sub-header dengan Judul Pengajuan */}
                 <h2 className="text-lg font-bold text-black mb-4">
-                    {submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'ST' : 'SK'} - {(submissionValues.judulAcara || 'Surat').toUpperCase()}
+                    {documentViewMode === 'hasil' || filterType === 'keluar'
+                        ? `${suratHasilDoc?.type === 'SURAT_KEPUTUSAN' ? 'SK' : 'ST'} - `
+                        : `${submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'ST' : 'SK'} - `
+                    }
+                    {(submissionValues.judulAcara || 'Surat').toUpperCase()}
                 </h2>
+                
+                {/* Info label untuk lingkup fakultas */}
+                {userScope === 'FAKULTAS' && filterType && (
+                    <div className="mb-4 text-sm text-zinc-500">
+                        {filterType === 'masuk' ? (
+                            <span className="inline-flex items-center gap-1.5">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                Surat Masuk (Surat Pengantar)
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                Surat Keluar ({suratHasilDoc?.type === 'SURAT_KEPUTUSAN' ? 'Surat Keputusan' : 'Surat Tugas'})
+                            </span>
+                        )}
+                    </div>
+                )}
 
-                {/* Document Tabs with Content */}
-                <Tabs defaultValue={defaultTab} className="w-full">
-                    {/* Tab Buttons */}
-                    <div className="mb-6">
-                        <TabsList className="bg-transparent gap-2 p-0 h-auto">
-                            <TabsTrigger 
-                                value="surat-pengantar"
-                                className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=inactive]:bg-zinc-200 data-[state=inactive]:text-zinc-800 px-4 py-2 rounded-lg"
-                            >
-                                Surat Pengantar
-                            </TabsTrigger>
-                            {suratHasilDoc && (
+                {/* Content based on documentViewMode */}
+                {documentViewMode === 'both' ? (
+                    /* Lingkup Departemen dengan tabs (jika UPA sudah selesai) */
+                    <Tabs defaultValue={defaultTab} className="w-full">
+                        {/* Tab Buttons */}
+                        <div className="mb-6">
+                            <TabsList className="bg-transparent gap-2 p-0 h-auto">
                                 <TabsTrigger 
-                                    value="surat-hasil"
+                                    value="surat-pengantar"
                                     className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=inactive]:bg-zinc-200 data-[state=inactive]:text-zinc-800 px-4 py-2 rounded-lg"
                                 >
-                                    {suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
+                                    Surat Pengantar
                                 </TabsTrigger>
-                            )}
-                        </TabsList>
-                    </div>
+                                {suratHasilDoc && (
+                                    <TabsTrigger 
+                                        value="surat-hasil"
+                                        className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=inactive]:bg-zinc-200 data-[state=inactive]:text-zinc-800 px-4 py-2 rounded-lg"
+                                    >
+                                        {suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
+                                    </TabsTrigger>
+                                )}
+                            </TabsList>
+                        </div>
 
-                    {/* Main Content - 2 Column Layout */}
-                    <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-6">
-                        {/* Left Column - Surat Preview with Tabs Content */}
-                        <div className="relative">
-                            <TabsContent value="surat-pengantar" className="mt-0">
-                                <SuratPreview 
-                                    submissionData={submissionDataForTemplate}
-                                    documentData={suratPengantarDocData}
-                                    fileUrl={suratPengantarDoc?.fileUrl}
-                                    fileName="Surat Pengantar"
-                                    onDownload={suratPengantarDoc?.fileUrl ? () => {
-                                        const link = document.createElement('a');
-                                        link.href = suratPengantarDoc.fileUrl!;
-                                        link.download = 'surat-pengantar.pdf';
-                                        link.click();
-                                    } : undefined}
-                                />
-                            </TabsContent>
-                            {suratHasilDoc && (
-                                <TabsContent value="surat-hasil" className="mt-0">
-                                    <PDFPreview 
-                                        key={`surat-hasil-${pdfRefreshKey}`}
-                                        fileUrl={suratHasilDoc?.fileUrl || null}
-                                        fileName={suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
-                                        isSigned={suratHasilDoc?.isSigned || false}
-                                        content={suratHasilDoc?.content}
-                                        documentType={suratHasilDoc?.type as 'SURAT_PENGANTAR' | 'SURAT_TUGAS' | 'SURAT_TUGAS_TABEL' | 'SURAT_KEPUTUSAN'}
-                                        signatures={suratHasilDoc?.signatures}
-                                        onDownload={suratHasilDoc?.fileUrl ? () => {
-                                            const link = document.createElement('a');
-                                            link.href = suratHasilDoc.fileUrl!;
-                                            link.download = `${suratHasilDoc.type.toLowerCase().replace('_', '-')}.pdf`;
-                                            link.click();
-                                        } : undefined}
-                                    />
+                        {/* Main Content - 2 Column Layout */}
+                        <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-6">
+                            {/* Left Column - Surat Preview with Tabs Content */}
+                            <div className="relative">
+                                <TabsContent value="surat-pengantar" className="mt-0">
+                                    {renderSuratPengantarPreview()}
                                 </TabsContent>
-                            )}
+                                <TabsContent value="surat-hasil" className="mt-0">
+                                    {renderSuratHasilPreview()}
+                                </TabsContent>
+                            </div>
+
+                            {/* Right Column - Info Cards */}
+                            <div className="space-y-6">
+                                {/* Riwayat Proses */}
+                                <ProcessHistory 
+                                    logs={logs}
+                                    isWaiting={isWaiting}
+                                    currentActiveRole={detail.currentActiveRole}
+                                    userScope={userScope}
+                                    filterType={filterType}
+                                />
+
+                                {/* Detail Surat */}
+                                <DetailSuratInfo 
+                                    jenisSurat={submissionValues.jenisSurat}
+                                    judulSurat={submissionValues.judulAcara}
+                                    keperluan={submissionValues.keperluan}
+                                />
+
+                                {/* Identitas Pemohon */}
+                                <IdentitasPemohonCard />
+
+                                {/* Lampiran */}
+                                <LampiranCard />
+                            </div>
+                        </div>
+                    </Tabs>
+                ) : (
+                    /* Mode pengantar-only atau hasil-only (tanpa tabs) */
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-6">
+                        {/* Left Column - Single Document Preview */}
+                        <div className="relative">
+                            {documentViewMode === 'pengantar' && renderSuratPengantarPreview()}
+                            {documentViewMode === 'hasil' && renderSuratHasilPreview()}
                         </div>
 
                         {/* Right Column - Info Cards */}
@@ -1111,6 +1244,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 logs={logs}
                                 isWaiting={isWaiting}
                                 currentActiveRole={detail.currentActiveRole}
+                                userScope={userScope}
+                                filterType={filterType}
                             />
 
                             {/* Detail Surat */}
@@ -1127,7 +1262,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <LampiranCard />
                         </div>
                     </div>
-                </Tabs>
+                )}
             </>
         );
     };
@@ -1158,6 +1293,18 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     </Button>
                 }
                 rightContent={
+                    /* 
+                     * Untuk lingkup Fakultas dengan filter surat masuk:
+                     * Semua aksi disembunyikan karena surat masuk bersifat view-only
+                     * (aksi hanya dapat dilakukan di detail surat keluar)
+                     * 
+                     * Jika surat keluar (SK/ST) sudah dibuat, aksi di surat masuk juga disembunyikan
+                     * karena proses sudah berlanjut ke tahap surat keluar
+                     */
+                    (userScope === 'FAKULTAS' && filterType === 'masuk') || 
+                    (userScope === 'FAKULTAS' && hasSuratHasil && filterType !== 'keluar') ? (
+                        null
+                    ) : (
                     <div className="flex items-center gap-3">
                         {/* Buat Surat Pengantar Button - Admin Prodi (only when no document exists) */}
                         {/* {permissions.canDraft && !hasSuratPengantar && (
@@ -1470,6 +1617,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
                     </div>
+                    )
                 }
             />
 

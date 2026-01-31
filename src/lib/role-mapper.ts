@@ -115,6 +115,21 @@ export function isRoleUPA(role: string): boolean {
     return ROLE_SCOPE.UPA.includes(role.toUpperCase() as any);
 }
 
+/**
+ * Mendapatkan lingkup/scope berdasarkan role user
+ * @returns 'DEPARTEMEN' | 'FAKULTAS' | 'UPA'
+ */
+export function getRoleScope(role: string): 'DEPARTEMEN' | 'FAKULTAS' | 'UPA' {
+    const normalizedRole = role.toUpperCase();
+    if (ROLE_SCOPE.FAKULTAS.includes(normalizedRole as any)) {
+        return 'FAKULTAS';
+    }
+    if (ROLE_SCOPE.UPA.includes(normalizedRole as any)) {
+        return 'UPA';
+    }
+    return 'DEPARTEMEN';
+}
+
 // Role yang bisa mengajukan surat (Pengaju)
 export function canSubmitLetter(role: string): boolean {
     return ["MAHASISWA", "DOSEN"].includes(role.toUpperCase());

@@ -247,6 +247,7 @@ export default function DynamicDashboard() {
         columns={columns}
         data={data?.items || []}
         loading={loading}
+        filterType={config.hasInboxOutbox ? filters.type : undefined}
         emptyMessage={
           filters.search
             ? `Tidak ditemukan hasil untuk "${filters.search}"`

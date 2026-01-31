@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Clock } from "lucide-react";
+import { CheckCircle, Clock, Info } from "lucide-react";
 import { LogSummary } from "@/services/surat.service";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,10 @@ interface ProcessHistoryProps {
     logs: LogSummary[];
     isWaiting: boolean;
     currentActiveRole: string | null;
+    /** Scope user untuk menyesuaikan tampilan timeline */
+    userScope?: 'DEPARTEMEN' | 'FAKULTAS' | 'UPA';
+    /** Filter type dari dashboard (masuk/keluar) - hanya untuk lingkup fakultas */
+    filterType?: 'masuk' | 'keluar' | null;
 }
 
 function formatDateTime(dateString: string | null | undefined) {
@@ -60,14 +64,129 @@ function getWaitingLabel(role: string): string {
     return waitingLabels[role] || `Menunggu ${getRoleLabel(role)}`;
 }
 
-export function ProcessHistory({ logs, isWaiting, currentActiveRole }: ProcessHistoryProps) {
+function getActionLabel(action: string): string {
+    const actionLabels: Record<string, string> = {
+        'SUBMIT': 'Pengajuan Dibuat',
+        'RESUBMIT': 'Pengajuan Ulang',
+        'APPROVE': 'Disetujui',
+        'REJECT': 'Ditolak',
+        'RETURN': 'Dikembalikan',
+        'DISPOSITION': 'Didisposisikan',
+        'DRAFT_CREATE': 'Draft Dibuat',
+        'DRAFT_UPDATE': 'Draft Diperbarui',
+        'VERIFY': 'Diverifikasi',
+        'REQUEST_REVISION': 'Diminta Revisi',
+        'SIGN': 'Ditandatangani',
+        'ASSIGN_NUMBER': 'Diberi Nomor Surat',
+        'STAMP': 'Distempel',
+        'GENERATE_QR': 'QR Code Dibuat',
+        'FINALIZE': 'Diselesaikan',
+        'STATUS_CHANGE': 'Status Diubah',
+        'COMMENT': 'Komentar',
+        'VIEW': 'Dilihat',
+    };
+    return actionLabels[action.toUpperCase()] || action;
+}
+
+export function ProcessHistory({ logs, isWaiting, currentActiveRole, userScope, filterType }: ProcessHistoryProps) {
+    // Filter logs berdasarkan scope dan filter type
+    // Untuk lingkup fakultas dengan filter:
+    // - masuk: hanya tampilkan log terkait surat pengantar (dari pengajuan hingga didisposisikan ke staf)
+    // - keluar: hanya tampilkan log terkait surat hasil (dari staf membuat draft hingga UPA selesai)
+    const filterLogsForDisplay = (allLogs: LogSummary[]): LogSummary[] => {
+        if (userScope === 'FAKULTAS' && filterType) {
+            if (filterType === 'masuk') {
+                // Riwayat Surat Masuk:
+                // Pengajuan -> Kaprodi approve -> Admin Prodi buat draft pengantar -> 
+                // Kadep tanda tangan -> Diterima Fakultas -> Didisposisikan ke Staf/Supervisor
+                // BERHENTI di sini. Proses selanjutnya (Staf buat draft SK/ST) masuk ke surat keluar.
+                
+                // Log yang termasuk surat masuk (berdasarkan status)
+                const suratMasukStatuses = [
+                    'SUBMITTED',
+                    'KAPRODI_REVIEW',
+                    'SURAT_PENGANTAR_DRAFT',
+                    'SURAT_PENGANTAR_REVIEW',
+                    'SURAT_PENGANTAR_SIGNED',
+                    'FAKULTAS_RECEIVED',
+                    'FAKULTAS_DISPOSITION',
+                ];
+                
+                return allLogs.filter(log => {
+                    const fromStatus = log.fromStatus?.toUpperCase() || '';
+                    const toStatus = log.toStatus?.toUpperCase() || '';
+                    
+                    // Include jika fromStatus atau toStatus ada di fase surat masuk
+                    const isInMasukPhase = suratMasukStatuses.some(status => 
+                        fromStatus.includes(status) || toStatus.includes(status)
+                    );
+                    
+                    // Exclude jika sudah masuk fase drafting SK/ST (FAKULTAS_DRAFTING dan seterusnya)
+                    const isInKeluarPhase = 
+                        fromStatus.includes('FAKULTAS_DRAFTING') || toStatus.includes('FAKULTAS_DRAFTING') ||
+                        fromStatus.includes('FAKULTAS_VERIFICATION') || toStatus.includes('FAKULTAS_VERIFICATION') ||
+                        fromStatus.includes('FAKULTAS_SIGNING') || toStatus.includes('FAKULTAS_SIGNING') ||
+                        fromStatus.includes('UPA_') || toStatus.includes('UPA_') ||
+                        fromStatus.includes('COMPLETED') || toStatus.includes('COMPLETED');
+                    
+                    return isInMasukPhase && !isInKeluarPhase;
+                });
+            } else {
+                // Riwayat Surat Keluar:
+                // Staf/Supervisor buat draft SK/ST -> Supervisor verifikasi -> Manajer TU verifikasi ->
+                // Pejabat tanda tangan -> UPA beri nomor -> UPA stempel -> UPA finalisasi
+                
+                // Log yang termasuk surat keluar (berdasarkan status)
+                const suratKeluarStatuses = [
+                    'FAKULTAS_DRAFTING',
+                    'FAKULTAS_VERIFICATION', 
+                    'FAKULTAS_SIGNING',
+                    'UPA_NUMBERING',
+                    'UPA_STAMPING',
+                    'UPA_FINALIZING',
+                    'COMPLETED',
+                ];
+                
+                return allLogs.filter(log => {
+                    const fromStatus = log.fromStatus?.toUpperCase() || '';
+                    const toStatus = log.toStatus?.toUpperCase() || '';
+                    
+                    // Include jika fromStatus atau toStatus ada di fase surat keluar
+                    return suratKeluarStatuses.some(status => 
+                        fromStatus.includes(status) || toStatus.includes(status)
+                    );
+                });
+            }
+        }
+        
+        // Untuk departemen dan UPA, tampilkan semua log
+        return allLogs;
+    };
+
     // Sort logs in reverse chronological order (newest first from top to bottom)
-    const displayLogs = [...logs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const filteredLogs = filterLogsForDisplay(logs);
+    const displayLogs = [...filteredLogs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    // Determine title based on scope and filter
+    const getTitle = () => {
+        if (userScope === 'FAKULTAS' && filterType) {
+            return filterType === 'masuk' ? 'Riwayat Surat Masuk' : 'Riwayat Surat Keluar';
+        }
+        return 'Riwayat Proses';
+    };
 
     return (
         <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
             <CardContent className="p-6">
-                <h3 className="text-sm font-bold text-black mb-6">Riwayat Proses</h3>
+                <h3 className="text-sm font-bold text-black mb-6">{getTitle()}</h3>
+                
+                {/* Info untuk filter surat keluar jika belum ada log */}
+                {userScope === 'FAKULTAS' && filterType === 'keluar' && displayLogs.length === 0 && (
+                    <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                        <Info className="w-4 h-4" />
+                        <span>Belum ada riwayat proses surat keluar.</span>
+                    </div>
+                )}
                 
                 <div className="flex gap-4">
                     {/* Timeline Icons Column */}
@@ -120,7 +239,7 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole }: ProcessHi
                                 )}
                             >
                                 <div>
-                                    <p className="text-sm font-bold text-black leading-5">{log.action}</p>
+                                    <p className="text-sm font-bold text-black leading-5">{getActionLabel(log.action)}</p>
                                     <p className="text-sm text-black leading-5">
                                         Oleh: {log.actorName} • {formatDateTime(log.createdAt)}
                                     </p>
