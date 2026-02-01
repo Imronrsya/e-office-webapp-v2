@@ -44,7 +44,8 @@ import { toast } from "sonner";
 import BottomNav from "@/components/layout/bottom-nav";
 import { suratService } from "@/services/surat.service";
 import { userService } from "@/services/user.service";
-import { TemplatePreview } from "@/components/surat-preview";
+// Universal Preview - Single Source of Truth
+import { TemplatePreview } from "@/components/universal-preview";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { getPostDraftRedirectPath } from "@/lib/role-mapper";
 

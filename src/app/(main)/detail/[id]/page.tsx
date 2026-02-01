@@ -45,8 +45,11 @@ import { DispositionDialog, LetterCategory } from "./components/disposition-dial
 import { CompleteDialog } from "./components/complete-dialog";
 import { ReturnDialog } from "./components/return-dialog";
 import { DraftSuratDialog } from "./components/draft-surat-dialog";
-import { PDFPreview } from "./components/pdf-preview";
-import { SuratPreview } from "./components/surat-preview";
+// Universal Preview - Single Source of Truth
+import { 
+    PDFPreview, 
+    SuratPreview 
+} from "@/components/universal-preview";
 import { ProcessHistory } from "./components/process-history";
 import { DetailSuratInfo } from "./components/detail-surat-info";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

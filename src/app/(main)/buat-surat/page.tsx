@@ -51,7 +51,8 @@ import { toast } from "sonner";
 import BottomNav from "@/components/layout/bottom-nav";
 import { Checkbox } from "@/components/ui/checkbox";
 import { suratService } from "@/services/surat.service";
-import { TemplatePreview } from "@/components/surat-preview";
+// Universal Preview - Single Source of Truth
+import { TemplatePreview } from "@/components/universal-preview";
 import { Suspense } from "react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { getPostDraftRedirectPath } from "@/lib/role-mapper";
