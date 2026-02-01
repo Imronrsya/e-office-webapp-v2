@@ -917,21 +917,24 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const isUpaCompleted = detail.status === 'COMPLETED';
     
     // Check permission flags from backend
-    const { isVerificationMode, isPreDraftMode, showSuratPengantar } = permissions;
+    const { isVerificationMode, isPreDraftMode, showSuratPengantar, showSuratHasil } = permissions;
     
     // Determine what document to show based on scope and filter type
     // FAKULTAS: show based on filter type (masuk = pengantar, keluar = hasil)
-    // DEPARTEMEN: show pengantar by default, with option to view hasil if UPA completed
+    // DEPARTEMEN/MAHASISWA: show pengantar when available, show hasil when available, show both if both available
     // UPA: show hasil
     // SPECIAL: If in verification mode or pre-draft mode, show form-focused view
     const getDocumentViewMode = (): 'pengantar' | 'hasil' | 'both' | 'form-only' => {
-        // Jika dalam verification mode atau pre-draft mode, fokus ke form (tanpa dokumen preview)
-        if (isVerificationMode || isPreDraftMode) {
+        // Jika dalam verification mode atau pre-draft mode (dan bukan mahasiswa/dosen), fokus ke form
+        // Mahasiswa/Dosen selalu bisa lihat dokumen jika ada
+        const isMahasiswaOrDosen = currentUserRole === 'MAHASISWA' || currentUserRole === 'DOSEN' || !currentUserRole;
+        
+        if ((isVerificationMode || isPreDraftMode) && !isMahasiswaOrDosen) {
             return 'form-only';
         }
         
-        // Jika showSuratPengantar false dari backend, tidak tampilkan pengantar
-        if (!showSuratPengantar && userScope === 'DEPARTEMEN') {
+        // Jika showSuratPengantar false dari backend DAN bukan mahasiswa, tidak tampilkan pengantar
+        if (!showSuratPengantar && userScope === 'DEPARTEMEN' && !isMahasiswaOrDosen) {
             return 'form-only';
         }
         
@@ -952,12 +955,25 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             return 'hasil';
         }
         
-        // Lingkup Departemen: tampilkan tabs jika UPA sudah selesai
-        if (isUpaCompleted && hasSuratHasil) {
+        // Lingkup Departemen / Mahasiswa / Dosen:
+        // PERBAIKAN: Tampilkan 'both' jika KEDUA dokumen ada (tidak perlu menunggu UPA selesai)
+        // Tampilkan 'pengantar' jika hanya surat pengantar ada
+        // Tampilkan 'hasil' jika hanya surat hasil ada
+        // Tampilkan 'form-only' jika belum ada dokumen sama sekali
+        const hasPengantarDoc = showSuratPengantar && hasSuratPengantar;
+        const hasHasilDoc = showSuratHasil && hasSuratHasil;
+        
+        if (hasPengantarDoc && hasHasilDoc) {
             return 'both';
         }
+        if (hasHasilDoc) {
+            return 'hasil';
+        }
+        if (hasPengantarDoc) {
+            return 'pengantar';
+        }
         
-        return 'pengantar';
+        return 'form-only';
     };
     
     const documentViewMode = getDocumentViewMode();
@@ -1096,6 +1112,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             content: suratPengantarDoc.content, // Include content data from draft
             contentHtml: null, // Gunakan template
             isSigned: suratPengantarDoc.isSigned,
+            tembusan: suratPengantarDoc.tembusan, // Include tembusan data from draft
             signatures: suratPengantarDoc.signatures?.map(s => ({
                 signerRole: s.signerRole,
                 signerName: s.signerName,

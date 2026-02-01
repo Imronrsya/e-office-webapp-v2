@@ -39,37 +39,10 @@ export interface SuratPengantarData {
 
 /**
  * Helper untuk render daftar tembusan
+ * NOTE: Tembusan di surat pengantar di-hidden sesuai permintaan user
  */
 const renderTembusan = (tembusan?: string | TembusanRecipient[]): string => {
-    if (!tembusan) return '';
-    
-    // Jika tembusan adalah string (format lama)
-    if (typeof tembusan === 'string') {
-        return `
-        <div class="tembusan">
-            <p style="margin: 0;"><b>Tembusan:</b></p>
-            <p style="margin: 5px 0 0 0;">${tembusan}</p>
-        </div>
-        `;
-    }
-    
-    // Jika tembusan adalah array (format baru)
-    if (Array.isArray(tembusan) && tembusan.length > 0) {
-        const recipients = tembusan.map((t, idx) => {
-            const desc = t.description ? ` (${t.description})` : '';
-            return `<li style="margin-bottom: 2px;">${t.name}${desc}</li>`;
-        }).join('\n');
-        
-        return `
-        <div class="tembusan">
-            <p style="margin: 0;"><b>Tembusan:</b></p>
-            <ol style="margin: 5px 0 0 0; padding-left: 20px;">
-                ${recipients}
-            </ol>
-        </div>
-        `;
-    }
-    
+    // Tembusan hidden untuk surat pengantar
     return '';
 };
 
@@ -123,15 +96,24 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             print-color-adjust: exact !important;
             box-sizing: border-box;
         }
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        html, body {
+            width: 21cm;
+            min-height: 29.7cm;
+        }
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 12pt;
-            line-height: 1.5;
+            line-height: 1.6;
             margin: 0;
-            padding: 40px 60px;
+            padding: 50px 60px 80px 60px;
             max-width: 21cm;
             color: #000000;
             background: #ffffff;
+            box-sizing: border-box;
         }
         .header-container {
             display: flex;
@@ -140,7 +122,6 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             margin-bottom: 5px;
         }
         .header-divider {
-            border-bottom: 1px solid #000000;
             margin-bottom: 20px;
         }
         .logo-container {
@@ -279,8 +260,12 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             font-size: 11pt;
         }
         .tembusan {
-            margin-top: 60px;
+            display: none; /* Tembusan disembunyikan di surat pengantar */
+            margin-top: 40px;
             line-height: 1.6;
+            max-width: 300px;
+            text-align: left;
+            clear: both;
         }
         .draft-watermark {
             position: fixed;

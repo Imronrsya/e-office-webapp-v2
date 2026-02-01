@@ -65,6 +65,29 @@ const renderSignatureBlock = (signature: SignatureBlock): string => {
 };
 
 /**
+ * Sort signatures by hierarchy: Wadek 2 (lowest), Wadek 1, Dekan (highest)
+ * For 3 signatures layout: top-left (Wadek2), top-right (Wadek1), bottom-center (Dekan)
+ */
+const sortSignaturesByHierarchy = (signatures: SignatureBlock[]): SignatureBlock[] => {
+  if (signatures.length !== 3) return signatures;
+  
+  const getHierarchyRank = (role: string): number => {
+    const upperRole = role.toUpperCase();
+    if (upperRole.includes('DEKAN') && !upperRole.includes('WAKIL')) return 3; // Tertinggi
+    if (upperRole.includes('WAKIL') && upperRole.includes('1')) return 2; // Wadek 1
+    if (upperRole.includes('WAKIL') && upperRole.includes('2')) return 1; // Wadek 2
+    if (upperRole.includes('WADEK') && upperRole.includes('1')) return 2;
+    if (upperRole.includes('WADEK') && upperRole.includes('2')) return 1;
+    return 0;
+  };
+  
+  const sorted = [...signatures].sort((a, b) => getHierarchyRank(a.signerRole) - getHierarchyRank(b.signerRole));
+  
+  // Layout: [0] = Wadek2 (top-left), [1] = Wadek1 (top-right), [2] = Dekan (bottom-center)
+  return sorted;
+};
+
+/**
  * Helper untuk render semua blok tanda tangan dengan layout berdasarkan jumlah
  */
 const renderSignatures = (signatures?: SignatureBlock[]): string => {
@@ -82,10 +105,13 @@ const renderSignatures = (signatures?: SignatureBlock[]): string => {
     `;
   }
   
-  const count = signatures.length;
+  // Sort signatures by hierarchy for proper layout
+  const sortedSignatures = sortSignaturesByHierarchy(signatures);
+  
+  const count = sortedSignatures.length;
   const countClass = `ttd-count-${Math.min(count, 4)}`;
   
-  const signatureBlocks = signatures.map(sig => renderSignatureBlock(sig)).join('');
+  const signatureBlocks = sortedSignatures.map(sig => renderSignatureBlock(sig)).join('');
   
   return `<div class="${countClass}">${signatureBlocks}</div>`;
 };
@@ -105,7 +131,7 @@ const renderQRCode = (qrCodeDataUrl?: string, verificationUrl?: string): string 
 };
 
 /**
- * Helper untuk render daftar tembusan di kiri bawah
+ * Helper untuk render daftar tembusan di kiri bawah, di atas QR
  */
 const renderTembusan = (tembusan?: TembusanRecipient[]): string => {
   if (!tembusan || tembusan.length === 0) return '';
@@ -115,10 +141,16 @@ const renderTembusan = (tembusan?: TembusanRecipient[]): string => {
     return `<li style="color: #000000 !important; margin-bottom: 2px;">${t.name}${desc}</li>`;
   }).join('\n');
   
+  // Calculate bottom position based on number of tembusan items
+  const itemCount = tembusan.length;
+  const baseBottom = 110; // Base position above QR code
+  const additionalHeight = Math.max(0, (itemCount - 2) * 18); // 18px per extra item
+  const bottomPosition = baseBottom + additionalHeight;
+  
   return `
-    <div class="tembusan-container">
+    <div class="tembusan-container" style="position: fixed; bottom: ${bottomPosition}px; left: 60px; max-width: 280px; z-index: 100; background: white;">
       <p style="margin: 0 0 5px 0; color: #000000 !important; font-weight: bold;">Tembusan:</p>
-      <ol style="margin: 0; padding-left: 20px; color: #000000 !important;">
+      <ol style="margin: 0; padding-left: 20px; color: #000000 !important; line-height: 1.4;">
         ${recipients}
       </ol>
     </div>
@@ -142,15 +174,24 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    html, body {
+      width: 21cm;
+      min-height: 29.7cm;
+    }
     body {
       font-family: 'Times New Roman', Times, serif;
       font-size: 12pt;
-      line-height: 1.5;
+      line-height: 1.6;
       margin: 0;
-      padding: 40px 60px;
+      padding: 50px 60px 80px 60px;
       max-width: 21cm;
       color: #000000 !important;
       background: #ffffff !important;
+      box-sizing: border-box;
     }
     .header-container {
       display: flex;
@@ -199,8 +240,8 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
     }
     .judul-surat {
       text-align: center;
-      margin-top: 30px;
-      margin-bottom: 25px;
+      margin-top: 20px;
+      margin-bottom: 15px;
     }
     .judul-surat h4 {
       margin: 0;
@@ -209,22 +250,24 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       font-weight: bold;
     }
     .judul-surat p {
-      margin: 8px 0 0 0;
+      margin: 5px 0 0 0;
       font-size: 11pt;
     }
     .isi-surat {
       text-align: justify;
-      margin: 25px 0;
-      text-indent: 50px;
-      line-height: 1.8;
+      margin: 15px 0;
+      text-indent: 40px;
+      line-height: 1.5;
     }
     .penutup {
-      margin: 25px 0;
-      text-indent: 50px;
+      margin: 15px 0;
+      text-indent: 40px;
       text-align: justify;
     }
     .ttd-container {
-      margin-top: 50px;
+      margin-top: 30px;
+      page-break-inside: avoid;
+      clear: both;
     }
     
     /* 1 TTD → kanan */
@@ -298,10 +341,12 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       z-index: 1000;
     }
     .tembusan-container {
-      margin-top: 40px;
+      margin-top: 50px;
       max-width: 300px;
       font-size: 11pt;
-      line-height: 1.4;
+      line-height: 1.5;
+      page-break-inside: avoid;
+      clear: both;
     }
     @media print {
       .qr-code-container {
@@ -348,21 +393,21 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
     <p style="color: #000000;">
       Dekan Fakultas Sains dan Matematika Universitas Diponegoro dengan ini ${data.jenisSurat === 'keputusan' ? 'memutuskan' : 'menugaskan'} kepada yang nama-namanya tercantum di bawah ini:
     </p>
-    <table style="margin: 20px 0 20px 50px; width: calc(100% - 50px); color: #000000;">
+    <table style="margin: 20px 0 20px 50px; width: calc(100% - 100px); color: #000000; border-collapse: collapse;">
       <tr>
-        <td style="width: 150px; vertical-align: top; padding: 5px 0; color: #000000;">Nama</td>
-        <td style="width: 20px; vertical-align: top; padding: 5px 0; color: #000000;">:</td>
-        <td style="vertical-align: top; padding: 5px 0; color: #000000;">${data.namaLengkap}</td>
+        <td style="width: 120px; vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">Nama</td>
+        <td style="width: 15px; vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">:</td>
+        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">${data.namaLengkap}</td>
       </tr>
       <tr>
-        <td style="vertical-align: top; padding: 5px 0; color: #000000;">NIM/NIP</td>
-        <td style="vertical-align: top; padding: 5px 0; color: #000000;">:</td>
-        <td style="vertical-align: top; padding: 5px 0; color: #000000;">${data.nimNip}</td>
+        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">NIM/NIP</td>
+        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">:</td>
+        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">${data.nimNip}</td>
       </tr>
       <tr>
-        <td style="vertical-align: top; padding: 5px 0; color: #000000;">Program Studi</td>
-        <td style="vertical-align: top; padding: 5px 0; color: #000000;">:</td>
-        <td style="vertical-align: top; padding: 5px 0; text-transform: capitalize; color: #000000;">${data.programStudi}</td>
+        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">Program Studi</td>
+        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">:</td>
+        <td style="vertical-align: top; padding: 4px 0; text-transform: capitalize; color: #000000; line-height: 1.6;">${data.programStudi}</td>
       </tr>
     </table>
     <p style="text-indent: 50px; color: #000000;">

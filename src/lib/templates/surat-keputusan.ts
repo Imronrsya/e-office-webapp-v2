@@ -70,6 +70,25 @@ const renderSignatureBlock = (signature: SignatureBlock): string => {
 };
 
 /**
+ * Sort signatures by hierarchy: Wadek 2 (lowest), Wadek 1, Dekan (highest)
+ */
+const sortSignaturesByHierarchy = (signatures: SignatureBlock[]): SignatureBlock[] => {
+  if (signatures.length !== 3) return signatures;
+  
+  const getHierarchyRank = (role: string): number => {
+    const upperRole = role.toUpperCase();
+    if (upperRole.includes('DEKAN') && !upperRole.includes('WAKIL')) return 3;
+    if (upperRole.includes('WAKIL') && upperRole.includes('1')) return 2;
+    if (upperRole.includes('WAKIL') && upperRole.includes('2')) return 1;
+    if (upperRole.includes('WADEK') && upperRole.includes('1')) return 2;
+    if (upperRole.includes('WADEK') && upperRole.includes('2')) return 1;
+    return 0;
+  };
+  
+  return [...signatures].sort((a, b) => getHierarchyRank(a.signerRole) - getHierarchyRank(b.signerRole));
+};
+
+/**
  * Helper untuk render semua blok tanda tangan dengan layout berdasarkan jumlah
  */
 const renderSignatures = (signatures?: SignatureBlock[]): string => {
@@ -84,10 +103,11 @@ const renderSignatures = (signatures?: SignatureBlock[]): string => {
     `;
   }
   
-  const count = signatures.length;
+  const sortedSignatures = sortSignaturesByHierarchy(signatures);
+  const count = sortedSignatures.length;
   const countClass = `ttd-count-${Math.min(count, 4)}`;
   
-  const signatureBlocks = signatures.map(sig => renderSignatureBlock(sig)).join('');
+  const signatureBlocks = sortedSignatures.map(sig => renderSignatureBlock(sig)).join('');
   
   return `<div class="${countClass}">${signatureBlocks}</div>`;
 };
@@ -107,7 +127,7 @@ const renderQRCode = (qrCodeDataUrl?: string): string => {
 };
 
 /**
- * Helper untuk render daftar tembusan di kiri bawah
+ * Helper untuk render daftar tembusan di kiri bawah, di atas QR
  */
 const renderTembusan = (tembusan?: TembusanRecipient[]): string => {
   if (!tembusan || tembusan.length === 0) return '';
@@ -117,10 +137,15 @@ const renderTembusan = (tembusan?: TembusanRecipient[]): string => {
     return `<li style="color: #000000 !important; margin-bottom: 2px;">${t.name}${desc}</li>`;
   }).join('\n');
   
+  const itemCount = tembusan.length;
+  const baseBottom = 110;
+  const additionalHeight = Math.max(0, (itemCount - 2) * 18);
+  const bottomPosition = baseBottom + additionalHeight;
+  
   return `
-    <div class="tembusan-container">
+    <div class="tembusan-container" style="position: fixed; bottom: ${bottomPosition}px; left: 50px; max-width: 280px; z-index: 100; background: white;">
       <p style="margin: 0 0 5px 0; color: #000000 !important; font-weight: bold;">Tembusan:</p>
-      <ol style="margin: 0; padding-left: 20px; color: #000000 !important;">
+      <ol style="margin: 0; padding-left: 20px; color: #000000 !important; line-height: 1.4;">
         ${recipients}
       </ol>
     </div>
@@ -134,6 +159,14 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Surat Keputusan Dekan - FSM UNDIP</title>
   <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    html, body {
+      width: 21cm;
+      min-height: 29.7cm;
+    }
     @media print {
       body {
         -webkit-print-color-adjust: exact;
@@ -143,13 +176,14 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     * {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      box-sizing: border-box;
     }
     body {
       font-family: 'Times New Roman', Times, serif;
       font-size: 11pt;
       line-height: 1.6;
       margin: 0;
-      padding: 30px 50px;
+      padding: 40px 50px 100px 50px;
       max-width: 21cm;
       color: #000000 !important;
       background: #ffffff !important;
@@ -265,7 +299,8 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     }
     .ttd-section {
       margin-top: 40px;
-      text-align: center;
+      page-break-inside: avoid;
+      clear: both;
     }
     
     /* 1 TTD → kanan bawah */
@@ -280,7 +315,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       justify-content: space-between;
     }
 
-    /* 3 TTD: Wadek2 kiri atas, Dekan kanan atas, Wadek1 bawah tengah */
+    /* 3 TTD: Wadek1 kiri atas, Dekan kanan atas, Wadek2 bawah tengah */
     .ttd-count-3 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -335,10 +370,12 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       z-index: 1000;
     }
     .tembusan-container {
-      margin-top: 40px;
+      margin-top: 50px;
+      margin-bottom: 30px;
       max-width: 300px;
       font-size: 11pt;
-      line-height: 1.4;
+      line-height: 1.5;
+      page-break-inside: avoid;
     }
     @media print {
       .qr-code-container {
@@ -430,6 +467,11 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       </div>
     </div>
     `).join('')}
+  </div>
+  
+  <div class="tanggal-ditetapkan" style="text-align: right; margin-top: 30px; margin-bottom: 20px;">
+    <p style="margin: 0;">Ditetapkan di Semarang</p>
+    <p style="margin: 0;">pada tanggal ${data.tanggalDitetapkan}</p>
   </div>
   
   <div class="ttd-section">

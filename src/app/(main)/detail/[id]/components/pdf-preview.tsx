@@ -108,12 +108,17 @@ export function PDFPreview({
                 signatureUrl: sig.signatureUrl || undefined,
                 prefix: undefined,
             }));
+            
+            // Extract tembusan from content if available
+            const contentData = content as Record<string, unknown>;
+            const tembusanData = contentData.tembusan as Array<{ name: string; description?: string }> | undefined;
 
             switch (documentType) {
                 case 'SURAT_TUGAS': {
                     const data = {
                         ...content as unknown as SuratTugasData,
                         signatures: signatureBlocks,
+                        tembusan: tembusanData,
                     };
                     return suratTugasTemplate(data);
                 }
@@ -121,6 +126,7 @@ export function PDFPreview({
                     const data = {
                         ...content as unknown as SuratTugasTableData,
                         signatures: signatureBlocks,
+                        tembusan: tembusanData,
                     };
                     return suratTugasTableTemplate(data);
                 }
@@ -128,6 +134,7 @@ export function PDFPreview({
                     const data = {
                         ...content as unknown as SuratKeputusanData,
                         signatures: signatureBlocks,
+                        tembusan: tembusanData,
                     };
                     return suratKeputusanTemplate(data);
                 }

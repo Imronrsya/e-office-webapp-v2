@@ -120,6 +120,14 @@ const ALL_SIGNER_ROLES = [
     { value: "WADEK_2", label: "Wakil Dekan II" },
 ];
 
+// Signer roles untuk surat di tingkat fakultas (Surat Tugas, Surat Keputusan)
+// Hanya pejabat fakultas, tidak termasuk Ketua Prodi dan Ketua Departemen
+const SURAT_FAKULTAS_ROLES = [
+    { value: "DEKAN", label: "Dekan" },
+    { value: "WADEK_1", label: "Wakil Dekan I" },
+    { value: "WADEK_2", label: "Wakil Dekan II" },
+];
+
 const SURAT_TYPE_LABELS: Record<SuratType, string> = {
     SURAT_TUGAS: "Surat Tugas",
     SURAT_TUGAS_TABEL: "Surat Tugas (Tabel)",
@@ -975,7 +983,8 @@ function BuatSuratContent() {
                                                     <SelectValue placeholder="Pilih Pejabat" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {ALL_SIGNER_ROLES.map((role) => (
+                                                    {/* Surat di tingkat fakultas: hanya pejabat fakultas */}
+                                                    {SURAT_FAKULTAS_ROLES.map((role) => (
                                                         <SelectItem 
                                                             key={role.value} 
                                                             value={role.value}
@@ -1009,7 +1018,7 @@ function BuatSuratContent() {
                                     </div>
                                 ))}
 
-                                {signers.length < ALL_SIGNER_ROLES.length && (
+                                {signers.length < SURAT_FAKULTAS_ROLES.length && (
                                     <Button
                                         variant="outline"
                                         onClick={addSigner}
@@ -1048,6 +1057,7 @@ function BuatSuratContent() {
                                         suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
                                         suratKeputusanForm
                                     }
+                                    tembusan={tembusan.map(t => ({ name: t.value }))}
                                 />
                             </CardContent>
                         </Card>
@@ -1208,6 +1218,7 @@ function BuatSuratContent() {
                                             suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
                                             suratKeputusanForm
                                         }
+                                        tembusan={tembusan.map(t => ({ name: t.value }))}
                                     />
                                 </div>
                             </CardContent>

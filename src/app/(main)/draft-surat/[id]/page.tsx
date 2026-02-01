@@ -61,7 +61,7 @@ interface SignerItem {
 
 interface TembusanItem {
     id: string;
-    type: "TEXT" | "USER";
+    type: "TEXT" | "USER" | "PRESET";
     value: string;
     label?: string;
 }
@@ -135,7 +135,7 @@ interface SuratKeputusanForm {
 // CONSTANTS
 // ============================================================================
 
-// All available signer roles
+// All available signer roles (for reference)
 const ALL_SIGNER_ROLES = [
     { value: "KAPRODI", label: "Ketua Prodi" },
     { value: "KADEP", label: "Ketua Departemen" },
@@ -148,6 +148,14 @@ const ALL_SIGNER_ROLES = [
 const SURAT_PENGANTAR_ROLES = [
     { value: "KAPRODI", label: "Ketua Prodi" },
     { value: "KADEP", label: "Ketua Departemen" },
+];
+
+// Signer roles untuk surat di tingkat fakultas (Surat Tugas, Surat Keputusan)
+// Hanya pejabat fakultas, tidak termasuk Ketua Prodi dan Ketua Departemen
+const SURAT_FAKULTAS_ROLES = [
+    { value: "DEKAN", label: "Dekan" },
+    { value: "WADEK_1", label: "Wakil Dekan I" },
+    { value: "WADEK_2", label: "Wakil Dekan II" },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
@@ -251,7 +259,27 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Tembusan state
     const [tembusan, setTembusan] = useState<TembusanItem[]>([]);
     const [newTembusanText, setNewTembusanText] = useState("");
+    const [selectedTembusanPreset, setSelectedTembusanPreset] = useState("");
     const [includePengaju, setIncludePengaju] = useState(true);
+    
+    // Preset options untuk tembusan dropdown - pejabat prodi dan fakultas
+    const TEMBUSAN_PRESETS = [
+        // Pejabat Fakultas
+        { value: "dekan", label: "Dekan Fakultas Sains dan Matematika", category: "Fakultas" },
+        { value: "wakil_dekan_1", label: "Wakil Dekan I (Akademik)", category: "Fakultas" },
+        { value: "wakil_dekan_2", label: "Wakil Dekan II (Sumber Daya)", category: "Fakultas" },
+        { value: "manajer_tu", label: "Manajer Tata Usaha", category: "Fakultas" },
+        { value: "supervisor_akademik", label: "Supervisor Akademik", category: "Fakultas" },
+        { value: "supervisor_sumber_daya", label: "Supervisor Sumber Daya", category: "Fakultas" },
+        // Pejabat Prodi/Departemen
+        { value: "ketua_departemen", label: "Ketua Departemen", category: "Prodi" },
+        { value: "ketua_prodi", label: "Ketua Program Studi", category: "Prodi" },
+        { value: "sekretaris_departemen", label: "Sekretaris Departemen", category: "Prodi" },
+        { value: "sekretaris_prodi", label: "Sekretaris Program Studi", category: "Prodi" },
+        // Lainnya
+        { value: "arsip", label: "Arsip", category: "Lainnya" },
+        { value: "pengaju", label: "Yang Bersangkutan (Pengaju)", category: "Lainnya" },
+    ];
     
     // Loading state for fetching existing data
     const [loading, setLoading] = useState(true);
@@ -675,11 +703,41 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // TEMBUSAN HANDLERS
     // ========================================================================
 
-    const addTembusan = () => {
+    const addTembusanFromPreset = () => {
+        if (!selectedTembusanPreset) {
+            toast.error("Pilih tembusan dari dropdown");
+            return;
+        }
+        const preset = TEMBUSAN_PRESETS.find(p => p.value === selectedTembusanPreset);
+        if (!preset) return;
+        
+        // Cek apakah sudah ada
+        if (tembusan.some(t => t.value.toLowerCase() === preset.label.toLowerCase())) {
+            toast.error("Tembusan sudah ditambahkan");
+            return;
+        }
+        
+        const newId = String(Date.now());
+        setTembusan([...tembusan, { 
+            id: newId, 
+            type: "PRESET", 
+            value: preset.label 
+        }]);
+        setSelectedTembusanPreset("");
+    };
+
+    const addTembusanCustom = () => {
         if (!newTembusanText.trim()) {
             toast.error("Masukkan nama/jabatan tembusan");
             return;
         }
+        
+        // Cek apakah sudah ada
+        if (tembusan.some(t => t.value.toLowerCase() === newTembusanText.trim().toLowerCase())) {
+            toast.error("Tembusan sudah ditambahkan");
+            return;
+        }
+        
         const newId = String(Date.now());
         setTembusan([...tembusan, { 
             id: newId, 
@@ -1653,7 +1711,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     <SelectValue placeholder="Pilih Pejabat" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {(suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : ALL_SIGNER_ROLES).map((role) => (
+                                                    {/* Surat Pengantar: hanya pejabat prodi (Kaprodi, Kadep) */}
+                                                    {/* Surat Tugas/Keputusan: hanya pejabat fakultas (Dekan, Wadek 1, Wadek 2) */}
+                                                    {(suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : SURAT_FAKULTAS_ROLES).map((role) => (
                                                         <SelectItem 
                                                             key={role.value} 
                                                             value={role.value}
@@ -1687,7 +1747,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     </div>
                                 ))}
 
-                                {signers.length < (suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : ALL_SIGNER_ROLES).length && (
+                                {signers.length < (suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : SURAT_FAKULTAS_ROLES).length && (
                                     <Button
                                         variant="outline"
                                         onClick={addSigner}
@@ -1727,6 +1787,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
                                         suratKeputusanForm
                                     }
+                                    tembusan={tembusan.map(t => ({ name: t.value }))}
                                 />
                             </CardContent>
                         </Card>
@@ -1777,6 +1838,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 {index + 1}
                                             </div>
                                             <span className="flex-1 text-sm">{item.value}</span>
+                                            <Badge variant={item.type === "PRESET" ? "secondary" : "outline"} className="text-xs">
+                                                {item.type === "PRESET" ? "Preset" : "Custom"}
+                                            </Badge>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -1790,25 +1854,85 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 </div>
                             )}
 
-                            <div className="space-y-2">
-                                <Label htmlFor="new-tembusan" className="text-sm font-medium">
-                                    Tambah Tembusan
-                                </Label>
-                                <div className="flex gap-2">
-                                    <Textarea
-                                        id="new-tembusan"
-                                        placeholder="Masukkan nama/jabatan tembusan..."
-                                        value={newTembusanText}
-                                        onChange={(e) => setNewTembusanText(e.target.value)}
-                                        rows={2}
-                                        className="flex-1"
-                                    />
-                                    <Button onClick={addTembusan} className="self-end">
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Tambah
-                                    </Button>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium">Pilih Pejabat dari Daftar</Label>
+                                    <div className="flex gap-2">
+                                        <Select value={selectedTembusanPreset} onValueChange={setSelectedTembusanPreset}>
+                                            <SelectTrigger className="flex-1">
+                                                <SelectValue placeholder="Pilih pejabat tembusan..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {/* Pejabat Fakultas */}
+                                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted">
+                                                    Pejabat Fakultas
+                                                </div>
+                                                {TEMBUSAN_PRESETS.filter(p => p.category === "Fakultas" && !tembusan.some(t => t.value.toLowerCase() === p.label.toLowerCase())).map(preset => (
+                                                    <SelectItem key={preset.value} value={preset.value}>
+                                                        {preset.label}
+                                                    </SelectItem>
+                                                ))}
+                                                
+                                                {/* Pejabat Prodi/Departemen */}
+                                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted mt-1">
+                                                    Pejabat Prodi/Departemen
+                                                </div>
+                                                {TEMBUSAN_PRESETS.filter(p => p.category === "Prodi" && !tembusan.some(t => t.value.toLowerCase() === p.label.toLowerCase())).map(preset => (
+                                                    <SelectItem key={preset.value} value={preset.value}>
+                                                        {preset.label}
+                                                    </SelectItem>
+                                                ))}
+                                                
+                                                {/* Lainnya */}
+                                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted mt-1">
+                                                    Lainnya
+                                                </div>
+                                                {TEMBUSAN_PRESETS.filter(p => p.category === "Lainnya" && !tembusan.some(t => t.value.toLowerCase() === p.label.toLowerCase())).map(preset => (
+                                                    <SelectItem key={preset.value} value={preset.value}>
+                                                        {preset.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Button onClick={addTembusanFromPreset} disabled={!selectedTembusanPreset}>
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Tambah
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-tembusan" className="text-sm font-medium">
+                                        Tambah Tembusan Manual
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Masukkan nama atau jabatan penerima tembusan yang tidak ada dalam daftar.
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Textarea
+                                            id="new-tembusan"
+                                            placeholder="Contoh: Kepala Laboratorium Fisika, Dr. Nama Lengkap"
+                                            value={newTembusanText}
+                                            onChange={(e) => setNewTembusanText(e.target.value)}
+                                            rows={2}
+                                            className="flex-1"
+                                        />
+                                        <Button onClick={addTembusanCustom} className="self-end" disabled={!newTembusanText.trim()}>
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Tambah
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
+
+                            <Alert className="mt-4 bg-blue-50 border-blue-200">
+                                <Info className="h-4 w-4 text-blue-600" />
+                                <AlertDescription className="text-blue-800">
+                                    Informasi surat yang diajukan akan diteruskan ke semua pejabat/orang dalam daftar tembusan dan kepada pengaju surat.
+                                </AlertDescription>
+                            </Alert>
                         </CardContent>
                     </Card>
                 )}
@@ -1907,6 +2031,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
                                             suratKeputusanForm
                                         }
+                                        tembusan={tembusan.map(t => ({ name: t.value }))}
                                     />
                                 </div>
                             </CardContent>

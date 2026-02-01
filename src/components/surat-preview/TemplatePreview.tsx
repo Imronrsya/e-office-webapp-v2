@@ -22,10 +22,16 @@ export interface SignerInfo {
     signatureUrl?: string;
 }
 
+export interface TembusanItem {
+    name: string;
+    description?: string;
+}
+
 interface TemplatePreviewProps {
     suratType: SuratType;
     formData: unknown;
     signers: SignerInfo[];
+    tembusan?: TembusanItem[];  // Tembusan untuk surat tugas / surat keputusan
     isLoading?: boolean;
 }
 
@@ -37,6 +43,7 @@ export function TemplatePreview({
     suratType,
     formData,
     signers,
+    tembusan,
     isLoading = false,
 }: TemplatePreviewProps) {
     const [zoom, setZoom] = useState(100);
@@ -102,6 +109,7 @@ export function TemplatePreview({
                     const tugasData: SuratTugasData = {
                         ...data as unknown as SuratTugasData,
                         signatures: signatureBlocks,
+                        tembusan: tembusan,  // Teruskan tembusan dari prop
                     };
                     return suratTugasTemplate(tugasData);
                 }
@@ -109,6 +117,7 @@ export function TemplatePreview({
                     const tabelData: SuratTugasTableData = {
                         ...data as unknown as SuratTugasTableData,
                         signatures: signatureBlocks,
+                        tembusan: tembusan,  // Teruskan tembusan dari prop
                     };
                     return suratTugasTableTemplate(tabelData);
                 }
@@ -116,6 +125,7 @@ export function TemplatePreview({
                     const keputusanData: SuratKeputusanData = {
                         ...data as unknown as SuratKeputusanData,
                         signatures: signatureBlocks,
+                        tembusan: tembusan,  // Teruskan tembusan dari prop
                     };
                     return suratKeputusanTemplate(keputusanData);
                 }
@@ -126,7 +136,7 @@ export function TemplatePreview({
             console.error("Error generating template:", error);
             return null;
         }
-    }, [suratType, formData, signers]);
+    }, [suratType, formData, signers, tembusan]);
 
     const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 200));
     const handleZoomOut = () => setZoom(prev => Math.max(prev - 25, 50));

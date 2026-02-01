@@ -34,6 +34,7 @@ export interface DocumentSummary {
     fileUrl: string | null;
     content?: Record<string, unknown> | null; // Form data untuk generate preview
     contentHtml?: string | null; // HTML content jika sudah di-generate
+    tembusan?: Array<{ name: string; description?: string }> | null; // Tembusan recipients dari draft
     signatures: SignatureSummary[];
 }
 

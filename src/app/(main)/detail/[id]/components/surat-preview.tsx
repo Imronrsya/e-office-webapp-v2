@@ -47,6 +47,7 @@ interface SuratPreviewProps {
         content?: Record<string, unknown> | null; // Content data from draft (namaTujuan, jabatanTujuan, etc.)
         contentHtml?: string | null;
         isSigned?: boolean;
+        tembusan?: Array<{ name: string; description?: string }> | null; // Tembusan recipients dari draft
         signatures?: Array<{
             signerRole: string;
             signerName: string;
@@ -155,6 +156,8 @@ export function SuratPreview({
             namaKadep: kadepSig?.signerName,
             nipKadep: kadepSig?.signerNip,
             signatureKadep: kadepSig?.signatureUrl,
+            // Pass tembusan data from document
+            tembusan: documentData?.tembusan || undefined,
         };
 
         // Generate HTML - signatures are rendered directly in template at the correct position
