@@ -18,6 +18,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
     ArrowLeft,
     ArrowRight,
     Loader2,
@@ -267,6 +276,7 @@ function BuatSuratContent() {
             router.push("/dashboard");
         }
     }, [categoryParam, suratType, router]);
+
 
     // ========================================================================
     // FORM HANDLERS
@@ -660,11 +670,21 @@ function BuatSuratContent() {
     // SUBMIT
     // ========================================================================
 
+    // Submit handler - untuk semua kategori termasuk UMUM
+    // Supervisor selection untuk UMUM dilakukan saat "Ajukan Verifikasi" di halaman detail
     const handleSubmit = async () => {
         if (!suratType || !categoryParam || (categoryParam !== 'AKADEMIK' && categoryParam !== 'SUMBER_DAYA' && categoryParam !== 'UMUM')) {
             toast.error("Kategori tidak valid");
             return;
         }
+        
+        // Langsung submit untuk semua kategori (termasuk UMUM)
+        await doSubmit();
+    };
+    
+    // Fungsi submit yang sebenarnya
+    const doSubmit = async () => {
+        if (!suratType || !categoryParam) return;
         
         setSubmitting(true);
         try {

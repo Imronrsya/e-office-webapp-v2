@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
     ArrowLeft,
     Loader2,
@@ -154,8 +155,13 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const [numberingModalOpen, setNumberingModalOpen] = useState(false);
     const [verifyNotes, setVerifyNotes] = useState("");
     const [returnSuratReason, setReturnSuratReason] = useState("");
+    const [returnSuratTargetStaff, setReturnSuratTargetStaff] = useState<string>("");
     const [attachmentPreviewOpen, setAttachmentPreviewOpen] = useState(false);
     const [previewAttachment, setPreviewAttachment] = useState<{id: string, fileName: string, fileUrl: string, mimeType: string | null} | null>(null);
+    
+    // Supervisor selection modal state - untuk kategori UMUM saat Ajukan Verifikasi
+    const [supervisorModalOpen, setSupervisorModalOpen] = useState(false);
+    const [selectedSupervisor, setSelectedSupervisor] = useState<'SUPERVISOR_AKADEMIK' | 'SUPERVISOR_SUMBER_DAYA' | null>(null);
 
     // User's current role
     const currentUserRole = user?.role?.toUpperCase() || "";
@@ -486,10 +492,24 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             return;
         }
         
+        // Untuk kategori UMUM, tampilkan modal untuk memilih supervisor
+        if (detail.category === 'UMUM') {
+            setSupervisorModalOpen(true);
+            return;
+        }
+        
+        // Langsung submit untuk kategori non-UMUM
+        await doSubmitForVerification();
+    };
+    
+    // Fungsi submit untuk verifikasi yang sebenarnya
+    const doSubmitForVerification = async (targetSupervisor?: 'SUPERVISOR_AKADEMIK' | 'SUPERVISOR_SUMBER_DAYA') => {
+        if (!detail) return;
+        
         setActionLoading(true);
         try {
             // Use letterId, not documentId
-            const response = await suratService.submitDraftForVerification(detail.id);
+            const response = await suratService.submitDraftForVerification(detail.id, targetSupervisor);
             
             if (response.success) {
                 toast.success("Draft berhasil diajukan untuk verifikasi");
@@ -549,6 +569,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             return;
         }
         
+        // For UMUM category, require target staff selection
+        if (detail.category === 'UMUM' && !returnSuratTargetStaff) {
+            toast.error("Pilih staf tujuan untuk surat kategori Umum");
+            return;
+        }
+        
         // Just check if SK/ST document exists
         const hasSkst = detail.documents?.some(d => 
             d.type === 'SURAT_TUGAS' || d.type === 'SURAT_KEPUTUSAN'
@@ -562,12 +588,15 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         setActionLoading(true);
         try {
             // Use letterId, not documentId
-            const response = await suratService.returnSuratHasil(detail.id, returnSuratReason.trim());
+            // For UMUM category, include targetStaff
+            const targetStaff = detail.category === 'UMUM' ? returnSuratTargetStaff : undefined;
+            const response = await suratService.returnSuratHasil(detail.id, returnSuratReason.trim(), targetStaff);
             
             if (response.success) {
                 toast.success("Surat dikembalikan untuk revisi");
                 setReturnSuratDialogOpen(false);
                 setReturnSuratReason("");
+                setReturnSuratTargetStaff("");
                 await fetchDetail();
             } else {
                 toast.error(response.message || "Gagal mengembalikan surat");
@@ -1951,6 +1980,30 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
+                        {/* Pilihan staf tujuan untuk kategori UMUM */}
+                        {detail?.category === 'UMUM' && (
+                            <div className="space-y-2">
+                                <Label>Staf Tujuan <span className="text-destructive">*</span></Label>
+                                <RadioGroup 
+                                    value={returnSuratTargetStaff} 
+                                    onValueChange={setReturnSuratTargetStaff}
+                                >
+                                    <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                        <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik" />
+                                        <Label htmlFor="staf-akademik" className="flex-1 cursor-pointer">
+                                            <div className="font-medium">Staf Akademik</div>
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                        <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya" />
+                                        <Label htmlFor="staf-sumberdaya" className="flex-1 cursor-pointer">
+                                            <div className="font-medium">Staf Sumber Daya</div>
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
+                            </div>
+                        )}
+                        
                         <div className="space-y-2">
                             <Label htmlFor="return-reason">Alasan Pengembalian <span className="text-destructive">*</span></Label>
                             <Textarea
@@ -1968,6 +2021,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             onClick={() => {
                                 setReturnSuratDialogOpen(false);
                                 setReturnSuratReason("");
+                                setReturnSuratTargetStaff("");
                             }}
                             disabled={actionLoading}
                         >
@@ -1975,7 +2029,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         </Button>
                         <Button 
                             onClick={handleReturnSuratHasil}
-                            disabled={actionLoading || !returnSuratReason.trim()}
+                            disabled={actionLoading || !returnSuratReason.trim() || (detail?.category === 'UMUM' && !returnSuratTargetStaff)}
                             className="bg-amber-600 hover:bg-amber-700"
                         >
                             {actionLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -2081,6 +2135,64 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 Download
                             </Button>
                         )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Supervisor Selection Modal - untuk kategori UMUM saat ajukan verifikasi */}
+            <Dialog open={supervisorModalOpen} onOpenChange={setSupervisorModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Pilih Supervisor Tujuan</DialogTitle>
+                        <DialogDescription>
+                            Surat dengan kategori UMUM harus ditujukan ke salah satu supervisor untuk verifikasi.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <RadioGroup
+                            value={selectedSupervisor || ''}
+                            onValueChange={(value) => setSelectedSupervisor(value as 'SUPERVISOR_AKADEMIK' | 'SUPERVISOR_SUMBER_DAYA')}
+                            className="space-y-3"
+                        >
+                            <div className="flex items-center space-x-3 border border-zinc-300 rounded-lg p-4 hover:bg-zinc-50 cursor-pointer">
+                                <RadioGroupItem value="SUPERVISOR_AKADEMIK" id="supervisor_akademik" />
+                                <Label htmlFor="supervisor_akademik" className="flex-1 cursor-pointer">
+                                    <span className="font-medium">Supervisor Akademik</span>
+                                    <p className="text-sm text-zinc-500">Untuk surat terkait akademik, mahasiswa, dan pendidikan</p>
+                                </Label>
+                            </div>
+                            <div className="flex items-center space-x-3 border border-zinc-300 rounded-lg p-4 hover:bg-zinc-50 cursor-pointer">
+                                <RadioGroupItem value="SUPERVISOR_SUMBER_DAYA" id="supervisor_sumber_daya" />
+                                <Label htmlFor="supervisor_sumber_daya" className="flex-1 cursor-pointer">
+                                    <span className="font-medium">Supervisor Sumber Daya</span>
+                                    <p className="text-sm text-zinc-500">Untuk surat terkait SDM, keuangan, dan fasilitas</p>
+                                </Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                    <DialogFooter>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => {
+                                setSupervisorModalOpen(false);
+                                setSelectedSupervisor(null);
+                            }}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                if (selectedSupervisor) {
+                                    setSupervisorModalOpen(false);
+                                    doSubmitForVerification(selectedSupervisor);
+                                    setSelectedSupervisor(null);
+                                }
+                            }}
+                            disabled={!selectedSupervisor || actionLoading}
+                            className="bg-green-600 hover:bg-green-700"
+                        >
+                            {actionLoading ? "Memproses..." : "Ajukan Verifikasi"}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

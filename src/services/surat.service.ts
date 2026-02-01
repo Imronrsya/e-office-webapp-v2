@@ -419,6 +419,7 @@ export const suratService = {
         tembusan?: string[];
         content?: Record<string, unknown>;
         perihal?: string;
+        targetSupervisor?: 'SUPERVISOR_AKADEMIK' | 'SUPERVISOR_SUMBER_DAYA'; // Untuk kategori UMUM
     }): Promise<ApiResponse<{ id: string; documentId: string }>> {
         const response = await api.post<ApiResponse<{ id: string; documentId: string }>>(
             '/api/surat-hasil/create',
@@ -499,11 +500,12 @@ export const suratService = {
     /**
      * Staf submits draft for verification
      * Uses letterId (not documentId)
+     * @param targetSupervisor - Required for UMUM category letters
      */
-    async submitDraftForVerification(letterId: string): Promise<ApiResponse<unknown>> {
+    async submitDraftForVerification(letterId: string, targetSupervisor?: string): Promise<ApiResponse<unknown>> {
         const response = await api.post<ApiResponse<unknown>>(
             `/api/surat-hasil/${letterId}/submit`,
-            {}
+            { targetSupervisor }
         );
         return response.data;
     },
@@ -523,11 +525,12 @@ export const suratService = {
     /**
      * Supervisor/Pejabat returns for revision
      * Uses letterId (not documentId)
+     * @param targetStaff - Optional target staff for UMUM category letters
      */
-    async returnSuratHasil(letterId: string, reason: string): Promise<ApiResponse<unknown>> {
+    async returnSuratHasil(letterId: string, reason: string, targetStaff?: string): Promise<ApiResponse<unknown>> {
         const response = await api.post<ApiResponse<unknown>>(
             `/api/surat-hasil/${letterId}/return`,
-            { reason }
+            { reason, targetStaff }
         );
         return response.data;
     },
