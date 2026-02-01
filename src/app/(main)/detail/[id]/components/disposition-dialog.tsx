@@ -115,41 +115,118 @@ const DISPOSITION_OPTIONS: Record<LetterCategory, string[]> = {
     ]
 };
 
-// Specific disposition targets per role
-// Dekan: bisa ke semua jabatan di bawahnya
-// Wadek 1: hanya ke SUPERVISOR_AKADEMIK dan STAF_AKADEMIK
-// Wadek 2: hanya ke SUPERVISOR_SUMBER_DAYA dan STAF_SUMBER_DAYA
-const ROLE_DISPOSITION_TARGETS: Record<string, string[]> = {
-    DEKAN: [
-        "WADEK_1",
-        "WADEK_2",
-        "MANAJER_TU",
-        "SUPERVISOR_AKADEMIK",
-        "SUPERVISOR_SUMBER_DAYA",
-        "STAF_AKADEMIK",
-        "STAF_SUMBER_DAYA"
-    ],
-    WADEK_1: [
-        "SUPERVISOR_AKADEMIK",
-        "STAF_AKADEMIK"
-    ],
-    WADEK_2: [
-        "SUPERVISOR_SUMBER_DAYA",
-        "STAF_SUMBER_DAYA"
-    ],
-    MANAJER_TU: [
-        "SUPERVISOR_AKADEMIK",
-        "SUPERVISOR_SUMBER_DAYA",
-        "STAF_AKADEMIK",
-        "STAF_SUMBER_DAYA"
-    ],
-    SUPERVISOR_AKADEMIK: [
-        "STAF_AKADEMIK"
-    ],
-    SUPERVISOR_SUMBER_DAYA: [
-        "STAF_SUMBER_DAYA"
-    ],
+// ============================================================================
+// DISPOSITION TARGETS BY ROLE AND CATEGORY
+// ============================================================================
+// Disposisi harus mempertimbangkan:
+// 1. Jabatan (role hierarchy) - hanya bisa ke role lebih rendah
+// 2. Jenis surat (kategori) - AKADEMIK, SUMBER_DAYA, UMUM
+//
+// Contoh:
+// - Wadek 1 + surat UMUM → MTU, Semua SPV, Semua Staff
+// - Wadek 1 + surat AKADEMIK → MTU, SPV Akademik, Staff Akademik
+// - Wadek 2 + surat SUMBER_DAYA → MTU, SPV Sumber Daya, Staff Sumber Daya
+
+type RoleDispositionTargets = Record<LetterCategory, string[]>;
+
+const ROLE_DISPOSITION_TARGETS: Record<string, RoleDispositionTargets> = {
+    DEKAN: {
+        UMUM: [
+            "WADEK_1",
+            "WADEK_2",
+            "MANAJER_TU",
+            "SUPERVISOR_AKADEMIK",
+            "SUPERVISOR_SUMBER_DAYA",
+            "STAF_AKADEMIK",
+            "STAF_SUMBER_DAYA"
+        ],
+        AKADEMIK: [
+            "WADEK_1",
+            "MANAJER_TU",
+            "SUPERVISOR_AKADEMIK",
+            "STAF_AKADEMIK"
+        ],
+        SUMBER_DAYA: [
+            "WADEK_2",
+            "MANAJER_TU",
+            "SUPERVISOR_SUMBER_DAYA",
+            "STAF_SUMBER_DAYA"
+        ]
+    },
+    WADEK_1: {
+        UMUM: [
+            "MANAJER_TU",
+            "SUPERVISOR_AKADEMIK",
+            "SUPERVISOR_SUMBER_DAYA",
+            "STAF_AKADEMIK",
+            "STAF_SUMBER_DAYA"
+        ],
+        AKADEMIK: [
+            "MANAJER_TU",
+            "SUPERVISOR_AKADEMIK",
+            "STAF_AKADEMIK"
+        ],
+        SUMBER_DAYA: [
+            "MANAJER_TU",
+            "SUPERVISOR_SUMBER_DAYA",
+            "STAF_SUMBER_DAYA"
+        ]
+    },
+    WADEK_2: {
+        UMUM: [
+            "MANAJER_TU",
+            "SUPERVISOR_AKADEMIK",
+            "SUPERVISOR_SUMBER_DAYA",
+            "STAF_AKADEMIK",
+            "STAF_SUMBER_DAYA"
+        ],
+        AKADEMIK: [
+            "MANAJER_TU",
+            "SUPERVISOR_AKADEMIK",
+            "STAF_AKADEMIK"
+        ],
+        SUMBER_DAYA: [
+            "MANAJER_TU",
+            "SUPERVISOR_SUMBER_DAYA",
+            "STAF_SUMBER_DAYA"
+        ]
+    },
+    MANAJER_TU: {
+        UMUM: [
+            "SUPERVISOR_AKADEMIK",
+            "SUPERVISOR_SUMBER_DAYA",
+            "STAF_AKADEMIK",
+            "STAF_SUMBER_DAYA"
+        ],
+        AKADEMIK: [
+            "SUPERVISOR_AKADEMIK",
+            "STAF_AKADEMIK"
+        ],
+        SUMBER_DAYA: [
+            "SUPERVISOR_SUMBER_DAYA",
+            "STAF_SUMBER_DAYA"
+        ]
+    },
+    SUPERVISOR_AKADEMIK: {
+        UMUM: ["STAF_AKADEMIK"],
+        AKADEMIK: ["STAF_AKADEMIK"],
+        SUMBER_DAYA: [] // Tidak bisa disposisi ke SD dari SPV Akademik
+    },
+    SUPERVISOR_SUMBER_DAYA: {
+        UMUM: ["STAF_SUMBER_DAYA"],
+        AKADEMIK: [], // Tidak bisa disposisi ke Akademik dari SPV SD
+        SUMBER_DAYA: ["STAF_SUMBER_DAYA"]
+    },
 };
+
+/**
+ * Get disposition targets based on role AND category
+ */
+function getDispositionTargets(role: string, category: LetterCategory): string[] {
+    const roleTargets = ROLE_DISPOSITION_TARGETS[role];
+    if (!roleTargets) return [];
+    return roleTargets[category] || [];
+}
 
 const ROLE_LABELS: Record<string, string> = {
     DEKAN: "Dekan",
@@ -212,15 +289,14 @@ export function DispositionDialog({
             // Admin Fakultas - can forward to anyone in category
             return FORWARD_OPTIONS[category];
         } else {
-            // Pejabat - use specific disposition targets based on role
-            // First get the allowed targets for current user role
-            const roleTargets = currentUserRole ? ROLE_DISPOSITION_TARGETS[currentUserRole] || [] : [];
-            
-            // Filter by category options too
-            const categoryRoles = DISPOSITION_OPTIONS[category];
-            
-            // Return intersection: roles that are both allowed for user AND valid for category
-            return roleTargets.filter(role => categoryRoles.includes(role));
+            // Pejabat - use specific disposition targets based on role AND category
+            // getDispositionTargets sudah return hasil yang tepat berdasarkan:
+            // 1. Role hierarchy (hanya ke bawah)
+            // 2. Category surat (UMUM/AKADEMIK/SUMBER_DAYA)
+            // Jadi TIDAK perlu filter tambahan lagi
+            return currentUserRole 
+                ? getDispositionTargets(currentUserRole, category) 
+                : [];
         }
     }, [category, isForwardMode, currentUserRole]);
 
