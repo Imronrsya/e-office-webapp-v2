@@ -33,6 +33,11 @@ import {
     FileText,
     CheckCircle,
     ClipboardList,
+    Paperclip,
+    Upload,
+    X,
+    Image,
+    File,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -97,7 +102,17 @@ interface KeputusanItem {
     content: string;
 }
 
-type Step = "form" | "signature" | "tembusan" | "review";
+// Attachment item untuk file yang diupload
+interface AttachmentItem {
+    id: string;
+    file: File;
+    name: string;
+    size: number;
+    type: string;
+    previewUrl?: string;
+}
+
+type Step = "form" | "signature" | "tembusan" | "attachments" | "review";
 
 // Form data for each surat type
 interface SuratPengantarForm {
@@ -296,6 +311,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [userSearchResults, setUserSearchResults] = useState<import('@/services/user.service').TembusanUser[]>([]);
     const [isSearchingUsers, setIsSearchingUsers] = useState(false);
     const [showUserResults, setShowUserResults] = useState(false);
+    
+    // Attachment state - untuk file PDF/JPG/PNG yang diupload
+    const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+    const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
     
     // Loading state for fetching existing data
     const [loading, setLoading] = useState(true);
@@ -899,11 +918,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             }
             // Skip tembusan for Surat Pengantar
             if (suratType === "SURAT_PENGANTAR") {
-                setCurrentStep("review");
+                setCurrentStep("attachments");
             } else {
                 setCurrentStep("tembusan");
             }
         } else if (currentStep === "tembusan") {
+            setCurrentStep("attachments");
+        } else if (currentStep === "attachments") {
             setCurrentStep("review");
         }
     };
@@ -913,14 +934,76 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             setCurrentStep("form");
         } else if (currentStep === "tembusan") {
             setCurrentStep("signature");
-        } else if (currentStep === "review") {
+        } else if (currentStep === "attachments") {
             // Skip tembusan for Surat Pengantar
             if (suratType === "SURAT_PENGANTAR") {
                 setCurrentStep("signature");
             } else {
                 setCurrentStep("tembusan");
             }
+        } else if (currentStep === "review") {
+            setCurrentStep("attachments");
         }
+    };
+
+    // ========================================================================
+    // ATTACHMENT HANDLERS
+    // ========================================================================
+
+    const handleAttachmentUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files) return;
+
+        const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+        const maxSize = 10 * 1024 * 1024; // 10MB
+
+        const newAttachments: AttachmentItem[] = [];
+
+        Array.from(files).forEach((file) => {
+            if (!validTypes.includes(file.type)) {
+                toast.error(`Format file ${file.name} tidak didukung. Gunakan PDF, JPG, atau PNG`);
+                return;
+            }
+            if (file.size > maxSize) {
+                toast.error(`File ${file.name} terlalu besar. Maksimal 10MB`);
+                return;
+            }
+
+            const newItem: AttachmentItem = {
+                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                file,
+                name: file.name,
+                size: file.size,
+                type: file.type,
+            };
+
+            // Create preview URL for images
+            if (file.type.startsWith('image/')) {
+                newItem.previewUrl = URL.createObjectURL(file);
+            }
+
+            newAttachments.push(newItem);
+        });
+
+        setAttachments(prev => [...prev, ...newAttachments]);
+        // Reset input
+        event.target.value = '';
+    };
+
+    const removeAttachment = (id: string) => {
+        setAttachments(prev => {
+            const item = prev.find(a => a.id === id);
+            if (item?.previewUrl) {
+                URL.revokeObjectURL(item.previewUrl);
+            }
+            return prev.filter(a => a.id !== id);
+        });
+    };
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     };
 
     // ========================================================================
@@ -1045,6 +1128,22 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             }
 
             if (response.success) {
+                // Upload attachments jika ada
+                const documentId = (response.data as any)?.documentId || existingDocumentId;
+                if (attachments.length > 0 && documentId) {
+                    try {
+                        setIsUploadingAttachment(true);
+                        const filesToUpload = attachments.map(a => a.file);
+                        await suratService.uploadAttachments(documentId, filesToUpload);
+                        toast.success(`${filesToUpload.length} lampiran berhasil diupload`);
+                    } catch (attachmentError) {
+                        console.error("Failed to upload attachments:", attachmentError);
+                        toast.error("Lampiran gagal diupload, tetapi draft berhasil disimpan");
+                    } finally {
+                        setIsUploadingAttachment(false);
+                    }
+                }
+                
                 toast.success(isEditMode ? "Draft surat berhasil diperbarui" : "Draft surat berhasil dibuat");
                 router.push(`/detail/${resolvedParams.id}`);
             } else {
@@ -1073,6 +1172,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         { key: "form", label: "Formulir", icon: ClipboardList, disabled: false },
         { key: "signature", label: "Tanda Tangan", icon: PenTool, disabled: false },
         { key: "tembusan", label: "Tembusan", icon: Users, disabled: isSuratPengantar },
+        { key: "attachments", label: "Lampiran", icon: Paperclip, disabled: false },
         { key: "review", label: "Review", icon: CheckCircle, disabled: false },
     ];
 
@@ -2206,7 +2306,123 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     </Card>
                 )}
 
-                {/* Step 4: Review */}
+                {/* Step 4: Attachments (Lampiran) */}
+                {currentStep === "attachments" && (
+                    <Card className="bg-neutral-50 border-zinc-400">
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <Paperclip className="w-5 h-5" />
+                                Lampiran (Opsional)
+                            </CardTitle>
+                            <CardDescription>
+                                Upload file lampiran dalam format PDF, JPG, atau PNG. Maksimal 10MB per file.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* Upload Area */}
+                            <div className="border-2 border-dashed border-zinc-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                                <input
+                                    type="file"
+                                    id="attachment-upload"
+                                    multiple
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={handleAttachmentUpload}
+                                    className="hidden"
+                                />
+                                <label
+                                    htmlFor="attachment-upload"
+                                    className="cursor-pointer flex flex-col items-center gap-2"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <Upload className="w-6 h-6 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-blue-600">Klik untuk upload file</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            atau drag & drop file ke sini
+                                        </p>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                        Format: PDF, JPG, PNG • Maks. 10MB per file
+                                    </p>
+                                </label>
+                            </div>
+
+                            {/* Attachment List */}
+                            {attachments.length > 0 && (
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium">
+                                        File Terupload ({attachments.length})
+                                    </Label>
+                                    <div className="space-y-2">
+                                        {attachments.map((attachment) => (
+                                            <div
+                                                key={attachment.id}
+                                                className="flex items-center gap-3 p-3 bg-white rounded-lg border"
+                                            >
+                                                {/* Icon based on type */}
+                                                <div className={cn(
+                                                    "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                                                    attachment.type === 'application/pdf' 
+                                                        ? "bg-red-100" 
+                                                        : "bg-green-100"
+                                                )}>
+                                                    {attachment.type === 'application/pdf' ? (
+                                                        <File className="w-5 h-5 text-red-600" />
+                                                    ) : (
+                                                        <Image className="w-5 h-5 text-green-600" />
+                                                    )}
+                                                </div>
+                                                
+                                                {/* File info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-sm truncate">
+                                                        {attachment.name}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {formatFileSize(attachment.size)}
+                                                    </p>
+                                                </div>
+
+                                                {/* Preview for images */}
+                                                {attachment.previewUrl && (
+                                                    <div className="w-12 h-12 rounded overflow-hidden border shrink-0">
+                                                        <img
+                                                            src={attachment.previewUrl}
+                                                            alt={attachment.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {/* Remove button */}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => removeAttachment(attachment.id)}
+                                                    className="text-destructive hover:text-destructive h-8 w-8 shrink-0"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {attachments.length === 0 && (
+                                <Alert className="bg-blue-50 border-blue-200">
+                                    <Info className="h-4 w-4 text-blue-600" />
+                                    <AlertDescription className="text-blue-800 text-sm">
+                                        Lampiran bersifat opsional. Anda dapat melanjutkan tanpa menambahkan lampiran.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Step 5: Review */}
                 {currentStep === "review" && (
                     <div className="space-y-4">
                         <Card className="bg-neutral-50 border-zinc-400">
@@ -2295,6 +2511,46 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             </p>
                                         )}
                                     </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* Lampiran Review */}
+                                <div>
+                                    <Label className="text-sm text-muted-foreground mb-2 block">
+                                        Lampiran ({attachments.length})
+                                    </Label>
+                                    {attachments.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {attachments.map((attachment) => (
+                                                <div
+                                                    key={attachment.id}
+                                                    className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200"
+                                                >
+                                                    <div className={cn(
+                                                        "w-8 h-8 rounded flex items-center justify-center shrink-0",
+                                                        attachment.type === 'application/pdf' 
+                                                            ? "bg-red-100" 
+                                                            : "bg-green-100"
+                                                    )}>
+                                                        {attachment.type === 'application/pdf' ? (
+                                                            <File className="w-4 h-4 text-red-600" />
+                                                        ) : (
+                                                            <Image className="w-4 h-4 text-green-600" />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-sm truncate">{attachment.name}</p>
+                                                        <p className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground italic">
+                                            Tidak ada lampiran
+                                        </p>
+                                    )}
                                 </div>
 
                                 <Separator />

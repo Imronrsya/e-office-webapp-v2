@@ -188,70 +188,54 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, userScope, 
                     </div>
                 )}
                 
-                <div className="flex gap-4">
-                    {/* Timeline Icons Column */}
-                    <div className="flex flex-col items-center pt-1">
-                        {/* Current waiting status (at top) */}
-                        {isWaiting && currentActiveRole && (
-                            <>
+                <div className="space-y-0">
+                    {/* Current waiting status (at top) */}
+                    {isWaiting && currentActiveRole && (
+                        <div className="flex gap-4">
+                            {/* Timeline Icon */}
+                            <div className="flex flex-col items-center">
                                 <div className="w-10 h-10 rounded-full flex items-center justify-center border-4 bg-white border-zinc-400 flex-shrink-0">
                                     <Clock className="w-4 h-4 text-zinc-400" />
                                 </div>
-                                {displayLogs.length > 0 && <div className="w-0.5 h-12 bg-zinc-400" />}
-                            </>
-                        )}
-                        
-                        {/* Completed logs */}
-                        {displayLogs.map((log, idx) => (
-                            <div key={log.id} className="flex flex-col items-center">
+                                {displayLogs.length > 0 && <div className="w-0.5 flex-1 bg-zinc-400 min-h-4" />}
+                            </div>
+                            {/* Content */}
+                            <div className="min-w-0 flex-1 pb-6">
+                                <p className="text-sm font-bold text-black leading-5">
+                                    {getWaitingLabel(currentActiveRole)}
+                                </p>
+                                <p className="text-sm text-zinc-500 leading-5">Menunggu proses...</p>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Completed logs */}
+                    {displayLogs.map((log, idx) => (
+                        <div key={log.id} className="flex gap-4">
+                            {/* Timeline Icon */}
+                            <div className="flex flex-col items-center">
                                 <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-500 flex-shrink-0">
                                     <CheckCircle className="w-5 h-5 text-white" />
                                 </div>
-                                {idx < displayLogs.length - 1 && <div className="w-0.5 h-12 bg-zinc-400" />}
+                                {idx < displayLogs.length - 1 && <div className="w-0.5 flex-1 bg-zinc-400 min-h-4" />}
                             </div>
-                        ))}
-                    </div>
-                    
-                    {/* Timeline Content Column */}
-                    <div className="flex flex-col flex-1 pt-1">
-                        {/* Current waiting status content */}
-                        {isWaiting && currentActiveRole && (
+                            {/* Content */}
                             <div className={cn(
-                                "flex items-start min-h-10",
-                                displayLogs.length > 0 && "mb-8"
+                                "min-w-0 flex-1",
+                                idx < displayLogs.length - 1 && "pb-6"
                             )}>
-                                <div>
-                                    <p className="text-sm font-bold text-black leading-5">
-                                        {getWaitingLabel(currentActiveRole)}
+                                <p className="text-sm font-bold text-black leading-5">{getActionLabel(log.action)}</p>
+                                <p className="text-sm text-black leading-5">
+                                    Oleh: {log.actorName} • {formatDateTime(log.createdAt)}
+                                </p>
+                                {log.notes && (
+                                    <p className="text-sm text-zinc-500 italic mt-1 break-words whitespace-pre-wrap">
+                                        &ldquo;{log.notes}&rdquo;
                                     </p>
-                                    <p className="text-sm text-zinc-500 leading-5">Menunggu proses...</p>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {/* Completed logs content */}
-                        {displayLogs.map((log, idx) => (
-                            <div 
-                                key={log.id} 
-                                className={cn(
-                                    "flex items-start min-h-10",
-                                    idx < displayLogs.length - 1 && "mb-8"
                                 )}
-                            >
-                                <div>
-                                    <p className="text-sm font-bold text-black leading-5">{getActionLabel(log.action)}</p>
-                                    <p className="text-sm text-black leading-5">
-                                        Oleh: {log.actorName} • {formatDateTime(log.createdAt)}
-                                    </p>
-                                    {log.notes && (
-                                        <p className="text-sm text-zinc-500 italic mt-1">
-                                            &ldquo;{log.notes}&rdquo;
-                                        </p>
-                                    )}
-                                </div>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ))}
                 </div>
             </CardContent>
         </Card>

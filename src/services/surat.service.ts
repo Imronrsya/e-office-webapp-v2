@@ -35,6 +35,7 @@ export interface DocumentSummary {
     content?: Record<string, unknown> | null; // Form data untuk generate preview
     contentHtml?: string | null; // HTML content jika sudah di-generate
     tembusan?: Array<{ name: string; description?: string }> | null; // Tembusan recipients dari draft
+    attachmentUrls?: string[] | null; // Lampiran PDF/JPG/PNG yang diupload oleh staf/supervisor
     signatures: SignatureSummary[];
 }
 
@@ -566,6 +567,58 @@ export const suratService = {
             name: string;
             nip?: string;
         }>>>('/api/users/pejabat');
+        return response.data;
+    },
+
+    // =========================================================================
+    // ATTACHMENT MANAGEMENT
+    // =========================================================================
+
+    /**
+     * Upload attachments to document
+     * Supported formats: PDF, JPG, PNG
+     */
+    async uploadAttachments(
+        documentId: string,
+        files: File[]
+    ): Promise<ApiResponse<{ attachmentUrls: string[] }>> {
+        const formData = new FormData();
+        files.forEach((file) => {
+            formData.append('files', file);
+        });
+
+        const response = await api.post<ApiResponse<{ attachmentUrls: string[] }>>(
+            `/api/surat-hasil/document/${documentId}/attachments`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+        return response.data;
+    },
+
+    /**
+     * Remove attachment from document
+     */
+    async removeAttachment(
+        documentId: string,
+        index: number
+    ): Promise<ApiResponse<{ attachmentUrls: string[] }>> {
+        const response = await api.delete<ApiResponse<{ attachmentUrls: string[] }>>(
+            `/api/surat-hasil/document/${documentId}/attachments/${index}`
+        );
+        return response.data;
+    },
+
+    /**
+     * Get attachments for document
+     */
+    async getAttachments(documentId: string): Promise<ApiResponse<{ attachmentUrls: string[] }>> {
+        const response = await api.get<ApiResponse<{ attachmentUrls: string[] }>>(
+            `/api/surat-hasil/document/${documentId}/attachments`
+        );
         return response.data;
     },
 };

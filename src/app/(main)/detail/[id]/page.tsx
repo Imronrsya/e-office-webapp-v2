@@ -1008,13 +1008,13 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     );
 
     // ========================================================================
-    // LAMPIRAN CARD
+    // LAMPIRAN CARD (Lampiran Submission dari Pengaju)
     // ========================================================================
     const LampiranCard = () => (
         attachments.length > 0 ? (
             <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
                 <CardContent className="p-6">
-                    <h3 className="text-sm font-bold text-black mb-4">Lampiran</h3>
+                    <h3 className="text-sm font-bold text-black mb-4">Lampiran Pengaju</h3>
                     
                     <div className="space-y-3">
                         {attachments.map((att) => (
@@ -1058,6 +1058,82 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     );
 
     // ========================================================================
+    // LAMPIRAN DOKUMEN CARD (Lampiran dari Staf/Supervisor - PDF/JPG/PNG)
+    // ========================================================================
+    const LampiranDokumenCard = () => {
+        // Ambil lampiran dari dokumen (attachmentUrls dari LetterDocument)
+        const suratHasilDoc = detail?.documents?.find(d => 
+            d.type === 'SURAT_TUGAS' || 
+            d.type === 'SURAT_TUGAS_TABEL' || 
+            d.type === 'SURAT_KEPUTUSAN'
+        );
+        
+        const docAttachments = (suratHasilDoc?.attachmentUrls || []) as string[];
+        
+        if (docAttachments.length === 0) return null;
+        
+        return (
+            <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
+                <CardContent className="p-6">
+                    <h3 className="text-sm font-bold text-black mb-4">Lampiran Surat</h3>
+                    
+                    <div className="space-y-3">
+                        {docAttachments.map((url, index) => {
+                            // Extract filename from URL
+                            const fileName = url.split('/').pop() || `Lampiran ${index + 1}`;
+                            const isPdf = url.toLowerCase().endsWith('.pdf');
+                            const isImage = /\.(jpg|jpeg|png|gif)$/i.test(url);
+                            
+                            return (
+                                <div 
+                                    key={index}
+                                    className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-amber-300"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-lg flex items-center justify-center",
+                                            isPdf ? "bg-red-100" : "bg-green-100"
+                                        )}>
+                                            <FileText className={cn(
+                                                "w-5 h-5",
+                                                isPdf ? "text-red-600" : "text-green-600"
+                                            )} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-black truncate max-w-[150px]">{fileName}</p>
+                                            <p className="text-xs text-amber-600">Lampiran Surat</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {isImage && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => window.open(url, '_blank')}
+                                                title="Preview"
+                                            >
+                                                <Eye className="w-5 h-5" />
+                                            </Button>
+                                        )}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => window.open(url, '_blank')}
+                                            title="Download"
+                                        >
+                                            <Download className="w-5 h-5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    };
+
+    // ========================================================================
     // CONTENT CARDS FOR OLD LAYOUT (NO DOCUMENT)
     // ========================================================================
     const ContentCards = () => (
@@ -1083,6 +1159,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
             {/* Lampiran */}
             <LampiranCard />
+            
+            {/* Lampiran Dokumen dari Staf/Supervisor */}
+            <LampiranDokumenCard />
         </div>
     );
 
@@ -1240,6 +1319,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             {/* Lampiran */}
                             <LampiranCard />
                             
+                            {/* Lampiran Dokumen dari Staf/Supervisor */}
+                            <LampiranDokumenCard />
+                            
                             {/* Info untuk user tentang mode ini */}
                             {isVerificationMode && (
                                 <Card className="bg-blue-50 border-blue-200 rounded-xl">
@@ -1337,6 +1419,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                                 {/* Lampiran */}
                                 <LampiranCard />
+                                
+                                {/* Lampiran Dokumen dari Staf/Supervisor */}
+                                <LampiranDokumenCard />
                             </div>
                         </div>
                     </Tabs>
@@ -1372,6 +1457,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                             {/* Lampiran */}
                             <LampiranCard />
+                            
+                            {/* Lampiran Dokumen dari Staf/Supervisor */}
+                            <LampiranDokumenCard />
                         </div>
                     </div>
                 )}
