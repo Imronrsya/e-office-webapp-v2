@@ -208,12 +208,12 @@ const ROLE_DISPOSITION_TARGETS: Record<string, RoleDispositionTargets> = {
         ]
     },
     SUPERVISOR_AKADEMIK: {
-        UMUM: ["STAF_AKADEMIK"],
+        UMUM: ["STAF_AKADEMIK", "STAF_SUMBER_DAYA"], // Untuk kategori UMUM, bisa pilih semua staf
         AKADEMIK: ["STAF_AKADEMIK"],
         SUMBER_DAYA: [] // Tidak bisa disposisi ke SD dari SPV Akademik
     },
     SUPERVISOR_SUMBER_DAYA: {
-        UMUM: ["STAF_SUMBER_DAYA"],
+        UMUM: ["STAF_AKADEMIK", "STAF_SUMBER_DAYA"], // Untuk kategori UMUM, bisa pilih semua staf
         AKADEMIK: [], // Tidak bisa disposisi ke Akademik dari SPV SD
         SUMBER_DAYA: ["STAF_SUMBER_DAYA"]
     },
