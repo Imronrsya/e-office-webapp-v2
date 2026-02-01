@@ -1995,16 +1995,13 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 isLoading={actionLoading}
             />
 
-            {/* Numbering Modal - for UPA to assign nomor surat with drag-and-drop positioning */}
+            {/* Numbering Modal - for UPA to assign nomor surat */}
             {suratHasilDoc && (
                 <NumberingModal
                     open={numberingModalOpen}
                     onOpenChange={setNumberingModalOpen}
                     documentId={suratHasilDoc.id}
                     documentType={suratHasilDoc.type}
-                    pdfUrl={suratHasilDoc.fileUrl || undefined}
-                    content={suratHasilDoc.content}
-                    signatures={suratHasilDoc.signatures}
                     onSuccess={handleNumberingSuccess}
                 />
             )}
