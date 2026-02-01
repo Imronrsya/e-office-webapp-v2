@@ -229,6 +229,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Get type from query params
     const suratType = searchParams.get("type") as SuratType | null;
     
+    // Get reset parameter for supervisor overwrite mode
+    const shouldResetDraft = searchParams.get("reset") === "true";
+    
     // State
     const [submitting, setSubmitting] = useState(false);
     const [currentStep, setCurrentStep] = useState<Step>("form");
@@ -319,6 +322,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
     
+    // Existing attachments from server (already uploaded before)
+    const [existingAttachments, setExistingAttachments] = useState<string[]>([]);
+    
     // Loading state for fetching existing data
     const [loading, setLoading] = useState(true);
     
@@ -330,8 +336,15 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [isEditMode, setIsEditMode] = useState(false);
     const [existingDocumentId, setExistingDocumentId] = useState<string | null>(null);
     
+    // Track if this is surat masuk (from submission) or surat keluar (staff-created)
+    const [isSuratMasuk, setIsSuratMasuk] = useState(false);
+    
     // Verification mode - true if supervisor/manajer TU is editing during verification
     const [isVerificationMode, setIsVerificationMode] = useState(false);
+    
+    // Save mode - "patch" for normal edit, "overwrite" for full reset
+    // Default to 'overwrite' if reset parameter is set (supervisor creating new draft)
+    const [saveMode, setSaveMode] = useState<'patch' | 'overwrite'>(shouldResetDraft ? 'overwrite' : 'patch');
 
     // Redirect if no type specified
     useEffect(() => {
@@ -346,6 +359,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         async function fetchExistingData() {
             if (!resolvedParams.id) {
                 setLoading(false);
+                return;
+            }
+            
+            // If reset mode, skip loading existing data - supervisor wants clean form
+            if (shouldResetDraft) {
+                setLoading(false);
+                setIsEditMode(false);
+                setExistingDocumentId(null);
                 return;
             }
 
@@ -379,6 +400,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 if (detail.status === 'FAKULTAS_VERIFICATION' && existingDoc) {
                     setIsVerificationMode(true);
                 }
+                
+                // Determine if this is surat masuk (from submission) or surat keluar (staff-created)
+                const hasSuratMasukSubmission = detail.submissionValues !== null && detail.submissionValues !== undefined;
+                setIsSuratMasuk(hasSuratMasukSubmission);
 
                 // Determine if pengaju is Mahasiswa or Dosen based on submissionValues
                 // Mahasiswa memiliki NIM, Dosen memiliki NIP
@@ -575,20 +600,56 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 // Load tembusan from existing document
                 if (existingDoc?.content) {
                     const content = existingDoc.content as Record<string, unknown>;
-                    const existingTembusan = (content.tembusan as string[]) || [];
+                    const existingTembusan = content.tembusan;
                     
-                    // Check if "Pengaju" is in the list
-                    const hasPengaju = existingTembusan.some(t => t.toLowerCase() === "pengaju");
-                    setIncludePengaju(hasPengaju);
-                    
-                    // Set tembusan texts excluding "Pengaju" (it's handled separately)
-                    const texts: TembusanText[] = existingTembusan
-                        .filter(t => t.toLowerCase() !== "pengaju")
-                        .map((t, index) => ({
-                            id: String(index + 1),
-                            text: t
-                        }));
-                    setTembusanTexts(texts);
+                    // Parse tembusan - could be string[] (old format) or TembusanRecipient[] (new format)
+                    if (Array.isArray(existingTembusan)) {
+                        const users: TembusanUser[] = [];
+                        const texts: TembusanText[] = [];
+                        let hasPengaju = false;
+                        
+                        existingTembusan.forEach((item: any, index: number) => {
+                            if (typeof item === 'string') {
+                                // Old format: string[]
+                                if (item.toLowerCase() === 'pengaju') {
+                                    hasPengaju = true;
+                                } else {
+                                    texts.push({
+                                        id: String(texts.length + 1),
+                                        text: item
+                                    });
+                                }
+                            } else if (item && typeof item === 'object' && 'userId' in item) {
+                                // New format: TembusanRecipient[]
+                                if (item.userId) {
+                                    // This is a user account
+                                    users.push({
+                                        userId: item.userId,
+                                        name: item.name || '',
+                                        email: item.description || '',
+                                    });
+                                } else {
+                                    // This is a text-only tembusan
+                                    texts.push({
+                                        id: String(texts.length + 1),
+                                        text: item.name || item.description || ''
+                                    });
+                                }
+                            }
+                        });
+                        
+                        setIncludePengaju(hasPengaju);
+                        setTembusanUsers(users);
+                        setTembusanTexts(texts);
+                    }
+                }
+
+                // Load existing attachments from document
+                if (existingDoc?.attachmentUrls && Array.isArray(existingDoc.attachmentUrls)) {
+                    const validUrls = existingDoc.attachmentUrls.filter(
+                        (url): url is string => typeof url === 'string' && url.length > 0
+                    );
+                    setExistingAttachments(validUrls);
                 }
 
             } catch (error) {
@@ -599,7 +660,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         }
 
         fetchExistingData();
-    }, [resolvedParams.id, suratType]);
+    }, [resolvedParams.id, suratType, shouldResetDraft]);
 
     // ========================================================================
     // FORM HANDLERS
@@ -1077,15 +1138,19 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     order: idx + 1
                 }));
 
-            // Build tembusan array - hanya text yang ditulis di PDF
+            // Build tembusan array - text yang ditulis di PDF
             const tembusanList: string[] = [];
-            if (includePengaju) {
-                tembusanList.push("Pengaju");
-            }
             // Tambahkan semua text tembusan
             tembusanTexts.forEach(item => {
                 tembusanList.push(item.text);
             });
+            
+            // Build tembusan users - untuk akses sistem
+            const tembusanUsersList = tembusanUsers.map(u => ({
+                userId: u.userId,
+                name: u.name,
+                email: u.email,
+            }));
 
             let response;
             
@@ -1104,30 +1169,50 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 // Check if supervisor is editing during verification
                 if (isVerificationMode) {
                     // Supervisor/Manajer TU editing during verification
+                    // Combine text tembusan and user tembusan
+                    const combinedTembusan = [
+                        ...tembusanUsersList,
+                        ...tembusanList.map(text => ({ userId: '', name: text, description: text }))
+                    ];
+                    
                     response = await suratService.updateDraftAsSupervisor(
                         resolvedParams.id,
                         {
                             content,
-                            tembusan: tembusanList,
+                            tembusan: combinedTembusan,
                         }
                     );
                 } else if (isEditMode && existingDocumentId) {
                     // Staff editing existing draft (after return)
+                    // Combine text tembusan and user tembusan
+                    const combinedTembusan = [
+                        ...tembusanUsersList,
+                        ...tembusanList.map(text => ({ userId: '', name: text, description: text }))
+                    ];
+                    
                     response = await suratService.updateDraftSuratHasil(
                         existingDocumentId,
                         {
                             content,
-                            tembusan: tembusanList,
+                            tembusan: combinedTembusan,
+                            mode: saveMode,
+                            signatories, // Include signatories for update
                         }
                     );
                 } else {
                     // Create new draft
+                    // Combine text tembusan and user tembusan
+                    const combinedTembusan = [
+                        ...tembusanUsersList,
+                        ...tembusanList.map(text => ({ userId: '', name: text, description: text }))
+                    ];
+                    
                     response = await suratService.createDraftSuratHasil(
                         resolvedParams.id,
                         {
                             documentType: suratType === "SURAT_TUGAS_TABEL" ? "SURAT_TUGAS_TABEL" : suratType,
                             signatories,
-                            tembusan: tembusanList,
+                            tembusan: combinedTembusan,
                             content,
                         }
                     );
@@ -1136,7 +1221,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
             if (response.success) {
                 // Upload attachments jika ada
-                const documentId = (response.data as any)?.documentId || existingDocumentId;
+                const documentId = (response.data as any)?.documentId || (response.data as any)?.id || existingDocumentId;
                 if (attachments.length > 0 && documentId) {
                     try {
                         setIsUploadingAttachment(true);
@@ -1151,10 +1236,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     }
                 }
                 
-                toast.success(isEditMode ? "Draft surat berhasil diperbarui" : "Draft surat berhasil dibuat");
-                // Redirect berdasarkan role: Admin Prodi -> Dashboard, Staff -> Surat Keluar
-                const redirectPath = user?.role ? getPostDraftRedirectPath(user.role) : '/dashboard';
-                router.push(redirectPath);
+                // Show success toast
+                const successMessage = saveMode === 'overwrite' 
+                    ? "Draft surat berhasil dibuat ulang"
+                    : isEditMode 
+                        ? "Draft surat berhasil diperbarui" 
+                        : "Draft surat berhasil dibuat";
+                toast.success(successMessage);
+                
+                // Redirect ke halaman detail untuk melihat tombol "Ajukan Verifikasi"
+                const filterType = isSuratMasuk ? 'masuk' : 'keluar';
+                router.push(`/detail/${resolvedParams.id}?filterType=${filterType}`);
+                router.refresh();
             } else {
                 toast.error(response.message || "Gagal menyimpan draft surat");
             }
@@ -2079,10 +2172,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
                                         suratKeputusanForm
                                     }
-                                    tembusan={[
-                                        ...(includePengaju ? [{ name: "Pengaju" }] : []),
-                                        ...tembusanTexts.map(t => ({ name: t.text }))
-                                    ]}
+                                    tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                 />
                             </CardContent>
                         </Card>
@@ -2113,7 +2203,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         Pengaju Surat
                                     </Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Pengaju akan mendapat akses sistem DAN tertulis di surat
+                                        Pengaju akan mendapat akses sistem.
                                     </p>
                                 </div>
                                 <Badge variant="secondary">Disarankan</Badge>
@@ -2419,7 +2509,56 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 </div>
                             )}
 
-                            {attachments.length === 0 && (
+                            {/* Existing Attachments (already uploaded) */}
+                            {existingAttachments.length > 0 && (
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-amber-700">
+                                        Lampiran Tersimpan ({existingAttachments.length})
+                                    </Label>
+                                    <div className="space-y-2">
+                                        {existingAttachments.map((url, index) => {
+                                            const fileName = url.split('/').pop() || `Lampiran ${index + 1}`;
+                                            const isPdf = url.toLowerCase().endsWith('.pdf');
+                                            
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200"
+                                                >
+                                                    <div className={cn(
+                                                        "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                                                        isPdf ? "bg-red-100" : "bg-green-100"
+                                                    )}>
+                                                        {isPdf ? (
+                                                            <File className="w-5 h-5 text-red-600" />
+                                                        ) : (
+                                                            <Image className="w-5 h-5 text-green-600" />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-sm truncate">{fileName}</p>
+                                                        <p className="text-xs text-amber-600">Sudah tersimpan di server</p>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => window.open(url, '_blank')}
+                                                        className="text-blue-600 hover:text-blue-800"
+                                                        title="Preview"
+                                                    >
+                                                        <FileText className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <p className="text-xs text-amber-600">
+                                        File di atas sudah tersimpan. Upload file baru untuk menambah lampiran.
+                                    </p>
+                                </div>
+                            )}
+
+                            {attachments.length === 0 && existingAttachments.length === 0 && (
                                 <Alert className="bg-blue-50 border-blue-200">
                                     <Info className="h-4 w-4 text-blue-600" />
                                     <AlertDescription className="text-blue-800 text-sm">
@@ -2477,7 +2616,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Tembusan ({(includePengaju ? 1 : 0) + tembusanTexts.length + tembusanUsers.length})
+                                        Tembusan ({tembusanTexts.length + tembusanUsers.length + (includePengaju ? 1 : 0)} akses sistem)
                                     </Label>
                                     <div className="space-y-2">
                                         {includePengaju && (
@@ -2485,7 +2624,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 <Users className="w-5 h-5 text-blue-600" />
                                                 <div className="flex-1">
                                                     <span className="font-medium">Pengaju Surat</span>
-                                                    <p className="text-xs text-muted-foreground">Akses sistem + tertulis di surat</p>
+                                                    <p className="text-xs text-muted-foreground">Akses sistem saja</p>
                                                 </div>
                                             </div>
                                         )}
@@ -2584,10 +2723,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
                                             suratKeputusanForm
                                         }
-                                        tembusan={[
-                                            ...(includePengaju ? [{ name: "Pengaju" }] : []),
-                                            ...tembusanTexts.map(t => ({ name: t.text }))
-                                        ]}
+                                        tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                     />
                                 </div>
                             </CardContent>
@@ -2596,7 +2732,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         <Alert className="border-blue-200 bg-blue-50">
                             <Info className="h-4 w-4 text-blue-600" />
                             <AlertDescription className="text-blue-800">
-                                Setelah draft dibuat, surat akan melalui alur verifikasi sebelum ditandatangani.
+                                {isEditMode 
+                                    ? "Setelah menyimpan perubahan, Anda bisa tetap di halaman ini untuk review atau kembali ke dashboard."
+                                    : "Setelah draft dibuat, surat akan melalui alur verifikasi sebelum ditandatangani."}
                             </AlertDescription>
                         </Alert>
                     </div>
@@ -2618,16 +2756,19 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 rightContent={
                     currentStep === "review" ? (
                         <Button
-                            onClick={handleSubmit}
+                            onClick={() => {
+                                setSaveMode('patch');
+                                handleSubmit();
+                            }}
                             disabled={submitting}
                             className="bg-emerald-600 hover:bg-emerald-700 gap-2"
                         >
-                            {submitting ? (
+                            {submitting && saveMode === 'patch' ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                                 <CheckCircle className="w-4 h-4" />
                             )}
-                            Buat Draft Surat
+                            {isEditMode ? "Simpan Perubahan" : "Buat Draft Surat"}
                         </Button>
                     ) : (
                         <Button

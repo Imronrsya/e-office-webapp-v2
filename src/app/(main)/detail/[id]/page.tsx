@@ -453,7 +453,16 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const handleDraftSurat = (type: "SURAT_PENGANTAR" | "SURAT_TUGAS" | "SURAT_TUGAS_TABEL" | "SURAT_KEPUTUSAN") => {
         if (!detail) return;
         setDraftSuratDialogOpen(false);
-        router.push(`/draft-surat/${detail.id}?type=${type}`);
+        
+        // Check if supervisor is creating new draft for surat masuk (has submission)
+        // Supervisor should get clean form with overwrite mode
+        const isSupervisor = currentUserRole === "SUPERVISOR_AKADEMIK" || currentUserRole === "SUPERVISOR_SUMBER_DAYA" || currentUserRole === "MANAJER_TU";
+        const hasSuratMasukSubmission = detail.submissionValues !== null;
+        const shouldResetForSupervisor = isSupervisor && hasSuratMasukSubmission;
+        
+        // Add reset=true query param for supervisor to trigger overwrite mode
+        const resetParam = shouldResetForSupervisor ? '&reset=true' : '';
+        router.push(`/draft-surat/${detail.id}?type=${type}${resetParam}`);
     };
 
     // Edit Draft Handler - navigates to draft page with existing document type
@@ -1037,10 +1046,19 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     );
 
     // ========================================================================
-    // LAMPIRAN CARD (Lampiran Submission dari Pengaju)
+    // LAMPIRAN CARD (Lampiran Submission dari Pengaju - HANYA UNTUK SURAT MASUK)
+    // Tidak ditampilkan untuk surat keluar (surat yang dibuat langsung oleh staf)
     // ========================================================================
-    const LampiranCard = () => (
-        attachments.length > 0 ? (
+    const LampiranCard = () => {
+        // Hanya tampilkan untuk surat masuk (surat yang berasal dari submission)
+        // Surat keluar (dibuat langsung staf) TIDAK PUNYA lampiran pengaju
+        const isSuratKeluar = filterType === 'keluar' || !submissionValues;
+        
+        if (isSuratKeluar || attachments.length === 0) {
+            return null;
+        }
+        
+        return (
             <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
                 <CardContent className="p-6">
                     <h3 className="text-sm font-bold text-black mb-4">Lampiran Pengaju</h3>
@@ -1083,8 +1101,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     </div>
                 </CardContent>
             </Card>
-        ) : null
-    );
+        );
+    };
 
     // ========================================================================
     // LAMPIRAN DOKUMEN CARD (Lampiran dari Staf/Supervisor - PDF/JPG/PNG)
@@ -1097,7 +1115,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             d.type === 'SURAT_KEPUTUSAN'
         );
         
-        const docAttachments = (suratHasilDoc?.attachmentUrls || []) as string[];
+        // Defensive type checking: ensure attachmentUrls is array of strings
+        const rawAttachments = suratHasilDoc?.attachmentUrls || [];
+        const docAttachments = Array.isArray(rawAttachments) 
+            ? rawAttachments.filter((url): url is string => typeof url === 'string' && url.length > 0)
+            : [];
         
         if (docAttachments.length === 0) return null;
         
@@ -1108,10 +1130,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     
                     <div className="space-y-3">
                         {docAttachments.map((url, index) => {
-                            // Extract filename from URL
-                            const fileName = url.split('/').pop() || `Lampiran ${index + 1}`;
-                            const isPdf = url.toLowerCase().endsWith('.pdf');
-                            const isImage = /\.(jpg|jpeg|png|gif)$/i.test(url);
+                            // Extract filename from URL (safely)
+                            const fileName = (typeof url === 'string' && url.split) 
+                                ? url.split('/').pop() || `Lampiran ${index + 1}`
+                                : `Lampiran ${index + 1}`;
+                            const isPdf = typeof url === 'string' && url.toLowerCase().endsWith('.pdf');
+                            const isImage = typeof url === 'string' && /\.(jpg|jpeg|png|gif)$/i.test(url);
                             
                             return (
                                 <div 

@@ -448,7 +448,7 @@ export const suratService = {
                 y?: number;
                 page?: number;
             }>;
-            tembusan?: string[];
+            tembusan?: Array<{ userId: string; name: string; description?: string }> | string[];
             content?: Record<string, unknown>;
             perihal?: string;
         }
@@ -462,13 +462,24 @@ export const suratService = {
 
     /**
      * Staf updates draft SK/ST
+     * @param mode - "patch" (default) keeps existing data, "overwrite" replaces everything
      */
     async updateDraftSuratHasil(
         documentId: string,
         data: {
             content?: Record<string, unknown>;
-            tembusan?: string[];
+            tembusan?: Array<{ userId: string; name: string; description?: string }> | string[];
             perihal?: string;
+            mode?: 'patch' | 'overwrite';
+            signatories?: Array<{
+                signerRole: string;
+                signerName: string;
+                signerNip?: string;
+                order: number;
+                x?: number;
+                y?: number;
+                page?: number;
+            }>;
         }
     ): Promise<ApiResponse<unknown>> {
         const response = await api.put<ApiResponse<unknown>>(
@@ -486,7 +497,7 @@ export const suratService = {
         letterId: string,
         data: {
             content?: Record<string, unknown>;
-            tembusan?: string[];
+            tembusan?: Array<{ userId: string; name: string; description?: string }> | string[];
             perihal?: string;
         }
     ): Promise<ApiResponse<unknown>> {

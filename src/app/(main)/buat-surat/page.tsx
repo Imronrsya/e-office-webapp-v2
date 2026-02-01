@@ -53,6 +53,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { suratService } from "@/services/surat.service";
 import { TemplatePreview } from "@/components/surat-preview";
 import { Suspense } from "react";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import { getPostDraftRedirectPath } from "@/lib/role-mapper";
 
 // ============================================================================
 // TYPES
@@ -1437,7 +1439,7 @@ function BuatSuratContent() {
                                         Pengaju Surat
                                     </Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Pengaju akan mendapat akses download surat (tidak tertulis di surat)
+                                        Pengaju akan mendapat akses sistem.
                                     </p>
                                 </div>
                                 <Badge variant="secondary">Disarankan</Badge>
@@ -1807,14 +1809,14 @@ function BuatSuratContent() {
 
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Tembusan ({(includePengaju ? 1 : 0) + tembusanTexts.length + tembusanUsers.length})
+                                        Tembusan ({(includePengaju ? 1 : 0) + tembusanTexts.length + tembusanUsers.length} akses sistem)
                                     </Label>
                                     <div className="space-y-2">
                                         {includePengaju && (
                                             <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                                                 <User className="w-5 h-5 text-blue-600" />
                                                 <span className="flex-1">Pengaju Surat</span>
-                                                <Badge variant="secondary" className="text-xs">Akses + Tertulis</Badge>
+                                                <Badge variant="secondary" className="text-xs">Akses Sistem</Badge>
                                             </div>
                                         )}
                                         {tembusanUsers.map((user) => (
