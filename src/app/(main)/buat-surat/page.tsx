@@ -244,7 +244,7 @@ function BuatSuratContent() {
     // Signature state
     const [signers, setSigners] = useState<SignerItem[]>([
         { 
-            id: "1", 
+            id: String(Date.now()), 
             role: "DEKAN", 
             order: 1, 
             isRequired: true,
@@ -424,7 +424,8 @@ function BuatSuratContent() {
     // ========================================================================
 
     const addSigner = () => {
-        const newId = String(signers.length + 1);
+        // Use Date.now() for unique ID to prevent duplication
+        const newId = String(Date.now());
         const newOrder = signers.length + 1;
         setSigners([...signers, { 
             id: newId, 
@@ -444,6 +445,7 @@ function BuatSuratContent() {
             toast.error("Minimal harus ada 1 penanda tangan");
             return;
         }
+        // Filter out the signer and reorder
         const filtered = signers.filter(s => s.id !== id);
         const reordered = filtered.map((s, idx) => ({ ...s, order: idx + 1 }));
         setSigners(reordered);

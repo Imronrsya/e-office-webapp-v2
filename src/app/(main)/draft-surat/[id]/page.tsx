@@ -286,7 +286,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Signature state - position data no longer needed with template-based positioning
     const [signers, setSigners] = useState<SignerItem[]>([
         { 
-            id: "1", 
+            id: String(Date.now()), 
             role: suratType === "SURAT_PENGANTAR" ? "KADEP" : "DEKAN", 
             order: 1, 
             isRequired: true,
@@ -511,7 +511,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 // Populate signers from existing signatures
                 if (existingDoc?.signatures && existingDoc.signatures.length > 0) {
                     const existingSigners: SignerItem[] = existingDoc.signatures.map((sig, index) => ({
-                        id: String(index + 1),
+                        // Use signature ID if available, otherwise use timestamp + index for uniqueness
+                        id: sig.id || String(Date.now() + index),
                         role: sig.signerRole,
                         order: sig.order || index + 1,
                         isRequired: true,
@@ -525,9 +526,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 } else if (suratType === "SURAT_PENGANTAR" && detail.signatureConfig) {
                     // No existing signatures, initialize based on signatureConfig
                     const needsKadep = detail.signatureConfig.requestKadepSign || false;
+                    const baseTimestamp = Date.now();
                     const initialSigners: SignerItem[] = [
                         {
-                            id: "1",
+                            id: String(baseTimestamp),
                             role: "KAPRODI",
                             order: 1,
                             isRequired: true,
@@ -540,7 +542,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     ];
                     if (needsKadep) {
                         initialSigners.push({
-                            id: "2",
+                            id: String(baseTimestamp + 1),
                             role: "KADEP",
                             order: 2,
                             isRequired: true,
@@ -555,7 +557,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 } else if (!existingDoc && suratType !== "SURAT_PENGANTAR") {
                     // For SK/ST without existing doc, initialize with DEKAN as default signer
                     setSigners([{
-                        id: "1",
+                        id: String(Date.now()),
                         role: "DEKAN",
                         order: 1,
                         isRequired: true,
@@ -746,7 +748,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // ========================================================================
 
     const addSigner = () => {
-        const newId = String(signers.length + 1);
+        // Use Date.now() for unique ID to prevent duplication
+        const newId = String(Date.now());
         const newOrder = signers.length + 1;
         setSigners([...signers, { 
             id: newId, 
@@ -766,6 +769,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             toast.error("Minimal harus ada 1 penanda tangan");
             return;
         }
+        // Filter out the signer and reorder
         const filtered = signers.filter(s => s.id !== id);
         const reordered = filtered.map((s, idx) => ({ ...s, order: idx + 1 }));
         setSigners(reordered);
