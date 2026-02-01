@@ -114,10 +114,52 @@ export function TemplatePreview({
                     return suratTugasTemplate(tugasData);
                 }
                 case "SURAT_TUGAS_TABEL": {
+                    // Map form fields to template fields
+                    const formDataMapped = data as Record<string, unknown>;
+                    const pelaksana = (formDataMapped.pelaksana as Array<Record<string, string>>) || [];
+                    const customColumns = (formDataMapped.customColumns as Array<{ key: string; label: string }>) || [];
+                    
+                    // Convert pelaksana to dataMahasiswa format with custom columns
+                    const dataMahasiswa = pelaksana.map(p => ({
+                        nama: p.nama || "",
+                        nim: p.nim || "",
+                        prodi: p.prodi || "",
+                        // Include custom column values
+                        ...customColumns.reduce((acc, col) => ({ 
+                            ...acc, 
+                            [col.key]: p[col.key] || "" 
+                        }), {})
+                    }));
+                    
+                    // Format tanggal untuk display
+                    const formatTanggal = (dateStr: string): string => {
+                        if (!dateStr) return "-";
+                        try {
+                            const date = new Date(dateStr);
+                            return date.toLocaleDateString('id-ID', { 
+                                day: 'numeric', 
+                                month: 'long', 
+                                year: 'numeric' 
+                            });
+                        } catch {
+                            return dateStr;
+                        }
+                    };
+                    
+                    const tanggalMulai = (formDataMapped.tanggalMulai as string) || "";
+                    const tanggalSelesai = (formDataMapped.tanggalSelesai as string) || "";
+                    const tanggalSurat = (formDataMapped.tanggalSurat as string) || "";
+                    
                     const tabelData: SuratTugasTableData = {
-                        ...data as unknown as SuratTugasTableData,
+                        nomorSurat: (formDataMapped.nomorSurat as string) || "-",
+                        dataMahasiswa: dataMahasiswa,
+                        keterangan: (formDataMapped.keperluan as string) || "",
+                        tanggalMulai: formatTanggal(tanggalMulai),
+                        tanggalSelesai: formatTanggal(tanggalSelesai),
+                        tanggalSurat: formatTanggal(tanggalSurat),
                         signatures: signatureBlocks,
-                        tembusan: tembusan,  // Teruskan tembusan dari prop
+                        tembusan: tembusan,
+                        customColumns: customColumns,
                     };
                     return suratTugasTableTemplate(tabelData);
                 }

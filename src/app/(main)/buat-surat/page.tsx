@@ -25,14 +25,17 @@ import {
     Trash2,
     PenTool,
     Users,
+    User,
     Info,
     FileText,
     CheckCircle,
     ClipboardList,
+    Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import BottomNav from "@/components/layout/bottom-nav";
+import { Checkbox } from "@/components/ui/checkbox";
 import { suratService } from "@/services/surat.service";
 import { TemplatePreview } from "@/components/surat-preview";
 import { Suspense } from "react";
@@ -57,18 +60,33 @@ interface SignerItem {
     page?: number;
 }
 
-interface TembusanItem {
+// Tembusan Sistem - untuk akses download (tidak tertulis di surat)
+interface TembusanUser {
+    userId: string;
+    name: string;
+    email: string;
+    type: 'mahasiswa' | 'pegawai';
+    description: string; // NIM/NIP + Prodi/Jabatan
+}
+
+// Tembusan Tertulis - untuk ditulis di PDF surat (tidak terkait akun)
+interface TembusanText {
     id: string;
-    type: "TEXT" | "USER";
-    value: string;
-    label?: string;
+    text: string;
 }
 
 interface PelaksanaItem {
     key: string;
     nama: string;
-    nimNip: string;
-    jabatan?: string;
+    nim: string;
+    prodi: string;
+    [key: string]: string; // Support dynamic columns
+}
+
+// Custom column definition for table
+interface CustomColumn {
+    key: string;
+    label: string;
 }
 
 interface KeputusanItem {
@@ -91,9 +109,12 @@ interface SuratTugasForm {
 
 interface SuratTugasTabelForm {
     jenisSuratText: string;
+    tanggalMulai: string;
+    tanggalSelesai: string;
     keperluan: string;
     judulSurat: string;
     pelaksana: PelaksanaItem[];
+    customColumns: CustomColumn[];
 }
 
 interface SuratKeputusanForm {
@@ -176,9 +197,12 @@ function BuatSuratContent() {
 
     const [suratTugasTabelForm, setSuratTugasTabelForm] = useState<SuratTugasTabelForm>({
         jenisSuratText: "SURAT TUGAS",
+        tanggalMulai: "",
+        tanggalSelesai: "",
         keperluan: "",
         judulSurat: "",
-        pelaksana: [{ key: "1", nama: "", nimNip: "", jabatan: "" }],
+        pelaksana: [{ key: "1", nama: "", nim: "", prodi: "" }],
+        customColumns: [],
     });
 
     const [suratKeputusanForm, setSuratKeputusanForm] = useState<SuratKeputusanForm>({
@@ -205,9 +229,17 @@ function BuatSuratContent() {
         }
     ]);
     
-    // Tembusan state
-    const [tembusan, setTembusan] = useState<TembusanItem[]>([]);
-    const [newTembusanText, setNewTembusanText] = useState("");
+    // Tembusan state - Separated system
+    const [tembusanUsers, setTembusanUsers] = useState<TembusanUser[]>([]);
+    const [tembusanTexts, setTembusanTexts] = useState<TembusanText[]>([]);
+    const [includePengaju, setIncludePengaju] = useState(true);
+    const [newTembusanTextInput, setNewTembusanTextInput] = useState("");
+    
+    // User search for tembusan
+    const [userSearchQuery, setUserSearchQuery] = useState("");
+    const [userSearchResults, setUserSearchResults] = useState<import('@/services/user.service').TembusanUser[]>([]);
+    const [showUserResults, setShowUserResults] = useState(false);
+    const [isSearchingUsers, setIsSearchingUsers] = useState(false);
 
     // Redirect if no valid params
     useEffect(() => {
@@ -225,7 +257,7 @@ function BuatSuratContent() {
         setSuratTugasForm(prev => ({ ...prev, [field]: value }));
     };
 
-    const updateSuratTugasTabel = (field: keyof SuratTugasTabelForm, value: string | PelaksanaItem[]) => {
+    const updateSuratTugasTabel = (field: keyof SuratTugasTabelForm, value: string | PelaksanaItem[] | CustomColumn[]) => {
         setSuratTugasTabelForm(prev => ({ ...prev, [field]: value }));
     };
 
@@ -236,9 +268,20 @@ function BuatSuratContent() {
     // Pelaksana handlers
     const addPelaksana = () => {
         const newKey = String(Date.now());
+        // Create new pelaksana with default columns + custom columns
+        const newPelaksana: PelaksanaItem = { 
+            key: newKey, 
+            nama: "", 
+            nim: "", 
+            prodi: "",
+        };
+        // Add empty values for custom columns
+        suratTugasTabelForm.customColumns.forEach(col => {
+            newPelaksana[col.key] = "";
+        });
         setSuratTugasTabelForm(prev => ({
             ...prev,
-            pelaksana: [...prev.pelaksana, { key: newKey, nama: "", nimNip: "", jabatan: "" }]
+            pelaksana: [...prev.pelaksana, newPelaksana]
         }));
     };
 
@@ -249,10 +292,40 @@ function BuatSuratContent() {
         }));
     };
 
-    const updatePelaksana = (key: string, field: keyof PelaksanaItem, value: string) => {
+    const updatePelaksana = (key: string, field: string, value: string) => {
         setSuratTugasTabelForm(prev => ({
             ...prev,
             pelaksana: prev.pelaksana.map(p => p.key === key ? { ...p, [field]: value } : p)
+        }));
+    };
+
+    // Custom Column handlers for Surat Tugas Tabel
+    const addCustomColumn = () => {
+        const newKey = `col_${Date.now()}`;
+        setSuratTugasTabelForm(prev => ({
+            ...prev,
+            customColumns: [...prev.customColumns, { key: newKey, label: "" }],
+            // Add empty value for this column to all existing pelaksana
+            pelaksana: prev.pelaksana.map(p => ({ ...p, [newKey]: "" }))
+        }));
+    };
+
+    const removeCustomColumn = (colKey: string) => {
+        setSuratTugasTabelForm(prev => ({
+            ...prev,
+            customColumns: prev.customColumns.filter(c => c.key !== colKey),
+            // Remove this column from all pelaksana
+            pelaksana: prev.pelaksana.map(p => {
+                const { [colKey]: _, ...rest } = p;
+                return rest as PelaksanaItem;
+            })
+        }));
+    };
+
+    const updateCustomColumnLabel = (colKey: string, label: string) => {
+        setSuratTugasTabelForm(prev => ({
+            ...prev,
+            customColumns: prev.customColumns.map(c => c.key === colKey ? { ...c, label } : c)
         }));
     };
 
@@ -360,22 +433,69 @@ function BuatSuratContent() {
     // TEMBUSAN HANDLERS
     // ========================================================================
 
-    const addTembusan = () => {
-        if (!newTembusanText.trim()) {
-            toast.error("Masukkan nama/jabatan tembusan");
+    // Add text tembusan (for PDF)
+    const addTembusanText = () => {
+        if (!newTembusanTextInput.trim()) {
+            toast.error("Masukkan text tembusan");
             return;
         }
         const newId = String(Date.now());
-        setTembusan([...tembusan, { 
+        setTembusanTexts([...tembusanTexts, { 
             id: newId, 
-            type: "TEXT", 
-            value: newTembusanText.trim() 
+            text: newTembusanTextInput.trim() 
         }]);
-        setNewTembusanText("");
+        setNewTembusanTextInput("");
     };
 
-    const removeTembusan = (id: string) => {
-        setTembusan(tembusan.filter(t => t.id !== id));
+    const removeTembusanText = (id: string) => {
+        setTembusanTexts(tembusanTexts.filter(t => t.id !== id));
+    };
+
+    // Remove user tembusan (for system access)
+    const removeTembusanUser = (userId: string) => {
+        setTembusanUsers(tembusanUsers.filter(u => u.userId !== userId));
+    };
+
+    // User search effect
+    useEffect(() => {
+        const searchUsers = async () => {
+            if (userSearchQuery.length < 2) {
+                setUserSearchResults([]);
+                return;
+            }
+            
+            setIsSearchingUsers(true);
+            try {
+                const { userService } = await import('@/services/user.service');
+                const response = await userService.searchUsers(userSearchQuery);
+                const results = response.data || [];
+                // Filter out already selected users
+                const selectedUserIds = new Set(tembusanUsers.map(u => u.userId));
+                setUserSearchResults(results.filter(u => !selectedUserIds.has(u.id)));
+            } catch (error) {
+                console.error('Failed to search users:', error);
+            } finally {
+                setIsSearchingUsers(false);
+            }
+        };
+        
+        const debounce = setTimeout(searchUsers, 300);
+        return () => clearTimeout(debounce);
+    }, [userSearchQuery, tembusanUsers]);
+
+    const handleSelectUser = (user: import('@/services/user.service').TembusanUser) => {
+        const newUser: TembusanUser = {
+            userId: user.id,
+            name: user.name,
+            email: user.email,
+            type: user.type,
+            description: user.type === 'mahasiswa' 
+                ? `${user.identifier} • ${user.programStudi || 'Mahasiswa'}`
+                : `NIP: ${user.identifier} • ${user.jabatan || 'Pegawai'}`
+        };
+        setTembusanUsers([...tembusanUsers, newUser]);
+        setUserSearchQuery("");
+        setShowUserResults(false);
     };
 
     // ========================================================================
@@ -395,13 +515,17 @@ function BuatSuratContent() {
                 toast.error("Lengkapi keperluan surat");
                 return false;
             }
+            if (!suratTugasTabelForm.tanggalMulai || !suratTugasTabelForm.tanggalSelesai) {
+                toast.error("Lengkapi tanggal mulai dan selesai tugas");
+                return false;
+            }
             if (suratTugasTabelForm.pelaksana.length === 0) {
                 toast.error("Tambahkan minimal 1 pelaksana");
                 return false;
             }
-            const emptyPelaksana = suratTugasTabelForm.pelaksana.some(p => !p.nama.trim() || !p.nimNip.trim());
+            const emptyPelaksana = suratTugasTabelForm.pelaksana.some(p => !p.nama.trim() || !p.nim.trim() || !p.prodi.trim());
             if (emptyPelaksana) {
-                toast.error("Lengkapi data semua pelaksana");
+                toast.error("Lengkapi data nama, NIM, dan prodi untuk setiap pelaksana");
                 return false;
             }
         } else if (suratType === "SURAT_KEPUTUSAN") {
@@ -502,11 +626,18 @@ function BuatSuratContent() {
                     order: idx + 1
                 }));
 
-            // Build tembusan
-            const tembusanList: string[] = [];
-            tembusan.forEach(t => {
-                tembusanList.push(t.value);
+            // Build tembusan texts (for PDF) - NOT including pengaju
+            const tembusanTextsList: string[] = [];
+            tembusanTexts.forEach(t => {
+                tembusanTextsList.push(t.text);
             });
+
+            // Build tembusan users (for system access)
+            const tembusanUsersList = tembusanUsers.map(u => ({
+                userId: u.userId,
+                name: u.name,
+                email: u.email,
+            }));
 
             // Extract perihal/judul from form
             let perihal = '';
@@ -523,7 +654,9 @@ function BuatSuratContent() {
                 category: categoryParam as 'AKADEMIK' | 'SUMBER_DAYA' | 'UMUM',
                 documentType: suratType,
                 signatories,
-                tembusan: tembusanList,
+                tembusan: tembusanTextsList,
+                tembusanUsers: tembusanUsersList,
+                includePengaju,
                 content,
                 perihal,
             });
@@ -740,51 +873,143 @@ function BuatSuratContent() {
                                                 rows={2}
                                             />
                                         </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="tanggalMulai">Tanggal Mulai <span className="text-red-500">*</span></Label>
+                                                <Input
+                                                    id="tanggalMulai"
+                                                    type="date"
+                                                    value={suratTugasTabelForm.tanggalMulai}
+                                                    onChange={(e) => updateSuratTugasTabel("tanggalMulai", e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="tanggalSelesai">Tanggal Selesai <span className="text-red-500">*</span></Label>
+                                                <Input
+                                                    id="tanggalSelesai"
+                                                    type="date"
+                                                    value={suratTugasTabelForm.tanggalSelesai}
+                                                    onChange={(e) => updateSuratTugasTabel("tanggalSelesai", e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
                                     </CardContent>
                                 </Card>
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
                                         <CardTitle className="text-lg">Data Pelaksana</CardTitle>
-                                        <CardDescription>Tambahkan daftar orang yang akan ditugaskan</CardDescription>
+                                        <CardDescription>Tambahkan daftar orang yang akan ditugaskan dalam format tabel</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        {suratTugasTabelForm.pelaksana.map((p, index) => (
-                                            <div key={p.key} className="flex items-start gap-3 p-4 bg-white rounded-lg border">
-                                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium">
-                                                    {index + 1}
+                                        {/* Custom Columns Management */}
+                                        {suratTugasTabelForm.customColumns.length > 0 && (
+                                            <div className="space-y-2">
+                                                <Label className="text-sm font-medium text-muted-foreground">Kolom Tambahan:</Label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {suratTugasTabelForm.customColumns.map((col) => (
+                                                        <div key={col.key} className="flex items-center gap-1 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1">
+                                                            <Input
+                                                                value={col.label}
+                                                                onChange={(e) => updateCustomColumnLabel(col.key, e.target.value)}
+                                                                placeholder="Nama Kolom"
+                                                                className="h-7 w-32 text-sm border-0 bg-transparent focus-visible:ring-0"
+                                                            />
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => removeCustomColumn(col.key)}
+                                                                className="h-6 w-6 text-destructive hover:text-destructive"
+                                                            >
+                                                                <Trash2 className="w-3 h-3" />
+                                                            </Button>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                <div className="flex-1 space-y-3">
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <Input
-                                                            value={p.nama}
-                                                            onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
-                                                            placeholder="Nama"
-                                                        />
-                                                        <Input
-                                                            value={p.nimNip}
-                                                            onChange={(e) => updatePelaksana(p.key, "nimNip", e.target.value)}
-                                                            placeholder="NIM/NIP"
-                                                        />
-                                                    </div>
-                                                    <Input
-                                                        value={p.jabatan || ""}
-                                                        onChange={(e) => updatePelaksana(p.key, "jabatan", e.target.value)}
-                                                        placeholder="Jabatan (opsional)"
-                                                    />
-                                                </div>
-                                                {suratTugasTabelForm.pelaksana.length > 1 && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => removePelaksana(p.key)}
-                                                        className="text-destructive hover:text-destructive"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
-                                                )}
                                             </div>
-                                        ))}
+                                        )}
+                                        
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={addCustomColumn} 
+                                            className="border-dashed"
+                                        >
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Tambah Kolom
+                                        </Button>
+
+                                        {/* Table Header */}
+                                        <div className="border rounded-lg overflow-hidden">
+                                            <div className="bg-muted/50 p-3 border-b">
+                                                <div className="grid gap-2" style={{ 
+                                                    gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px` 
+                                                }}>
+                                                    <div className="text-xs font-medium text-center">No</div>
+                                                    <div className="text-xs font-medium">Nama <span className="text-red-500">*</span></div>
+                                                    <div className="text-xs font-medium">NIM <span className="text-red-500">*</span></div>
+                                                    <div className="text-xs font-medium">Prodi <span className="text-red-500">*</span></div>
+                                                    {suratTugasTabelForm.customColumns.map((col) => (
+                                                        <div key={col.key} className="text-xs font-medium">{col.label || "(Belum diberi nama)"}</div>
+                                                    ))}
+                                                    <div></div>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Table Body */}
+                                            <div className="divide-y">
+                                                {suratTugasTabelForm.pelaksana.map((p, index) => (
+                                                    <div key={p.key} className="p-3 bg-white hover:bg-muted/30">
+                                                        <div className="grid gap-2 items-center" style={{ 
+                                                            gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px` 
+                                                        }}>
+                                                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium text-sm">
+                                                                {index + 1}
+                                                            </div>
+                                                            <Input
+                                                                value={p.nama}
+                                                                onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
+                                                                placeholder="Nama"
+                                                                className="h-9"
+                                                            />
+                                                            <Input
+                                                                value={p.nim}
+                                                                onChange={(e) => updatePelaksana(p.key, "nim", e.target.value)}
+                                                                placeholder="NIM"
+                                                                className="h-9"
+                                                            />
+                                                            <Input
+                                                                value={p.prodi}
+                                                                onChange={(e) => updatePelaksana(p.key, "prodi", e.target.value)}
+                                                                placeholder="Prodi"
+                                                                className="h-9"
+                                                            />
+                                                            {suratTugasTabelForm.customColumns.map((col) => (
+                                                                <Input
+                                                                    key={col.key}
+                                                                    value={p[col.key] || ""}
+                                                                    onChange={(e) => updatePelaksana(p.key, col.key, e.target.value)}
+                                                                    placeholder={col.label || "..."}
+                                                                    className="h-9"
+                                                                />
+                                                            ))}
+                                                            {suratTugasTabelForm.pelaksana.length > 1 && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => removePelaksana(p.key)}
+                                                                    className="text-destructive hover:text-destructive h-8 w-8"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
+                                                            {suratTugasTabelForm.pelaksana.length <= 1 && <div></div>}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        
                                         <Button variant="outline" onClick={addPelaksana} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah Pelaksana
@@ -1057,7 +1282,7 @@ function BuatSuratContent() {
                                         suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
                                         suratKeputusanForm
                                     }
-                                    tembusan={tembusan.map(t => ({ name: t.value }))}
+                                    tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                 />
                             </CardContent>
                         </Card>
@@ -1077,50 +1302,216 @@ function BuatSuratContent() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {tembusan.length > 0 && (
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium">Tembusan</Label>
-                                    {tembusan.map((item, index) => (
-                                        <div
-                                            key={item.id}
-                                            className="flex items-center gap-3 p-3 bg-white rounded-lg border"
-                                        >
-                                            <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-xs">
-                                                {index + 1}
-                                            </div>
-                                            <span className="flex-1 text-sm">{item.value}</span>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => removeTembusan(item.id)}
-                                                className="text-destructive hover:text-destructive h-8 w-8"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
+                            {/* Pengaju Checkbox */}
+                            <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                <Checkbox
+                                    id="pengaju"
+                                    checked={includePengaju}
+                                    onCheckedChange={(checked) => setIncludePengaju(checked === true)}
+                                />
+                                <div className="flex-1">
+                                    <Label htmlFor="pengaju" className="font-medium cursor-pointer">
+                                        Pengaju Surat
+                                    </Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Pengaju akan mendapat akses download surat (tidak tertulis di surat)
+                                    </p>
                                 </div>
-                            )}
-
-                            <div className="space-y-2">
-                                <Label htmlFor="new-tembusan" className="text-sm font-medium">
-                                    Tambah Tembusan
-                                </Label>
-                                <div className="flex gap-2">
-                                    <Textarea
-                                        id="new-tembusan"
-                                        placeholder="Masukkan nama/jabatan tembusan..."
-                                        value={newTembusanText}
-                                        onChange={(e) => setNewTembusanText(e.target.value)}
-                                        rows={2}
-                                        className="flex-1"
-                                    />
-                                    <Button onClick={addTembusan} className="self-end">
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Tambah
-                                    </Button>
-                                </div>
+                                <Badge variant="secondary">Disarankan</Badge>
                             </div>
+
+                            <Separator />
+
+                            {/* Section 1: Akun Pengguna untuk Akses Sistem */}
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-blue-700">
+                                        1. Pilih Akun Pengguna (Akses Sistem)
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Akun yang dipilih akan dapat <strong>mengakses dan mendownload</strong> surat setelah selesai.<br/>
+                                        <span className="text-amber-600 font-medium">Tidak akan tertulis di PDF surat.</span>
+                                    </p>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            type="text"
+                                            placeholder="Cari nama atau email pengguna..."
+                                            value={userSearchQuery}
+                                            onChange={(e) => {
+                                                setUserSearchQuery(e.target.value);
+                                                setShowUserResults(true);
+                                            }}
+                                            onFocus={() => setShowUserResults(true)}
+                                            className="pl-9"
+                                        />
+                                        {isSearchingUsers && (
+                                            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                                        )}
+                                    </div>
+
+                                    {/* User Search Results */}
+                                    {showUserResults && userSearchQuery.length >= 2 && (
+                                        <Card className="shadow-lg border-2 max-h-64 overflow-y-auto">
+                                            {userSearchResults.length === 0 ? (
+                                                <div className="p-4 text-center text-muted-foreground text-sm">
+                                                    {isSearchingUsers ? 'Mencari...' : 'Tidak ada hasil ditemukan'}
+                                                </div>
+                                            ) : (
+                                                <div className="p-2 space-y-1">
+                                                    {userSearchResults.map((user) => (
+                                                        <button
+                                                            key={user.id}
+                                                            type="button"
+                                                            className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted text-left transition-colors"
+                                                            onClick={() => handleSelectUser(user)}
+                                                        >
+                                                            <div className={cn(
+                                                                "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+                                                                user.type === 'mahasiswa' ? 'bg-blue-100' : 'bg-purple-100'
+                                                            )}>
+                                                                <User className={cn(
+                                                                    "h-5 w-5",
+                                                                    user.type === 'mahasiswa' ? 'text-blue-700' : 'text-purple-700'
+                                                                )} />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-medium text-sm truncate">{user.name}</p>
+                                                                <p className="text-xs text-muted-foreground truncate">
+                                                                    {user.type === 'mahasiswa' 
+                                                                        ? `${user.identifier} • ${user.programStudi || 'Mahasiswa'}`
+                                                                        : `${user.jabatan || 'Pegawai'} • NIP: ${user.identifier}`
+                                                                    }
+                                                                </p>
+                                                            </div>
+                                                            <Badge variant="outline" className="text-xs shrink-0">
+                                                                {user.type === 'mahasiswa' ? 'Mahasiswa' : 'Pegawai'}
+                                                            </Badge>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </Card>
+                                    )}
+
+                                    {userSearchQuery.length > 0 && userSearchQuery.length < 2 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Ketik minimal 2 karakter untuk mencari...
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* List selected users */}
+                                {tembusanUsers.length > 0 && (
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium">Akun Terpilih ({tembusanUsers.length})</Label>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            {tembusanUsers.map((user) => (
+                                                <div
+                                                    key={user.userId}
+                                                    className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                                >
+                                                    <div className={cn(
+                                                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                                                        user.type === 'mahasiswa' ? 'bg-blue-100' : 'bg-purple-100'
+                                                    )}>
+                                                        <User className={cn(
+                                                            "h-4 w-4",
+                                                            user.type === 'mahasiswa' ? 'text-blue-700' : 'text-purple-700'
+                                                        )} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-sm truncate">{user.name}</p>
+                                                        <p className="text-xs text-muted-foreground truncate">{user.description}</p>
+                                                    </div>
+                                                    <Badge variant="secondary" className="text-xs shrink-0">
+                                                        Akses Sistem
+                                                    </Badge>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => removeTembusanUser(user.userId)}
+                                                        className="text-destructive hover:text-destructive h-8 w-8 shrink-0"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <Separator />
+
+                            {/* Section 2: Text Manual untuk Tertulis di Surat */}
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-tembusan-text" className="text-sm font-medium text-green-700">
+                                        2. Tambah Text Tembusan (Tertulis di Surat)
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Text yang diketik akan <strong>tertulis di bagian "Tembusan:"</strong> di PDF surat.<br/>
+                                        <span className="text-amber-600 font-medium">Tidak terkait dengan akun sistem.</span><br/>
+                                        Contoh: "Arsip", "Pertinggal", "Kepala Laboratorium"
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Textarea
+                                            id="new-tembusan-text"
+                                            placeholder="Contoh: Arsip, Kepala Lab Fisika, Yth. Bapak/Ibu..."
+                                            value={newTembusanTextInput}
+                                            onChange={(e) => setNewTembusanTextInput(e.target.value)}
+                                            rows={2}
+                                            className="flex-1"
+                                        />
+                                        <Button onClick={addTembusanText} className="self-end" disabled={!newTembusanTextInput.trim()}>
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Tambah
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* List text tembusan */}
+                                {tembusanTexts.length > 0 && (
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium">Text Terpilih ({tembusanTexts.length})</Label>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            {tembusanTexts.map((item, index) => (
+                                                <div
+                                                    key={item.id}
+                                                    className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200"
+                                                >
+                                                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-700 shrink-0">
+                                                        {index + 1}
+                                                    </div>
+                                                    <span className="flex-1 text-sm">{item.text}</span>
+                                                    <Badge variant="outline" className="text-xs border-green-300 text-green-700 shrink-0">
+                                                        Tertulis di Surat
+                                                    </Badge>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => removeTembusanText(item.id)}
+                                                        className="text-destructive hover:text-destructive h-8 w-8 shrink-0"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <Alert className="mt-4 bg-amber-50 border-amber-200">
+                                <Info className="h-4 w-4 text-amber-600" />
+                                <AlertDescription className="text-amber-800 text-sm">
+                                    <strong>Perbedaan:</strong><br/>
+                                    • <strong>Pengaju</strong>: Dapat akses download surat, tidak tertulis di PDF<br/>
+                                    • <strong>Akun Sistem (Biru)</strong>: Dapat akses download surat, tidak tertulis di PDF<br/>
+                                    • <strong>Text Tertulis (Hijau)</strong>: Tertulis di surat, tidak dapat akses sistem
+                                </AlertDescription>
+                            </Alert>
                         </CardContent>
                     </Card>
                 )}
@@ -1177,19 +1568,37 @@ function BuatSuratContent() {
 
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Tembusan ({tembusan.length})
+                                        Tembusan ({(includePengaju ? 1 : 0) + tembusanTexts.length + tembusanUsers.length})
                                     </Label>
                                     <div className="space-y-2">
-                                        {tembusan.map((item) => (
+                                        {includePengaju && (
+                                            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                                <User className="w-5 h-5 text-blue-600" />
+                                                <span className="flex-1">Pengaju Surat</span>
+                                                <Badge variant="secondary" className="text-xs">Akses + Tertulis</Badge>
+                                            </div>
+                                        )}
+                                        {tembusanUsers.map((user) => (
                                             <div
-                                                key={item.id}
-                                                className="flex items-center gap-3 p-3 bg-white rounded-lg border"
+                                                key={user.userId}
+                                                className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
                                             >
-                                                <Users className="w-5 h-5 text-zinc-400" />
-                                                <span>{item.value}</span>
+                                                <User className="w-5 h-5 text-blue-600" />
+                                                <span className="flex-1">{user.name}</span>
+                                                <Badge variant="secondary" className="text-xs">Akses Sistem</Badge>
                                             </div>
                                         ))}
-                                        {tembusan.length === 0 && (
+                                        {tembusanTexts.map((item) => (
+                                            <div
+                                                key={item.id}
+                                                className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200"
+                                            >
+                                                <FileText className="w-5 h-5 text-green-600" />
+                                                <span className="flex-1">{item.text}</span>
+                                                <Badge variant="outline" className="text-xs border-green-300 text-green-700">Tertulis di Surat</Badge>
+                                            </div>
+                                        ))}
+                                        {!includePengaju && tembusanTexts.length === 0 && tembusanUsers.length === 0 && (
                                             <p className="text-sm text-muted-foreground italic">
                                                 Tidak ada tembusan
                                             </p>
@@ -1218,7 +1627,7 @@ function BuatSuratContent() {
                                             suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
                                             suratKeputusanForm
                                         }
-                                        tembusan={tembusan.map(t => ({ name: t.value }))}
+                                        tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                     />
                                 </div>
                             </CardContent>

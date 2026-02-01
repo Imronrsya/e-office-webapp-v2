@@ -27,6 +27,8 @@ import {
     Trash2,
     PenTool,
     Users,
+    User,
+    Search,
     Info,
     FileText,
     CheckCircle,
@@ -36,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import BottomNav from "@/components/layout/bottom-nav";
 import { suratService } from "@/services/surat.service";
+import { userService } from "@/services/user.service";
 import { TemplatePreview } from "@/components/surat-preview";
 
 // ============================================================================
@@ -59,18 +62,33 @@ interface SignerItem {
     page?: number;
 }
 
-interface TembusanItem {
+// Tembusan Sistem - untuk akses download (tidak tertulis di surat)
+interface TembusanUser {
+    userId: string;
+    name: string;
+    email: string;
+    type: 'mahasiswa' | 'pegawai';
+    description: string; // NIM/NIP + Prodi/Jabatan
+}
+
+// Tembusan Tertulis - untuk ditulis di PDF surat (tidak terkait akun)
+interface TembusanText {
     id: string;
-    type: "TEXT" | "USER" | "PRESET";
-    value: string;
-    label?: string;
+    text: string;
 }
 
 interface PelaksanaItem {
     key: string;
     nama: string;
-    nimNip: string;
-    jabatan?: string;
+    nim: string;
+    prodi: string;
+    [key: string]: string; // Support dynamic columns
+}
+
+// Custom column definition for table
+interface CustomColumn {
+    key: string;
+    label: string;
 }
 
 interface KeputusanItem {
@@ -114,9 +132,12 @@ interface SuratTugasForm {
 interface SuratTugasTabelForm {
     jenisSuratText: string;
     tanggalSurat: string;
+    tanggalMulai: string;    // Tanggal mulai tugas
+    tanggalSelesai: string;  // Tanggal selesai tugas
     keperluan: string;
     judulSurat: string;
     pelaksana: PelaksanaItem[];
+    customColumns: CustomColumn[];  // Custom columns for table
 }
 
 interface SuratKeputusanForm {
@@ -227,9 +248,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [suratTugasTabelForm, setSuratTugasTabelForm] = useState<SuratTugasTabelForm>({
         jenisSuratText: "SURAT TUGAS",
         tanggalSurat: "",
+        tanggalMulai: "",
+        tanggalSelesai: "",
         keperluan: "",
         judulSurat: "",
         pelaksana: [],
+        customColumns: [],
     });
 
     const [suratKeputusanForm, setSuratKeputusanForm] = useState<SuratKeputusanForm>({
@@ -256,30 +280,22 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         }
     ]);
     
-    // Tembusan state
-    const [tembusan, setTembusan] = useState<TembusanItem[]>([]);
-    const [newTembusanText, setNewTembusanText] = useState("");
-    const [selectedTembusanPreset, setSelectedTembusanPreset] = useState("");
+    // Tembusan state - DIPISAH menjadi 2:
+    // 1. Akun user (untuk akses sistem, TIDAK tertulis di surat)
+    const [tembusanUsers, setTembusanUsers] = useState<TembusanUser[]>([]);
+    
+    // 2. Text manual (untuk tertulis di surat, TIDAK terkait akun)
+    const [tembusanTexts, setTembusanTexts] = useState<TembusanText[]>([]);
+    const [newTembusanTextInput, setNewTembusanTextInput] = useState("");
+    
+    // Checkbox pengaju
     const [includePengaju, setIncludePengaju] = useState(true);
     
-    // Preset options untuk tembusan dropdown - pejabat prodi dan fakultas
-    const TEMBUSAN_PRESETS = [
-        // Pejabat Fakultas
-        { value: "dekan", label: "Dekan Fakultas Sains dan Matematika", category: "Fakultas" },
-        { value: "wakil_dekan_1", label: "Wakil Dekan I (Akademik)", category: "Fakultas" },
-        { value: "wakil_dekan_2", label: "Wakil Dekan II (Sumber Daya)", category: "Fakultas" },
-        { value: "manajer_tu", label: "Manajer Tata Usaha", category: "Fakultas" },
-        { value: "supervisor_akademik", label: "Supervisor Akademik", category: "Fakultas" },
-        { value: "supervisor_sumber_daya", label: "Supervisor Sumber Daya", category: "Fakultas" },
-        // Pejabat Prodi/Departemen
-        { value: "ketua_departemen", label: "Ketua Departemen", category: "Prodi" },
-        { value: "ketua_prodi", label: "Ketua Program Studi", category: "Prodi" },
-        { value: "sekretaris_departemen", label: "Sekretaris Departemen", category: "Prodi" },
-        { value: "sekretaris_prodi", label: "Sekretaris Program Studi", category: "Prodi" },
-        // Lainnya
-        { value: "arsip", label: "Arsip", category: "Lainnya" },
-        { value: "pengaju", label: "Yang Bersangkutan (Pengaju)", category: "Lainnya" },
-    ];
+    // User search for tembusan akun
+    const [userSearchQuery, setUserSearchQuery] = useState("");
+    const [userSearchResults, setUserSearchResults] = useState<import('@/services/user.service').TembusanUser[]>([]);
+    const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+    const [showUserResults, setShowUserResults] = useState(false);
     
     // Loading state for fetching existing data
     const [loading, setLoading] = useState(true);
@@ -412,18 +428,23 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 // Populate SURAT_TUGAS_TABEL form from existing content
                 if (suratType === "SURAT_TUGAS_TABEL" && existingDoc?.content) {
                     const content = existingDoc.content as Record<string, unknown>;
-                    const existingPelaksana = (content.pelaksana as Array<{ nama: string; nimNip: string; jabatan?: string }>) || [];
+                    const existingPelaksana = (content.pelaksana as Array<Record<string, string>>) || [];
+                    const existingCustomColumns = (content.customColumns as Array<{ key: string; label: string }>) || [];
                     setSuratTugasTabelForm(prev => ({
                         ...prev,
                         jenisSuratText: (content.jenisSuratText as string) || "SURAT TUGAS",
                         tanggalSurat: (content.tanggalSurat as string) || "",
+                        tanggalMulai: (content.tanggalMulai as string) || "",
+                        tanggalSelesai: (content.tanggalSelesai as string) || "",
                         keperluan: (content.keperluan as string) || detail.submissionValues.keperluan || "",
                         judulSurat: (content.judulSurat as string) || detail.submissionValues.judulAcara || "",
+                        customColumns: existingCustomColumns,
                         pelaksana: existingPelaksana.map((p, index) => ({
                             key: String(index + 1),
                             nama: p.nama || "",
-                            nimNip: p.nimNip || "",
-                            jabatan: p.jabatan || ""
+                            nim: p.nim || p.nimNip || "",
+                            prodi: p.prodi || "",
+                            ...existingCustomColumns.reduce((acc, col) => ({ ...acc, [col.key]: p[col.key] || "" }), {})
                         }))
                     }));
                 } else if (suratType === "SURAT_TUGAS_TABEL" && !existingDoc && detail.submissionValues) {
@@ -432,11 +453,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         ...prev,
                         keperluan: detail.submissionValues.keperluan || "",
                         judulSurat: detail.submissionValues.judulAcara || "",
+                        customColumns: [],
                         pelaksana: [{
                             key: "1",
                             nama: detail.submissionValues.nama || "",
-                            nimNip: detail.submissionValues.nim || detail.submissionValues.nip || "",
-                            jabatan: ""
+                            nim: detail.submissionValues.nim || detail.submissionValues.nip || "",
+                            prodi: detail.submissionValues.programStudi || "",
                         }]
                     }));
                 }
@@ -535,15 +557,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     const hasPengaju = existingTembusan.some(t => t.toLowerCase() === "pengaju");
                     setIncludePengaju(hasPengaju);
                     
-                    // Set tembusan excluding "Pengaju" (it's handled separately)
-                    const tembusanItems: TembusanItem[] = existingTembusan
+                    // Set tembusan texts excluding "Pengaju" (it's handled separately)
+                    const texts: TembusanText[] = existingTembusan
                         .filter(t => t.toLowerCase() !== "pengaju")
                         .map((t, index) => ({
                             id: String(index + 1),
-                            type: "TEXT" as const,
-                            value: t
+                            text: t
                         }));
-                    setTembusan(tembusanItems);
+                    setTembusanTexts(texts);
                 }
 
             } catch (error) {
@@ -579,9 +600,20 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Pelaksana handlers for Surat Tugas Tabel
     const addPelaksana = () => {
         const newKey = String(Date.now());
+        // Create new pelaksana with default columns + custom columns
+        const newPelaksana: PelaksanaItem = { 
+            key: newKey, 
+            nama: "", 
+            nim: "", 
+            prodi: "",
+        };
+        // Add empty values for custom columns
+        suratTugasTabelForm.customColumns.forEach(col => {
+            newPelaksana[col.key] = "";
+        });
         setSuratTugasTabelForm(prev => ({
             ...prev,
-            pelaksana: [...prev.pelaksana, { key: newKey, nama: "", nimNip: "", jabatan: "" }]
+            pelaksana: [...prev.pelaksana, newPelaksana]
         }));
     };
 
@@ -592,10 +624,40 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         }));
     };
 
-    const updatePelaksana = (key: string, field: keyof PelaksanaItem, value: string) => {
+    const updatePelaksana = (key: string, field: string, value: string) => {
         setSuratTugasTabelForm(prev => ({
             ...prev,
             pelaksana: prev.pelaksana.map(p => p.key === key ? { ...p, [field]: value } : p)
+        }));
+    };
+
+    // Custom Column handlers for Surat Tugas Tabel
+    const addCustomColumn = () => {
+        const newKey = `col_${Date.now()}`;
+        setSuratTugasTabelForm(prev => ({
+            ...prev,
+            customColumns: [...prev.customColumns, { key: newKey, label: "" }],
+            // Add empty value for this column to all existing pelaksana
+            pelaksana: prev.pelaksana.map(p => ({ ...p, [newKey]: "" }))
+        }));
+    };
+
+    const removeCustomColumn = (colKey: string) => {
+        setSuratTugasTabelForm(prev => ({
+            ...prev,
+            customColumns: prev.customColumns.filter(c => c.key !== colKey),
+            // Remove this column from all pelaksana
+            pelaksana: prev.pelaksana.map(p => {
+                const { [colKey]: _, ...rest } = p;
+                return rest as PelaksanaItem;
+            })
+        }));
+    };
+
+    const updateCustomColumnLabel = (colKey: string, label: string) => {
+        setSuratTugasTabelForm(prev => ({
+            ...prev,
+            customColumns: prev.customColumns.map(c => c.key === colKey ? { ...c, label } : c)
         }));
     };
 
@@ -703,52 +765,65 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // TEMBUSAN HANDLERS
     // ========================================================================
 
-    const addTembusanFromPreset = () => {
-        if (!selectedTembusanPreset) {
-            toast.error("Pilih tembusan dari dropdown");
-            return;
-        }
-        const preset = TEMBUSAN_PRESETS.find(p => p.value === selectedTembusanPreset);
-        if (!preset) return;
+    const addTembusanText = () => {
+        if (!newTembusanTextInput.trim()) return;
         
-        // Cek apakah sudah ada
-        if (tembusan.some(t => t.value.toLowerCase() === preset.label.toLowerCase())) {
-            toast.error("Tembusan sudah ditambahkan");
-            return;
-        }
-        
-        const newId = String(Date.now());
-        setTembusan([...tembusan, { 
-            id: newId, 
-            type: "PRESET", 
-            value: preset.label 
-        }]);
-        setSelectedTembusanPreset("");
+        const newItem: TembusanText = {
+            id: String(Date.now()),
+            text: newTembusanTextInput.trim()
+        };
+        setTembusanTexts([...tembusanTexts, newItem]);
+        setNewTembusanTextInput("");
     };
 
-    const addTembusanCustom = () => {
-        if (!newTembusanText.trim()) {
-            toast.error("Masukkan nama/jabatan tembusan");
-            return;
-        }
-        
-        // Cek apakah sudah ada
-        if (tembusan.some(t => t.value.toLowerCase() === newTembusanText.trim().toLowerCase())) {
-            toast.error("Tembusan sudah ditambahkan");
-            return;
-        }
-        
-        const newId = String(Date.now());
-        setTembusan([...tembusan, { 
-            id: newId, 
-            type: "TEXT", 
-            value: newTembusanText.trim() 
-        }]);
-        setNewTembusanText("");
+    const removeTembusanText = (id: string) => {
+        setTembusanTexts(tembusanTexts.filter(t => t.id !== id));
     };
 
-    const removeTembusan = (id: string) => {
-        setTembusan(tembusan.filter(t => t.id !== id));
+    const removeTembusanUser = (userId: string) => {
+        setTembusanUsers(tembusanUsers.filter(u => u.userId !== userId));
+    };
+
+    // ========================================================================
+    // USER SEARCH FOR TEMBUSAN
+    // ========================================================================
+    
+    // Debounced user search
+    useEffect(() => {
+        if (userSearchQuery.length < 2) {
+            setUserSearchResults([]);
+            return;
+        }
+
+        const timeoutId = setTimeout(async () => {
+            setIsSearchingUsers(true);
+            const result = await userService.searchUsers(userSearchQuery);
+            if (result.success && result.data) {
+                // Filter out already selected users
+                const selectedUserIds = new Set(tembusanUsers.map(u => u.userId));
+                const filtered = result.data.filter(user => !selectedUserIds.has(user.id));
+                setUserSearchResults(filtered);
+            }
+            setIsSearchingUsers(false);
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [userSearchQuery, tembusanUsers]);
+
+    const handleSelectUser = (user: import('@/services/user.service').TembusanUser) => {
+        const newUser: TembusanUser = {
+            userId: user.id,
+            name: user.name,
+            email: user.email,
+            type: user.type,
+            description: user.type === 'mahasiswa' 
+                ? `${user.identifier} • ${user.programStudi || 'Mahasiswa'}`
+                : `${user.jabatan || 'Pegawai'} • NIP: ${user.identifier}`
+        };
+        setTembusanUsers([...tembusanUsers, newUser]);
+        setUserSearchQuery('');
+        setUserSearchResults([]);
+        setShowUserResults(false);
     };
 
     // ========================================================================
@@ -772,13 +847,23 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 return false;
             }
         } else if (suratType === "SURAT_TUGAS_TABEL") {
-            // Removed tanggalSurat from required - will be assigned by UPA
+            // Validate required fields
             if (!suratTugasTabelForm.keperluan) {
-                toast.error("Lengkapi semua field yang wajib diisi");
+                toast.error("Lengkapi keperluan surat");
+                return false;
+            }
+            if (!suratTugasTabelForm.tanggalMulai || !suratTugasTabelForm.tanggalSelesai) {
+                toast.error("Lengkapi tanggal mulai dan selesai tugas");
                 return false;
             }
             if (suratTugasTabelForm.pelaksana.length === 0) {
                 toast.error("Tambahkan minimal 1 pelaksana");
+                return false;
+            }
+            // Validate each pelaksana has required fields (nama, nim, prodi)
+            const invalidPelaksana = suratTugasTabelForm.pelaksana.find(p => !p.nama || !p.nim || !p.prodi);
+            if (invalidPelaksana) {
+                toast.error("Lengkapi data nama, NIM, dan prodi untuk setiap pelaksana");
                 return false;
             }
         } else if (suratType === "SURAT_KEPUTUSAN") {
@@ -902,13 +987,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     order: idx + 1
                 }));
 
-            // Build tembusan array
+            // Build tembusan array - hanya text yang ditulis di PDF
             const tembusanList: string[] = [];
             if (includePengaju) {
                 tembusanList.push("Pengaju");
             }
-            tembusan.forEach(t => {
-                tembusanList.push(t.value);
+            // Tambahkan semua text tembusan
+            tembusanTexts.forEach(item => {
+                tembusanList.push(item.text);
             });
 
             let response;
@@ -1433,49 +1519,146 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 rows={2}
                                             />
                                         </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="tanggalMulai">Tanggal Mulai <span className="text-red-500">*</span></Label>
+                                                <Input
+                                                    id="tanggalMulai"
+                                                    type="date"
+                                                    value={suratTugasTabelForm.tanggalMulai}
+                                                    onChange={(e) => updateSuratTugasTabel("tanggalMulai", e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="tanggalSelesai">Tanggal Selesai <span className="text-red-500">*</span></Label>
+                                                <Input
+                                                    id="tanggalSelesai"
+                                                    type="date"
+                                                    value={suratTugasTabelForm.tanggalSelesai}
+                                                    onChange={(e) => updateSuratTugasTabel("tanggalSelesai", e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
                                     </CardContent>
                                 </Card>
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
                                         <CardTitle className="text-lg">Data Pelaksana</CardTitle>
-                                        <CardDescription>Tambahkan daftar orang yang akan ditugaskan</CardDescription>
+                                        <CardDescription>Tambahkan daftar orang yang akan ditugaskan dalam format tabel</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        {suratTugasTabelForm.pelaksana.map((p, index) => (
-                                            <div key={p.key} className="flex items-start gap-3 p-4 bg-white rounded-lg border">
-                                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium">
-                                                    {index + 1}
+                                        {/* Custom Columns Management */}
+                                        {suratTugasTabelForm.customColumns.length > 0 && (
+                                            <div className="space-y-2">
+                                                <Label className="text-sm font-medium text-muted-foreground">Kolom Tambahan:</Label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {suratTugasTabelForm.customColumns.map((col) => (
+                                                        <div key={col.key} className="flex items-center gap-1 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1">
+                                                            <Input
+                                                                value={col.label}
+                                                                onChange={(e) => updateCustomColumnLabel(col.key, e.target.value)}
+                                                                placeholder="Nama Kolom"
+                                                                className="h-7 w-32 text-sm border-0 bg-transparent focus-visible:ring-0"
+                                                            />
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => removeCustomColumn(col.key)}
+                                                                className="h-6 w-6 text-destructive hover:text-destructive"
+                                                            >
+                                                                <Trash2 className="w-3 h-3" />
+                                                            </Button>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                <div className="flex-1 space-y-3">
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <Input
-                                                            value={p.nama}
-                                                            onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
-                                                            placeholder="Nama"
-                                                        />
-                                                        <Input
-                                                            value={p.nimNip}
-                                                            onChange={(e) => updatePelaksana(p.key, "nimNip", e.target.value)}
-                                                            placeholder="NIM/NIP"
-                                                        />
-                                                    </div>
-                                                    <Input
-                                                        value={p.jabatan || ""}
-                                                        onChange={(e) => updatePelaksana(p.key, "jabatan", e.target.value)}
-                                                        placeholder="Jabatan (opsional)"
-                                                    />
-                                                </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => removePelaksana(p.key)}
-                                                    className="text-destructive hover:text-destructive"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
                                             </div>
-                                        ))}
+                                        )}
+                                        
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={addCustomColumn} 
+                                            className="border-dashed"
+                                        >
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Tambah Kolom
+                                        </Button>
+
+                                        {/* Table Header */}
+                                        <div className="border rounded-lg overflow-hidden">
+                                            <div className="bg-muted/50 p-3 border-b">
+                                                <div className="grid gap-2" style={{ 
+                                                    gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px` 
+                                                }}>
+                                                    <div className="text-xs font-medium text-center">No</div>
+                                                    <div className="text-xs font-medium">Nama <span className="text-red-500">*</span></div>
+                                                    <div className="text-xs font-medium">NIM <span className="text-red-500">*</span></div>
+                                                    <div className="text-xs font-medium">Prodi <span className="text-red-500">*</span></div>
+                                                    {suratTugasTabelForm.customColumns.map((col) => (
+                                                        <div key={col.key} className="text-xs font-medium">{col.label || "(Belum diberi nama)"}</div>
+                                                    ))}
+                                                    <div></div>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Table Body */}
+                                            <div className="divide-y">
+                                                {suratTugasTabelForm.pelaksana.map((p, index) => (
+                                                    <div key={p.key} className="p-3 bg-white hover:bg-muted/30">
+                                                        <div className="grid gap-2 items-center" style={{ 
+                                                            gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px` 
+                                                        }}>
+                                                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium text-sm">
+                                                                {index + 1}
+                                                            </div>
+                                                            <Input
+                                                                value={p.nama}
+                                                                onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
+                                                                placeholder="Nama"
+                                                                className="h-9"
+                                                            />
+                                                            <Input
+                                                                value={p.nim}
+                                                                onChange={(e) => updatePelaksana(p.key, "nim", e.target.value)}
+                                                                placeholder="NIM"
+                                                                className="h-9"
+                                                            />
+                                                            <Input
+                                                                value={p.prodi}
+                                                                onChange={(e) => updatePelaksana(p.key, "prodi", e.target.value)}
+                                                                placeholder="Prodi"
+                                                                className="h-9"
+                                                            />
+                                                            {suratTugasTabelForm.customColumns.map((col) => (
+                                                                <Input
+                                                                    key={col.key}
+                                                                    value={p[col.key] || ""}
+                                                                    onChange={(e) => updatePelaksana(p.key, col.key, e.target.value)}
+                                                                    placeholder={col.label || "..."}
+                                                                    className="h-9"
+                                                                />
+                                                            ))}
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => removePelaksana(p.key)}
+                                                                className="text-destructive hover:text-destructive h-8 w-8"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                
+                                                {suratTugasTabelForm.pelaksana.length === 0 && (
+                                                    <div className="p-8 text-center text-muted-foreground">
+                                                        <p className="text-sm">Belum ada data pelaksana</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
                                         <Button variant="outline" onClick={addPelaksana} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah Pelaksana
@@ -1787,7 +1970,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
                                         suratKeputusanForm
                                     }
-                                    tembusan={tembusan.map(t => ({ name: t.value }))}
+                                    tembusan={[
+                                        ...(includePengaju ? [{ name: "Pengaju" }] : []),
+                                        ...tembusanTexts.map(t => ({ name: t.text }))
+                                    ]}
                                 />
                             </CardContent>
                         </Card>
@@ -1818,7 +2004,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         Pengaju Surat
                                     </Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Pengaju akan mendapat salinan surat yang sudah jadi
+                                        Pengaju akan mendapat akses sistem DAN tertulis di surat
                                     </p>
                                 </div>
                                 <Badge variant="secondary">Disarankan</Badge>
@@ -1826,111 +2012,194 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                             <Separator />
 
-                            {tembusan.length > 0 && (
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium">Tembusan Tambahan</Label>
-                                    {tembusan.map((item, index) => (
-                                        <div
-                                            key={item.id}
-                                            className="flex items-center gap-3 p-3 bg-white rounded-lg border"
-                                        >
-                                            <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-xs">
-                                                {index + 1}
-                                            </div>
-                                            <span className="flex-1 text-sm">{item.value}</span>
-                                            <Badge variant={item.type === "PRESET" ? "secondary" : "outline"} className="text-xs">
-                                                {item.type === "PRESET" ? "Preset" : "Custom"}
-                                            </Badge>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => removeTembusan(item.id)}
-                                                className="text-destructive hover:text-destructive h-8 w-8"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
+                            {/* Section 1: Akun Pengguna untuk Akses Sistem */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium">Pilih Pejabat dari Daftar</Label>
-                                    <div className="flex gap-2">
-                                        <Select value={selectedTembusanPreset} onValueChange={setSelectedTembusanPreset}>
-                                            <SelectTrigger className="flex-1">
-                                                <SelectValue placeholder="Pilih pejabat tembusan..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {/* Pejabat Fakultas */}
-                                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted">
-                                                    Pejabat Fakultas
-                                                </div>
-                                                {TEMBUSAN_PRESETS.filter(p => p.category === "Fakultas" && !tembusan.some(t => t.value.toLowerCase() === p.label.toLowerCase())).map(preset => (
-                                                    <SelectItem key={preset.value} value={preset.value}>
-                                                        {preset.label}
-                                                    </SelectItem>
-                                                ))}
-                                                
-                                                {/* Pejabat Prodi/Departemen */}
-                                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted mt-1">
-                                                    Pejabat Prodi/Departemen
-                                                </div>
-                                                {TEMBUSAN_PRESETS.filter(p => p.category === "Prodi" && !tembusan.some(t => t.value.toLowerCase() === p.label.toLowerCase())).map(preset => (
-                                                    <SelectItem key={preset.value} value={preset.value}>
-                                                        {preset.label}
-                                                    </SelectItem>
-                                                ))}
-                                                
-                                                {/* Lainnya */}
-                                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted mt-1">
-                                                    Lainnya
-                                                </div>
-                                                {TEMBUSAN_PRESETS.filter(p => p.category === "Lainnya" && !tembusan.some(t => t.value.toLowerCase() === p.label.toLowerCase())).map(preset => (
-                                                    <SelectItem key={preset.value} value={preset.value}>
-                                                        {preset.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <Button onClick={addTembusanFromPreset} disabled={!selectedTembusanPreset}>
-                                            <Plus className="w-4 h-4 mr-2" />
-                                            Tambah
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                <Separator />
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="new-tembusan" className="text-sm font-medium">
-                                        Tambah Tembusan Manual
+                                    <Label className="text-sm font-medium text-blue-700">
+                                        1. Pilih Akun Pengguna (Akses Sistem)
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Masukkan nama atau jabatan penerima tembusan yang tidak ada dalam daftar.
+                                        Akun yang dipilih akan dapat <strong>mengakses dan mendownload</strong> surat setelah selesai.<br/>
+                                        <span className="text-amber-600 font-medium">Tidak akan tertulis di PDF surat.</span>
+                                    </p>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            type="text"
+                                            placeholder="Cari nama atau email pengguna..."
+                                            value={userSearchQuery}
+                                            onChange={(e) => {
+                                                setUserSearchQuery(e.target.value);
+                                                setShowUserResults(true);
+                                            }}
+                                            onFocus={() => setShowUserResults(true)}
+                                            className="pl-9"
+                                        />
+                                        {isSearchingUsers && (
+                                            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                                        )}
+                                    </div>
+
+                                    {/* User Search Results */}
+                                    {showUserResults && userSearchQuery.length >= 2 && (
+                                        <Card className="shadow-lg border-2 max-h-64 overflow-y-auto">
+                                            {userSearchResults.length === 0 ? (
+                                                <div className="p-4 text-center text-muted-foreground text-sm">
+                                                    {isSearchingUsers ? 'Mencari...' : 'Tidak ada hasil ditemukan'}
+                                                </div>
+                                            ) : (
+                                                <div className="p-2 space-y-1">
+                                                    {userSearchResults.map((user) => (
+                                                        <button
+                                                            key={user.id}
+                                                            type="button"
+                                                            className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted text-left transition-colors"
+                                                            onClick={() => handleSelectUser(user)}
+                                                        >
+                                                            <div className={cn(
+                                                                "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+                                                                user.type === 'mahasiswa' ? 'bg-blue-100' : 'bg-purple-100'
+                                                            )}>
+                                                                <User className={cn(
+                                                                    "h-5 w-5",
+                                                                    user.type === 'mahasiswa' ? 'text-blue-700' : 'text-purple-700'
+                                                                )} />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-medium text-sm truncate">{user.name}</p>
+                                                                <p className="text-xs text-muted-foreground truncate">
+                                                                    {user.type === 'mahasiswa' 
+                                                                        ? `${user.identifier} • ${user.programStudi || 'Mahasiswa'}`
+                                                                        : `${user.jabatan || 'Pegawai'} • NIP: ${user.identifier}`
+                                                                    }
+                                                                </p>
+                                                            </div>
+                                                            <Badge variant="outline" className="text-xs shrink-0">
+                                                                {user.type === 'mahasiswa' ? 'Mahasiswa' : 'Pegawai'}
+                                                            </Badge>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </Card>
+                                    )}
+
+                                    {userSearchQuery.length > 0 && userSearchQuery.length < 2 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Ketik minimal 2 karakter untuk mencari...
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* List selected users */}
+                                {tembusanUsers.length > 0 && (
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium">Akun Terpilih ({tembusanUsers.length})</Label>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            {tembusanUsers.map((user) => (
+                                                <div
+                                                    key={user.userId}
+                                                    className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                                >
+                                                    <div className={cn(
+                                                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                                                        user.type === 'mahasiswa' ? 'bg-blue-100' : 'bg-purple-100'
+                                                    )}>
+                                                        <User className={cn(
+                                                            "h-4 w-4",
+                                                            user.type === 'mahasiswa' ? 'text-blue-700' : 'text-purple-700'
+                                                        )} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-sm truncate">{user.name}</p>
+                                                        <p className="text-xs text-muted-foreground truncate">{user.description}</p>
+                                                    </div>
+                                                    <Badge variant="secondary" className="text-xs shrink-0">
+                                                        Akses Sistem
+                                                    </Badge>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => removeTembusanUser(user.userId)}
+                                                        className="text-destructive hover:text-destructive h-8 w-8 shrink-0"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <Separator />
+
+                            {/* Section 2: Text Manual untuk Tertulis di Surat */}
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-tembusan-text" className="text-sm font-medium text-green-700">
+                                        2. Tambah Text Tembusan (Tertulis di Surat)
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Text yang diketik akan <strong>tertulis di bagian "Tembusan:"</strong> di PDF surat.<br/>
+                                        <span className="text-amber-600 font-medium">Tidak terkait dengan akun sistem.</span><br/>
+                                        Contoh: "Arsip", "Pertinggal", "Kepala Laboratorium"
                                     </p>
                                     <div className="flex gap-2">
                                         <Textarea
-                                            id="new-tembusan"
-                                            placeholder="Contoh: Kepala Laboratorium Fisika, Dr. Nama Lengkap"
-                                            value={newTembusanText}
-                                            onChange={(e) => setNewTembusanText(e.target.value)}
+                                            id="new-tembusan-text"
+                                            placeholder="Contoh: Arsip, Kepala Lab Fisika, Yth. Bapak/Ibu..."
+                                            value={newTembusanTextInput}
+                                            onChange={(e) => setNewTembusanTextInput(e.target.value)}
                                             rows={2}
                                             className="flex-1"
                                         />
-                                        <Button onClick={addTembusanCustom} className="self-end" disabled={!newTembusanText.trim()}>
+                                        <Button onClick={addTembusanText} className="self-end" disabled={!newTembusanTextInput.trim()}>
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah
                                         </Button>
                                     </div>
                                 </div>
+
+                                {/* List text tembusan */}
+                                {tembusanTexts.length > 0 && (
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium">Text Terpilih ({tembusanTexts.length})</Label>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            {tembusanTexts.map((item, index) => (
+                                                <div
+                                                    key={item.id}
+                                                    className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200"
+                                                >
+                                                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-700 shrink-0">
+                                                        {index + 1}
+                                                    </div>
+                                                    <span className="flex-1 text-sm">{item.text}</span>
+                                                    <Badge variant="outline" className="text-xs border-green-300 text-green-700 shrink-0">
+                                                        Tertulis di Surat
+                                                    </Badge>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => removeTembusanText(item.id)}
+                                                        className="text-destructive hover:text-destructive h-8 w-8 shrink-0"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            <Alert className="mt-4 bg-blue-50 border-blue-200">
-                                <Info className="h-4 w-4 text-blue-600" />
-                                <AlertDescription className="text-blue-800">
-                                    Informasi surat yang diajukan akan diteruskan ke semua pejabat/orang dalam daftar tembusan dan kepada pengaju surat.
+                            <Alert className="mt-4 bg-amber-50 border-amber-200">
+                                <Info className="h-4 w-4 text-amber-600" />
+                                <AlertDescription className="text-amber-800 text-sm">
+                                    <strong>Perbedaan:</strong><br/>
+                                    • <strong>Akun Sistem (Biru)</strong>: Dapat akses download surat, tidak tertulis di PDF<br/>
+                                    • <strong>Text Manual (Hijau)</strong>: Tertulis di PDF surat, tidak dapat akses sistem<br/>
+                                    • <strong>Pengaju</strong>: Otomatis dapat akses DAN tertulis di surat
                                 </AlertDescription>
                             </Alert>
                         </CardContent>
@@ -1983,25 +2252,44 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Tembusan ({(includePengaju ? 1 : 0) + tembusan.length})
+                                        Tembusan ({(includePengaju ? 1 : 0) + tembusanTexts.length + tembusanUsers.length})
                                     </Label>
                                     <div className="space-y-2">
                                         {includePengaju && (
                                             <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                                                 <Users className="w-5 h-5 text-blue-600" />
-                                                <span className="font-medium">Pengaju Surat</span>
+                                                <div className="flex-1">
+                                                    <span className="font-medium">Pengaju Surat</span>
+                                                    <p className="text-xs text-muted-foreground">Akses sistem + tertulis di surat</p>
+                                                </div>
                                             </div>
                                         )}
-                                        {tembusan.map((item) => (
+                                        {tembusanUsers.map((user) => (
                                             <div
-                                                key={item.id}
-                                                className="flex items-center gap-3 p-3 bg-white rounded-lg border"
+                                                key={user.userId}
+                                                className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
                                             >
-                                                <Users className="w-5 h-5 text-zinc-400" />
-                                                <span>{item.value}</span>
+                                                <User className="w-5 h-5 text-blue-600" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-sm truncate">{user.name}</p>
+                                                    <p className="text-xs text-muted-foreground truncate">{user.description}</p>
+                                                </div>
+                                                <Badge variant="secondary" className="text-xs">Akses Sistem</Badge>
                                             </div>
                                         ))}
-                                        {!includePengaju && tembusan.length === 0 && (
+                                        {tembusanTexts.map((item, index) => (
+                                            <div
+                                                key={item.id}
+                                                className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200"
+                                            >
+                                                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-700">
+                                                    {index + 1}
+                                                </div>
+                                                <span className="flex-1 text-sm">{item.text}</span>
+                                                <Badge variant="outline" className="text-xs border-green-300 text-green-700">Tertulis di Surat</Badge>
+                                            </div>
+                                        ))}
+                                        {!includePengaju && tembusanTexts.length === 0 && tembusanUsers.length === 0 && (
                                             <p className="text-sm text-muted-foreground italic">
                                                 Tidak ada tembusan
                                             </p>
@@ -2031,7 +2319,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
                                             suratKeputusanForm
                                         }
-                                        tembusan={tembusan.map(t => ({ name: t.value }))}
+                                        tembusan={[
+                                            ...(includePengaju ? [{ name: "Pengaju" }] : []),
+                                            ...tembusanTexts.map(t => ({ name: t.text }))
+                                        ]}
                                     />
                                 </div>
                             </CardContent>

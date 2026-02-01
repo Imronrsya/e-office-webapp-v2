@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useDraftSurat, TembusanRecipient } from '../../context/draft-surat-context';
 import { userService, TembusanUser } from '@/services/user.service';
 import { 
@@ -18,7 +19,8 @@ import {
   Loader2, 
   Check, 
   AlertCircle,
-  UserPlus
+  UserPlus,
+  Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -79,9 +81,9 @@ export function TembusanConfigStep() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Konfigurasi Tembusan</h2>
+          <h2 className="text-2xl font-bold">Konfigurasi Penerima Surat</h2>
           <p className="text-muted-foreground mt-1">
-            Pilih akun yang akan menerima salinan surat setelah selesai diproses
+            Pilih akun yang akan dapat mengakses dan mendownload surat
           </p>
         </div>
         <Badge variant="outline" className="text-base px-3 py-1">
@@ -89,6 +91,14 @@ export function TembusanConfigStep() {
           {state.tembusan.length + (state.submitterInfo ? 1 : 0)} penerima
         </Badge>
       </div>
+
+      <Alert className="bg-blue-50 border-blue-200">
+        <Info className="h-4 w-4 text-blue-600" />
+        <AlertDescription className="text-blue-800">
+          <strong>Catatan:</strong> Akun yang dipilih di sini akan dapat <strong>mengakses dan mendownload surat</strong> setelah surat selesai diproses.<br/>
+          Untuk menambahkan tembusan yang <strong>tertulis di surat</strong> (seperti "Arsip", "Pertinggal"), itu dapat dilakukan saat editing draft oleh staf/supervisor.
+        </AlertDescription>
+      </Alert>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left Column: Search and Add */}

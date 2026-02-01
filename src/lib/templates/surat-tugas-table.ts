@@ -14,6 +14,15 @@ export interface MahasiswaData {
   nama: string;
   nim: string;
   prodi: string;
+  [key: string]: string; // Support dynamic columns
+}
+
+/**
+ * Interface untuk kolom custom
+ */
+export interface CustomColumn {
+  key: string;
+  label: string;
 }
 
 /**
@@ -30,6 +39,9 @@ export interface SuratTugasTableData {
   keterangan: string;
   tanggalMulai: string;
   tanggalSelesai: string;
+  
+  // Custom columns for table
+  customColumns?: CustomColumn[];
   
   // Tanda tangan
   signatures?: SignatureBlock[];
@@ -149,7 +161,48 @@ const renderTembusan = (tembusan?: TembusanRecipient[]): string => {
   `;
 };
 
-export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<!DOCTYPE html>
+/**
+ * Helper untuk render tabel mahasiswa dengan kolom custom
+ */
+const renderMahasiswaTable = (dataMahasiswa: MahasiswaData[], customColumns?: CustomColumn[]): string => {
+  const cols = customColumns || [];
+  
+  // Generate header
+  const headerCells = [
+    '<th style="color: #000000;">No</th>',
+    '<th style="color: #000000;">Nama</th>',
+    '<th style="color: #000000;">NIM</th>',
+    '<th style="color: #000000;">PRODI</th>',
+    ...cols.map(col => `<th style="color: #000000;">${col.label || col.key}</th>`)
+  ].join('\n          ');
+  
+  // Generate body rows
+  const bodyRows = (dataMahasiswa || []).map((mhs, index) => {
+    const baseCells = [
+      `<td style="color: #000000;">${index + 1}.</td>`,
+      `<td style="color: #000000;">${mhs.nama}</td>`,
+      `<td style="color: #000000;">${mhs.nim}</td>`,
+      `<td style="color: #000000;">${mhs.prodi}</td>`,
+    ];
+    const customCells = cols.map(col => `<td style="color: #000000;">${mhs[col.key] || ''}</td>`);
+    return `<tr>\n          ${[...baseCells, ...customCells].join('\n          ')}\n        </tr>`;
+  }).join('\n        ');
+  
+  return `
+    <table class="table-mahasiswa">
+      <thead>
+        <tr>
+          ${headerCells}
+        </tr>
+      </thead>
+      <tbody>
+        ${bodyRows}
+      </tbody>
+    </table>
+  `;
+};
+
+export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<!DOCTYPE html>>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
@@ -406,26 +459,7 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       Dekan Fakultas Sains dan Matematika Universitas Diponegoro menugaskan kepada mahasiswa Fakultas Sains dan Matematika Universitas Diponegoro sebagai berikut :
     </p>
     
-    <table class="table-mahasiswa">
-      <thead>
-        <tr>
-          <th style="color: #000000;">No</th>
-          <th style="color: #000000;">Nama</th>
-          <th style="color: #000000;">NIM</th>
-          <th style="color: #000000;">PRODI</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${(data.dataMahasiswa || []).map((mhs, index) => `
-        <tr>
-          <td style="color: #000000;">${index + 1}.</td>
-          <td style="color: #000000;">${mhs.nama}</td>
-          <td style="color: #000000;">${mhs.nim}</td>
-          <td style="color: #000000;">${mhs.prodi}</td>
-        </tr>
-        `).join('')}
-      </tbody>
-    </table>
+    ${renderMahasiswaTable(data.dataMahasiswa, data.customColumns)}
     
     <p style="color: #000000;">
       Sebagai <b style="color: #000000;">${data.keterangan}</b> mulai tanggal ${data.tanggalMulai} s.d ${data.tanggalSelesai}.
