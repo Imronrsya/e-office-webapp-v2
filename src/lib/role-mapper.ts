@@ -134,3 +134,33 @@ export function getRoleScope(role: string): 'DEPARTEMEN' | 'FAKULTAS' | 'UPA' {
 export function canSubmitLetter(role: string): boolean {
     return ["MAHASISWA", "DOSEN"].includes(role.toUpperCase());
 }
+
+/**
+ * Menentukan redirect path setelah membuat/menyimpan draft surat
+ * - ADMIN_PRODI: ke Dashboard utama
+ * - STAFF (Akademik/Sumber Daya/Umum): ke halaman Surat Keluar
+ * @param role - Role user saat ini
+ * @returns Path untuk redirect
+ */
+export function getPostDraftRedirectPath(role: string): string {
+    const normalizedRole = role.toUpperCase();
+    
+    // Admin Prodi -> Dashboard
+    if (normalizedRole === ROLES.ADMIN_PRODI) {
+        return '/dashboard';
+    }
+    
+    // Staff Akademik, Sumber Daya, atau kategori lainnya -> Surat Keluar
+    if ([
+        ROLES.STAF_AKADEMIK,
+        ROLES.STAF_SUMBER_DAYA,
+        ROLES.SUPERVISOR_AKADEMIK,
+        ROLES.SUPERVISOR_SUMBER_DAYA,
+        ROLES.MANAJER_TU,
+    ].includes(normalizedRole as any)) {
+        return '/dashboard?tab=surat-keluar';
+    }
+    
+    // Default fallback: Dashboard
+    return '/dashboard';
+}

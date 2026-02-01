@@ -45,6 +45,8 @@ import BottomNav from "@/components/layout/bottom-nav";
 import { suratService } from "@/services/surat.service";
 import { userService } from "@/services/user.service";
 import { TemplatePreview } from "@/components/surat-preview";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import { getPostDraftRedirectPath } from "@/lib/role-mapper";
 
 // ============================================================================
 // TYPES
@@ -222,6 +224,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const resolvedParams = use(params);
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { user } = useAuth();
     
     // Get type from query params
     const suratType = searchParams.get("type") as SuratType | null;
@@ -1149,7 +1152,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 }
                 
                 toast.success(isEditMode ? "Draft surat berhasil diperbarui" : "Draft surat berhasil dibuat");
-                router.push(`/detail/${resolvedParams.id}`);
+                // Redirect berdasarkan role: Admin Prodi -> Dashboard, Staff -> Surat Keluar
+                const redirectPath = user?.role ? getPostDraftRedirectPath(user.role) : '/dashboard';
+                router.push(redirectPath);
             } else {
                 toast.error(response.message || "Gagal menyimpan draft surat");
             }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { dashboardService } from "@/services/dashboard.service";
 import type { DashboardItem, DashboardPagination } from "@/features/dashboard/types";
@@ -112,7 +112,12 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
 export default function DynamicDashboard() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const userRole = user?.role?.toUpperCase() || "MAHASISWA";
+
+  // Read tab from URL query parameter (default to "masuk" if not specified)
+  const tabFromUrl = searchParams.get("tab") as "masuk" | "keluar" | null;
+  const initialTab = tabFromUrl === "surat-keluar" ? "keluar" : tabFromUrl || "masuk";
 
   // State
   const [data, setData] = useState<DashboardState | null>(null);
@@ -122,7 +127,7 @@ export default function DynamicDashboard() {
     search: "",
     status: "",
     dateRange: { from: undefined, to: undefined },
-    type: "masuk",
+    type: initialTab,
   });
   const [page, setPage] = useState(1);
 

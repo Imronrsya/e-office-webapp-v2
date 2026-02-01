@@ -199,6 +199,7 @@ const TYPE_MAP: Record<string, SuratType> = {
 function BuatSuratContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { user } = useAuth();
     
     // Get params from URL
     const categoryParam = searchParams.get("category") as Category | null;
@@ -782,7 +783,9 @@ function BuatSuratContent() {
                 }
                 
                 toast.success("Surat berhasil dibuat");
-                router.push(`/detail/${response.data?.id || ''}`);
+                // Redirect berdasarkan role: Admin Prodi -> Dashboard, Staff -> Surat Keluar
+                const redirectPath = user?.role ? getPostDraftRedirectPath(user.role) : '/dashboard';
+                router.push(redirectPath);
             } else {
                 toast.error(response.message || "Gagal membuat surat");
             }
@@ -1924,7 +1927,10 @@ function BuatSuratContent() {
                 leftContent={
                     <Button
                         variant="outline"
-                        onClick={currentStep === "form" ? () => router.push("/dashboard") : goToPrevStep}
+                        onClick={currentStep === "form" ? () => {
+                            const redirectPath = user?.role ? getPostDraftRedirectPath(user.role) : '/dashboard';
+                            router.push(redirectPath);
+                        } : goToPrevStep}
                         className="border-zinc-800 text-zinc-800 gap-2"
                     >
                         <ArrowLeft className="w-4 h-4" />
