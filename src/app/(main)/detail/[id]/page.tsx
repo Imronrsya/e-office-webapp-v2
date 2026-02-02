@@ -1294,13 +1294,18 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 );
             }
             
+            // Merge tembusan into content for preview rendering
+            const contentWithTembusan = suratHasilDoc.content 
+                ? { ...suratHasilDoc.content, tembusan: suratHasilDoc.tembusan || [] }
+                : suratHasilDoc.tembusan ? { tembusan: suratHasilDoc.tembusan } : null;
+            
             return (
                 <PDFPreview 
                     key={`surat-hasil-${pdfRefreshKey}`}
                     fileUrl={suratHasilDoc.fileUrl || null}
                     fileName={suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
                     isSigned={suratHasilDoc.isSigned || false}
-                    content={suratHasilDoc.content}
+                    content={contentWithTembusan}
                     documentType={suratHasilDoc.type as 'SURAT_PENGANTAR' | 'SURAT_TUGAS' | 'SURAT_TUGAS_TABEL' | 'SURAT_KEPUTUSAN'}
                     signatures={suratHasilDoc.signatures}
                     onDownload={suratHasilDoc.fileUrl ? () => {

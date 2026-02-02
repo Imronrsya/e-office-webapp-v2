@@ -22,8 +22,11 @@ export interface KeputusanItem {
 
 /**
  * Interface untuk penerima tembusan
+ * userId kosong = tembusan text (tampil di surat)
+ * userId terisi = tembusan user (hanya untuk akses sistem, tidak tampil di surat)
  */
 export interface TembusanRecipient {
+  userId?: string;        // Jika ada, tembusan ini hanya untuk akses sistem
   name: string;
   description?: string;
 }
@@ -128,16 +131,34 @@ const renderQRCode = (qrCodeDataUrl?: string): string => {
 
 /**
  * Helper untuk render daftar tembusan di kiri bawah, di atas QR
+ * Hanya menampilkan tembusan text (userId kosong)
+ * Tembusan user (userId terisi) hanya untuk akses sistem, tidak ditampilkan di surat
+ * Mendukung format lama (string[]) dan format baru (TembusanRecipient[])
  */
-const renderTembusan = (tembusan?: TembusanRecipient[]): string => {
+const renderTembusan = (tembusan?: (TembusanRecipient | string)[]): string => {
   if (!tembusan || tembusan.length === 0) return '';
   
-  const recipients = tembusan.map((t, idx) => {
+  // Normalize: convert to TembusanRecipient format
+  const normalizedTembusan: TembusanRecipient[] = tembusan.map(t => {
+    if (typeof t === 'string') {
+      // Old format: string - convert to object
+      return { userId: '', name: t, description: '' };
+    }
+    return t;
+  });
+  
+  // Filter: hanya tampilkan tembusan yang userId-nya kosong (text-based)
+  // Tembusan dengan userId = untuk akses sistem saja, tidak ditampilkan di surat
+  const textBasedTembusan = normalizedTembusan.filter(t => !t.userId || t.userId === '');
+  
+  if (textBasedTembusan.length === 0) return '';
+  
+  const recipients = textBasedTembusan.map((t, idx) => {
     const desc = t.description ? ` (${t.description})` : '';
     return `<li style="color: #000000 !important; margin-bottom: 2px;">${t.name}${desc}</li>`;
   }).join('\n');
   
-  const itemCount = tembusan.length;
+  const itemCount = textBasedTembusan.length;
   const baseBottom = 110;
   const additionalHeight = Math.max(0, (itemCount - 2) * 18);
   const bottomPosition = baseBottom + additionalHeight;
