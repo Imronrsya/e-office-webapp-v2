@@ -1125,20 +1125,54 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             : [];
         
         if (docAttachments.length === 0) return null;
+
+        // Extract clean filename from URL
+        const getFileName = (url: string): string => {
+            try {
+                // Remove query params first
+                const urlWithoutParams = url.split('?')[0];
+                const parts = urlWithoutParams.split('/');
+                const fullName = parts[parts.length - 1] || `Lampiran`;
+                // Remove timestamp prefix if exists (e.g., "1234567890-filename.pdf" -> "filename.pdf")
+                const cleanName = fullName.replace(/^\d+-/, '');
+                return decodeURIComponent(cleanName);
+            } catch {
+                return `Lampiran`;
+            }
+        };
+
+        // Handle download with proper filename
+        const handleDownload = async (url: string, fileName: string) => {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(downloadUrl);
+            } catch (error) {
+                console.error('Download failed:', error);
+                // Fallback to open in new tab
+                window.open(url, '_blank');
+            }
+        };
         
         return (
             <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
                 <CardContent className="p-6">
-                    <h3 className="text-sm font-bold text-black mb-4">Lampiran Surat</h3>
+                    <h3 className="text-sm font-bold text-black mb-4">
+                        Lampiran Surat Keluar ({docAttachments.length})
+                    </h3>
                     
                     <div className="space-y-3">
                         {docAttachments.map((url, index) => {
-                            // Extract filename from URL (safely)
-                            const fileName = (typeof url === 'string' && url.split) 
-                                ? url.split('/').pop() || `Lampiran ${index + 1}`
-                                : `Lampiran ${index + 1}`;
-                            const isPdf = typeof url === 'string' && url.toLowerCase().endsWith('.pdf');
-                            const isImage = typeof url === 'string' && /\.(jpg|jpeg|png|gif)$/i.test(url);
+                            const fileName = getFileName(url);
+                            const isPdf = url.toLowerCase().includes('.pdf');
+                            const isImage = /\.(jpg|jpeg|png|gif)/i.test(url);
                             
                             return (
                                 <div 
@@ -1148,36 +1182,42 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                     <div className="flex items-center gap-3">
                                         <div className={cn(
                                             "w-10 h-10 rounded-lg flex items-center justify-center",
-                                            isPdf ? "bg-red-100" : "bg-green-100"
+                                            isPdf ? "bg-red-100" : isImage ? "bg-green-100" : "bg-blue-100"
                                         )}>
                                             <FileText className={cn(
                                                 "w-5 h-5",
-                                                isPdf ? "text-red-600" : "text-green-600"
+                                                isPdf ? "text-red-600" : isImage ? "text-green-600" : "text-blue-600"
                                             )} />
                                         </div>
                                         <div>
-                                            <p className="text-sm text-black truncate max-w-[150px]">{fileName}</p>
-                                            <p className="text-xs text-amber-600">Lampiran Surat</p>
+                                            <p className="text-sm text-black truncate max-w-[180px]" title={fileName}>
+                                                {fileName}
+                                            </p>
+                                            <p className="text-xs text-amber-600">
+                                                {isPdf ? 'PDF Document' : isImage ? 'Image' : 'Attachment'}
+                                            </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        {isImage && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => window.open(url, '_blank')}
-                                                title="Preview"
-                                            >
-                                                <Eye className="w-5 h-5" />
-                                            </Button>
-                                        )}
+                                    <div className="flex items-center gap-1">
+                                        {/* Preview button - opens in new tab for PDF and images */}
                                         <Button
                                             variant="ghost"
                                             size="icon"
                                             onClick={() => window.open(url, '_blank')}
-                                            title="Download"
+                                            title="Preview"
+                                            className="h-8 w-8"
                                         >
-                                            <Download className="w-5 h-5" />
+                                            <Eye className="w-4 h-4" />
+                                        </Button>
+                                        {/* Download button */}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleDownload(url, fileName)}
+                                            title="Download"
+                                            className="h-8 w-8"
+                                        >
+                                            <Download className="w-4 h-4" />
                                         </Button>
                                     </div>
                                 </div>
