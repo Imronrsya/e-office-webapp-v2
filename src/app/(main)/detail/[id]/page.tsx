@@ -1109,8 +1109,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     // ========================================================================
     // LAMPIRAN DOKUMEN CARD (Lampiran dari Staf/Supervisor - PDF/JPG/PNG)
+    // Hanya tampil di surat keluar, tidak di surat masuk
     // ========================================================================
     const LampiranDokumenCard = () => {
+        // Hanya tampilkan di surat keluar (filterType !== 'masuk')
+        if (filterType === 'masuk') return null;
+        
         // Ambil lampiran dari dokumen (attachmentUrls dari LetterDocument)
         const suratHasilDoc = detail?.documents?.find(d => 
             d.type === 'SURAT_TUGAS' || 
