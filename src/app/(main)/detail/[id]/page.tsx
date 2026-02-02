@@ -165,6 +165,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // Supervisor selection modal state - untuk kategori UMUM saat Ajukan Verifikasi
     const [supervisorModalOpen, setSupervisorModalOpen] = useState(false);
     const [selectedSupervisor, setSelectedSupervisor] = useState<'SUPERVISOR_AKADEMIK' | 'SUPERVISOR_SUMBER_DAYA' | null>(null);
+    
+    // Active document tab state - untuk mengontrol lampiran yang ditampilkan
+    const [activeDocTab, setActiveDocTab] = useState<'surat-pengantar' | 'surat-hasil'>('surat-pengantar');
 
     // User's current role
     const currentUserRole = user?.role?.toUpperCase() || "";
@@ -206,6 +209,14 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     useEffect(() => {
         fetchDetail();
     }, [fetchDetail]);
+    
+    // Set default active tab berdasarkan dokumen yang tersedia
+    useEffect(() => {
+        if (detail) {
+            const hasPengantar = detail.documents?.some(d => d.type === 'SURAT_PENGANTAR');
+            setActiveDocTab(hasPengantar ? 'surat-pengantar' : 'surat-hasil');
+        }
+    }, [detail]);
 
     // Download attachment handler - force download without opening in browser
     const handleDownloadAttachment = async (fileName: string, fileUrl: string) => {
@@ -1051,6 +1062,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // ========================================================================
     // LAMPIRAN CARD (Lampiran Submission dari Pengaju - HANYA UNTUK SURAT MASUK)
     // Tidak ditampilkan untuk surat keluar (surat yang dibuat langsung oleh staf)
+    // Untuk pengaju, hanya tampil saat tab surat-pengantar aktif
     // ========================================================================
     const LampiranCard = () => {
         // Hanya tampilkan untuk surat masuk (surat yang berasal dari submission)
@@ -1058,6 +1070,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         const isSuratKeluar = filterType === 'keluar' || !submissionValues;
         
         if (isSuratKeluar || attachments.length === 0) {
+            return null;
+        }
+        
+        // Untuk pengaju (PEMOHON scope) atau DEPARTEMEN, hanya tampilkan jika tab surat-pengantar aktif
+        if ((userScope === 'PEMOHON' || userScope === 'DEPARTEMEN') && activeDocTab !== 'surat-pengantar') {
             return null;
         }
         
@@ -1109,11 +1126,15 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     // ========================================================================
     // LAMPIRAN DOKUMEN CARD (Lampiran dari Staf/Supervisor - PDF/JPG/PNG)
-    // Hanya tampil di surat keluar, tidak di surat masuk
+    // Hanya tampil di surat keluar atau saat tab surat-hasil aktif
     // ========================================================================
     const LampiranDokumenCard = () => {
         // Hanya tampilkan di surat keluar (filterType !== 'masuk')
+        // atau ketika tab aktif adalah 'surat-hasil' (surat tugas/keputusan)
         if (filterType === 'masuk') return null;
+        
+        // Untuk pengaju (PEMOHON scope) atau DEPARTEMEN, hanya tampilkan jika tab surat-hasil aktif
+        if ((userScope === 'PEMOHON' || userScope === 'DEPARTEMEN') && activeDocTab !== 'surat-hasil') return null;
         
         // Ambil lampiran dari dokumen (attachmentUrls dari LetterDocument)
         const suratHasilDoc = detail?.documents?.find(d => 
@@ -1468,7 +1489,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     </div>
                 ) : documentViewMode === 'both' ? (
                     /* Lingkup Departemen dengan tabs (jika UPA sudah selesai) */
-                    <Tabs defaultValue={defaultTab} className="w-full">
+                    <Tabs 
+                        defaultValue={defaultTab} 
+                        className="w-full"
+                        onValueChange={(value) => setActiveDocTab(value as 'surat-pengantar' | 'surat-hasil')}
+                    >
                         {/* Tab Buttons */}
                         <div className="mb-6">
                             <TabsList className="bg-transparent gap-2 p-0 h-auto">
