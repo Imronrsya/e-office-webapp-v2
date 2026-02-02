@@ -2077,33 +2077,84 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     <DialogHeader>
                         <DialogTitle>Kembalikan untuk Revisi</DialogTitle>
                         <DialogDescription>
-                            Kembalikan draft surat ke staf untuk diperbaiki.
+                            Kembalikan draft surat ke staf/supervisor untuk diperbaiki.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                        {/* Pilihan staf tujuan untuk kategori UMUM */}
-                        {detail?.category === 'UMUM' && (
-                            <div className="space-y-2">
-                                <Label>Staf Tujuan <span className="text-destructive">*</span></Label>
-                                <RadioGroup 
-                                    value={returnSuratTargetStaff} 
-                                    onValueChange={setReturnSuratTargetStaff}
-                                >
-                                    <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
-                                        <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik" />
-                                        <Label htmlFor="staf-akademik" className="flex-1 cursor-pointer">
-                                            <div className="font-medium">Staf Akademik</div>
-                                        </Label>
-                                    </div>
-                                    <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
-                                        <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya" />
-                                        <Label htmlFor="staf-sumberdaya" className="flex-1 cursor-pointer">
-                                            <div className="font-medium">Staf Sumber Daya</div>
-                                        </Label>
-                                    </div>
-                                </RadioGroup>
-                            </div>
-                        )}
+                        {/* Pilihan tujuan revisi berdasarkan kategori surat */}
+                        <div className="space-y-2">
+                            <Label>Tujuan Revisi <span className="text-destructive">*</span></Label>
+                            <RadioGroup 
+                                value={returnSuratTargetStaff} 
+                                onValueChange={setReturnSuratTargetStaff}
+                            >
+                                {/* Kategori UMUM - tampilkan semua opsi */}
+                                {detail?.category === 'UMUM' && (
+                                    <>
+                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                            <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik" />
+                                            <Label htmlFor="staf-akademik" className="flex-1 cursor-pointer">
+                                                <div className="font-medium">Staf Akademik</div>
+                                            </Label>
+                                        </div>
+                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                            <RadioGroupItem value="SUPERVISOR_AKADEMIK" id="supervisor-akademik" />
+                                            <Label htmlFor="supervisor-akademik" className="flex-1 cursor-pointer">
+                                                <div className="font-medium">Supervisor Akademik</div>
+                                            </Label>
+                                        </div>
+                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                            <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya" />
+                                            <Label htmlFor="staf-sumberdaya" className="flex-1 cursor-pointer">
+                                                <div className="font-medium">Staf Sumber Daya</div>
+                                            </Label>
+                                        </div>
+                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                            <RadioGroupItem value="SUPERVISOR_SUMBER_DAYA" id="supervisor-sumberdaya" />
+                                            <Label htmlFor="supervisor-sumberdaya" className="flex-1 cursor-pointer">
+                                                <div className="font-medium">Supervisor Sumber Daya</div>
+                                            </Label>
+                                        </div>
+                                    </>
+                                )}
+                                
+                                {/* Kategori AKADEMIK - hanya opsi akademik */}
+                                {detail?.category === 'AKADEMIK' && (
+                                    <>
+                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                            <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik" />
+                                            <Label htmlFor="staf-akademik" className="flex-1 cursor-pointer">
+                                                <div className="font-medium">Staf Akademik</div>
+                                            </Label>
+                                        </div>
+                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                            <RadioGroupItem value="SUPERVISOR_AKADEMIK" id="supervisor-akademik" />
+                                            <Label htmlFor="supervisor-akademik" className="flex-1 cursor-pointer">
+                                                <div className="font-medium">Supervisor Akademik</div>
+                                            </Label>
+                                        </div>
+                                    </>
+                                )}
+                                
+                                {/* Kategori SUMBER_DAYA - hanya opsi sumber daya */}
+                                {detail?.category === 'SUMBER_DAYA' && (
+                                    <>
+                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                            <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya" />
+                                            <Label htmlFor="staf-sumberdaya" className="flex-1 cursor-pointer">
+                                                <div className="font-medium">Staf Sumber Daya</div>
+                                            </Label>
+                                        </div>
+                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                            <RadioGroupItem value="SUPERVISOR_SUMBER_DAYA" id="supervisor-sumberdaya" />
+                                            <Label htmlFor="supervisor-sumberdaya" className="flex-1 cursor-pointer">
+                                                <div className="font-medium">Supervisor Sumber Daya</div>
+                                            </Label>
+                                        </div>
+                                    </>
+                                )}
+                            </RadioGroup>
+                        </div>
                         
                         <div className="space-y-2">
                             <Label htmlFor="return-reason">Alasan Pengembalian <span className="text-destructive">*</span></Label>
@@ -2130,7 +2181,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         </Button>
                         <Button 
                             onClick={handleReturnSuratHasil}
-                            disabled={actionLoading || !returnSuratReason.trim() || (detail?.category === 'UMUM' && !returnSuratTargetStaff)}
+                            disabled={actionLoading || !returnSuratReason.trim() || !returnSuratTargetStaff}
                             className="bg-amber-600 hover:bg-amber-700"
                         >
                             {actionLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
