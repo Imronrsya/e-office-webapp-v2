@@ -592,9 +592,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             return;
         }
         
-        // For UMUM category, require target staff selection
-        if (detail.category === 'UMUM' && !returnSuratTargetStaff) {
-            toast.error("Pilih staf tujuan untuk surat kategori Umum");
+        // Require target staff/supervisor selection for all categories
+        if (!returnSuratTargetStaff) {
+            toast.error("Pilih tujuan revisi");
             return;
         }
         
@@ -611,9 +611,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         setActionLoading(true);
         try {
             // Use letterId, not documentId
-            // For UMUM category, include targetStaff
-            const targetStaff = detail.category === 'UMUM' ? returnSuratTargetStaff : undefined;
-            const response = await suratService.returnSuratHasil(detail.id, returnSuratReason.trim(), targetStaff);
+            // Always include targetStaff for all categories
+            const response = await suratService.returnSuratHasil(detail.id, returnSuratReason.trim(), returnSuratTargetStaff);
             
             if (response.success) {
                 toast.success("Surat dikembalikan untuk revisi");
@@ -1758,6 +1757,22 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
+                        {/* Submit for Verification Button (Supervisor) - when in DRAFTING status after revision from Manajer TU */}
+                        {permissions.canSubmitVerification && isSupervisor && detail.status === 'FAKULTAS_DRAFTING' && (
+                            <Button 
+                                onClick={handleSubmitForVerification}
+                                disabled={actionLoading}
+                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                            >
+                                {actionLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Send className="w-4 h-4" />
+                                )}
+                                Ajukan Verifikasi
+                            </Button>
+                        )}
+
                         {/* === SUPERVISOR/MANAJER TU VERIFICATION BUTTONS === */}
                         
                         {/* Edit Draft Button (Supervisor/Manajer TU) - during verification */}
@@ -1785,7 +1800,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         )}
 
                         {/* Kembalikan untuk Revisi Button (Supervisor/Manajer TU) */}
-                        {permissions.canVerifySuratHasil && (isSupervisor || isManajerTU) && (
+                        {permissions.canReturnForRevision && (isSupervisor || isManajerTU) && (
                             <Button 
                                 onClick={() => setReturnSuratDialogOpen(true)}
                                 disabled={actionLoading}
@@ -2077,80 +2092,169 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     <DialogHeader>
                         <DialogTitle>Kembalikan untuk Revisi</DialogTitle>
                         <DialogDescription>
-                            Kembalikan draft surat ke staf/supervisor untuk diperbaiki.
+                            {detail?.status === 'FAKULTAS_DRAFTING' 
+                                ? 'Kembalikan draft surat ke staf untuk diperbaiki.'
+                                : 'Kembalikan draft surat ke staf/supervisor untuk diperbaiki.'}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                        {/* Pilihan tujuan revisi berdasarkan kategori surat */}
+                        {/* Pilihan tujuan revisi berdasarkan kategori surat dan status */}
                         <div className="space-y-2">
                             <Label>Tujuan Revisi <span className="text-destructive">*</span></Label>
                             <RadioGroup 
                                 value={returnSuratTargetStaff} 
                                 onValueChange={setReturnSuratTargetStaff}
                             >
-                                {/* Kategori UMUM - tampilkan semua opsi */}
-                                {detail?.category === 'UMUM' && (
+                                {/* Supervisor di status DRAFTING - hanya bisa ke staff */}
+                                {detail?.status === 'FAKULTAS_DRAFTING' && isSupervisor && (
                                     <>
-                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
-                                            <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik" />
-                                            <Label htmlFor="staf-akademik" className="flex-1 cursor-pointer">
-                                                <div className="font-medium">Staf Akademik</div>
-                                            </Label>
-                                        </div>
-                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
-                                            <RadioGroupItem value="SUPERVISOR_AKADEMIK" id="supervisor-akademik" />
-                                            <Label htmlFor="supervisor-akademik" className="flex-1 cursor-pointer">
-                                                <div className="font-medium">Supervisor Akademik</div>
-                                            </Label>
-                                        </div>
-                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
-                                            <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya" />
-                                            <Label htmlFor="staf-sumberdaya" className="flex-1 cursor-pointer">
-                                                <div className="font-medium">Staf Sumber Daya</div>
-                                            </Label>
-                                        </div>
-                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
-                                            <RadioGroupItem value="SUPERVISOR_SUMBER_DAYA" id="supervisor-sumberdaya" />
-                                            <Label htmlFor="supervisor-sumberdaya" className="flex-1 cursor-pointer">
-                                                <div className="font-medium">Supervisor Sumber Daya</div>
-                                            </Label>
-                                        </div>
+                                        {/* UMUM - pilih staff akademik atau sumber daya */}
+                                        {detail?.category === 'UMUM' && (
+                                            <>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                                    <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik-drafting" />
+                                                    <Label htmlFor="staf-akademik-drafting" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Staf Akademik</div>
+                                                    </Label>
+                                                </div>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                                    <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya-drafting" />
+                                                    <Label htmlFor="staf-sumberdaya-drafting" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Staf Sumber Daya</div>
+                                                    </Label>
+                                                </div>
+                                            </>
+                                        )}
+                                        {/* AKADEMIK - hanya staff akademik */}
+                                        {detail?.category === 'AKADEMIK' && (
+                                            <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                                <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik-drafting" />
+                                                <Label htmlFor="staf-akademik-drafting" className="flex-1 cursor-pointer">
+                                                    <div className="font-medium">Staf Akademik</div>
+                                                </Label>
+                                            </div>
+                                        )}
+                                        {/* SUMBER_DAYA - hanya staff sumber daya */}
+                                        {detail?.category === 'SUMBER_DAYA' && (
+                                            <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                                <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya-drafting" />
+                                                <Label htmlFor="staf-sumberdaya-drafting" className="flex-1 cursor-pointer">
+                                                    <div className="font-medium">Staf Sumber Daya</div>
+                                                </Label>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                                 
-                                {/* Kategori AKADEMIK - hanya opsi akademik */}
-                                {detail?.category === 'AKADEMIK' && (
+                                {/* Manajer TU di status VERIFICATION - bisa ke staff atau supervisor */}
+                                {detail?.status === 'FAKULTAS_VERIFICATION' && isManajerTU && (
                                     <>
-                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
-                                            <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik" />
-                                            <Label htmlFor="staf-akademik" className="flex-1 cursor-pointer">
-                                                <div className="font-medium">Staf Akademik</div>
-                                            </Label>
-                                        </div>
-                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
-                                            <RadioGroupItem value="SUPERVISOR_AKADEMIK" id="supervisor-akademik" />
-                                            <Label htmlFor="supervisor-akademik" className="flex-1 cursor-pointer">
-                                                <div className="font-medium">Supervisor Akademik</div>
-                                            </Label>
-                                        </div>
+                                        {/* Kategori UMUM - tampilkan semua opsi */}
+                                        {detail?.category === 'UMUM' && (
+                                            <>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                                    <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik" />
+                                                    <Label htmlFor="staf-akademik" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Staf Akademik</div>
+                                                    </Label>
+                                                </div>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                                    <RadioGroupItem value="SUPERVISOR_AKADEMIK" id="supervisor-akademik" />
+                                                    <Label htmlFor="supervisor-akademik" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Supervisor Akademik</div>
+                                                    </Label>
+                                                </div>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                                    <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya" />
+                                                    <Label htmlFor="staf-sumberdaya" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Staf Sumber Daya</div>
+                                                    </Label>
+                                                </div>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                                    <RadioGroupItem value="SUPERVISOR_SUMBER_DAYA" id="supervisor-sumberdaya" />
+                                                    <Label htmlFor="supervisor-sumberdaya" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Supervisor Sumber Daya</div>
+                                                    </Label>
+                                                </div>
+                                            </>
+                                        )}
+                                        
+                                        {/* Kategori AKADEMIK - hanya opsi akademik */}
+                                        {detail?.category === 'AKADEMIK' && (
+                                            <>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                                    <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik" />
+                                                    <Label htmlFor="staf-akademik" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Staf Akademik</div>
+                                                    </Label>
+                                                </div>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                                    <RadioGroupItem value="SUPERVISOR_AKADEMIK" id="supervisor-akademik" />
+                                                    <Label htmlFor="supervisor-akademik" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Supervisor Akademik</div>
+                                                    </Label>
+                                                </div>
+                                            </>
+                                        )}
+                                        
+                                        {/* Kategori SUMBER_DAYA - hanya opsi sumber daya */}
+                                        {detail?.category === 'SUMBER_DAYA' && (
+                                            <>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                                    <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya" />
+                                                    <Label htmlFor="staf-sumberdaya" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Staf Sumber Daya</div>
+                                                    </Label>
+                                                </div>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                                    <RadioGroupItem value="SUPERVISOR_SUMBER_DAYA" id="supervisor-sumberdaya" />
+                                                    <Label htmlFor="supervisor-sumberdaya" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Supervisor Sumber Daya</div>
+                                                    </Label>
+                                                </div>
+                                            </>
+                                        )}
                                     </>
                                 )}
-                                
-                                {/* Kategori SUMBER_DAYA - hanya opsi sumber daya */}
-                                {detail?.category === 'SUMBER_DAYA' && (
+
+                                {/* Supervisor di status VERIFICATION - hanya bisa ke staff (tidak bisa ke supervisor lain) */}
+                                {detail?.status === 'FAKULTAS_VERIFICATION' && isSupervisor && (
                                     <>
-                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
-                                            <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya" />
-                                            <Label htmlFor="staf-sumberdaya" className="flex-1 cursor-pointer">
-                                                <div className="font-medium">Staf Sumber Daya</div>
-                                            </Label>
-                                        </div>
-                                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
-                                            <RadioGroupItem value="SUPERVISOR_SUMBER_DAYA" id="supervisor-sumberdaya" />
-                                            <Label htmlFor="supervisor-sumberdaya" className="flex-1 cursor-pointer">
-                                                <div className="font-medium">Supervisor Sumber Daya</div>
-                                            </Label>
-                                        </div>
+                                        {/* Kategori UMUM - pilih staff akademik atau sumber daya */}
+                                        {detail?.category === 'UMUM' && (
+                                            <>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                                    <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik-sv" />
+                                                    <Label htmlFor="staf-akademik-sv" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Staf Akademik</div>
+                                                    </Label>
+                                                </div>
+                                                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer mt-2">
+                                                    <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya-sv" />
+                                                    <Label htmlFor="staf-sumberdaya-sv" className="flex-1 cursor-pointer">
+                                                        <div className="font-medium">Staf Sumber Daya</div>
+                                                    </Label>
+                                                </div>
+                                            </>
+                                        )}
+                                        {/* Kategori AKADEMIK - hanya staff akademik */}
+                                        {detail?.category === 'AKADEMIK' && (
+                                            <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                                <RadioGroupItem value="STAF_AKADEMIK" id="staf-akademik-sv" />
+                                                <Label htmlFor="staf-akademik-sv" className="flex-1 cursor-pointer">
+                                                    <div className="font-medium">Staf Akademik</div>
+                                                </Label>
+                                            </div>
+                                        )}
+                                        {/* Kategori SUMBER_DAYA - hanya staff sumber daya */}
+                                        {detail?.category === 'SUMBER_DAYA' && (
+                                            <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                                <RadioGroupItem value="STAF_SUMBER_DAYA" id="staf-sumberdaya-sv" />
+                                                <Label htmlFor="staf-sumberdaya-sv" className="flex-1 cursor-pointer">
+                                                    <div className="font-medium">Staf Sumber Daya</div>
+                                                </Label>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                             </RadioGroup>

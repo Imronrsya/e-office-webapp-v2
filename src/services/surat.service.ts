@@ -110,6 +110,8 @@ export interface SubmissionPermissions {
     // Verification actions (Pejabat)
     canVerifySuratHasil?: boolean;
     canSignSuratHasil?: boolean;
+    // Return for revision (Supervisor/Manajer TU)
+    canReturnForRevision?: boolean;
 }
 
 export interface SubmissionDetail {
