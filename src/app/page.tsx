@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 
 export default function Home() {
-  // Hapus kata 'pages' dan gunakan slash di depan
-  redirect("/persuratan/akademik/skl/form/dataDiri");
+  redirect("/login");
 }
 // export default function Home() {
   
