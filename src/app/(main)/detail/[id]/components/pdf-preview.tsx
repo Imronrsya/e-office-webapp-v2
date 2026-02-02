@@ -123,8 +123,13 @@ export function PDFPreview({
                     return suratTugasTemplate(data);
                 }
                 case 'SURAT_TUGAS_TABEL': {
+                    // Handle both old format (pelaksana) and new format (dataMahasiswa)
+                    const tableContent = content as Record<string, unknown>;
+                    const dataMahasiswa = (tableContent.dataMahasiswa || tableContent.pelaksana || []) as Array<{ nama: string; nim: string; prodi: string; [key: string]: string }>;
+                    
                     const data = {
                         ...content as unknown as SuratTugasTableData,
+                        dataMahasiswa: dataMahasiswa,
                         signatures: signatureBlocks,
                         tembusan: tembusanData,
                     };

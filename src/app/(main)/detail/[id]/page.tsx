@@ -494,9 +494,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const handleSubmitForVerification = async () => {
         if (!detail || actionLoading) return;
         
-        // Check if SK/ST document exists
+        // Check if SK/ST document exists (including table version)
         const hasSkst = detail.documents?.some(d => 
-            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_KEPUTUSAN'
+            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
         );
         
         if (!hasSkst) {
@@ -541,9 +541,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const handleVerifySuratHasil = async () => {
         if (!detail || actionLoading) return;
         
-        // Just check if SK/ST document exists
+        // Just check if SK/ST document exists (including table version)
         const hasSkst = detail.documents?.some(d => 
-            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_KEPUTUSAN'
+            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
         );
         
         if (!hasSkst) {
@@ -587,9 +587,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             return;
         }
         
-        // Just check if SK/ST document exists
+        // Just check if SK/ST document exists (including table version)
         const hasSkst = detail.documents?.some(d => 
-            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_KEPUTUSAN'
+            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
         );
         
         if (!hasSkst) {
@@ -625,9 +625,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const handleSignSuratHasil = async () => {
         if (!detail || actionLoading) return;
         
-        // Just check if SK/ST document exists
+        // Just check if SK/ST document exists (including table version)
         const hasSkst = detail.documents?.some(d => 
-            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_KEPUTUSAN'
+            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
         );
         
         if (!hasSkst) {

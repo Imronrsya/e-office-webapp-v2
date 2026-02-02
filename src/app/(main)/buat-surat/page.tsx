@@ -699,9 +699,17 @@ function BuatSuratContent() {
             if (suratType === "SURAT_TUGAS") {
                 content = { ...suratTugasForm };
             } else if (suratType === "SURAT_TUGAS_TABEL") {
+                // Convert pelaksana to dataMahasiswa for template compatibility
+                const dataMahasiswa = suratTugasTabelForm.pelaksana.map(({ key, ...rest }) => rest);
                 content = { 
                     ...suratTugasTabelForm,
-                    pelaksana: suratTugasTabelForm.pelaksana.map(({ key, ...rest }) => rest)
+                    // Keep pelaksana for backward compatibility
+                    pelaksana: dataMahasiswa,
+                    // Add dataMahasiswa for template rendering
+                    dataMahasiswa: dataMahasiswa,
+                    // Map form fields to template fields
+                    nomorSurat: suratTugasTabelForm.judulSurat || '',
+                    keterangan: suratTugasTabelForm.keperluan || '',
                 };
             } else if (suratType === "SURAT_KEPUTUSAN") {
                 content = {

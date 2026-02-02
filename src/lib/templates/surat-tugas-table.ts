@@ -223,7 +223,7 @@ const renderMahasiswaTable = (dataMahasiswa: MahasiswaData[], customColumns?: Cu
   `;
 };
 
-export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<!DOCTYPE html>>
+export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
