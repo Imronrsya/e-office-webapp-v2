@@ -56,6 +56,7 @@ import { TemplatePreview } from "@/components/universal-preview";
 import { Suspense } from "react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { getPostDraftRedirectPath } from "@/lib/role-mapper";
+import { FileUpload } from "@/features/pengajuan/components/file-upload";
 
 // ============================================================================
 // TYPES
@@ -110,16 +111,6 @@ interface KeputusanItem {
     key: string;
     label: string;
     content: string;
-}
-
-// Attachment item untuk file yang diupload
-interface AttachmentItem {
-    id: string;
-    file: File;
-    name: string;
-    size: number;
-    type: string;
-    previewUrl?: string;
 }
 
 type Step = "form" | "signature" | "tembusan" | "attachments" | "review";
@@ -300,8 +291,8 @@ function BuatSuratContent() {
     const [showUserResults, setShowUserResults] = useState(false);
     const [isSearchingUsers, setIsSearchingUsers] = useState(false);
     
-    // Attachment state - untuk file PDF/JPG/PNG yang diupload
-    const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+    // Attachment state - using FileUpload component from pengajuan (clean implementation)
+    const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
 
     // Pejabat list for autofill nama dan NIP
@@ -696,60 +687,6 @@ function BuatSuratContent() {
     // ATTACHMENT HANDLERS
     // ========================================================================
 
-    const handleAttachmentUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = event.target.files;
-        if (!files) return;
-
-        const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-        const maxSize = 10 * 1024 * 1024; // 10MB
-
-        const newAttachments: AttachmentItem[] = [];
-
-        Array.from(files).forEach((file) => {
-            if (!validTypes.includes(file.type)) {
-                toast.error(`Format file ${file.name} tidak didukung. Gunakan PDF, JPG, atau PNG`);
-                return;
-            }
-            if (file.size > maxSize) {
-                toast.error(`File ${file.name} terlalu besar. Maksimal 10MB`);
-                return;
-            }
-
-            const newItem: AttachmentItem = {
-                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                file,
-                name: file.name,
-                size: file.size,
-                type: file.type,
-            };
-
-            if (file.type.startsWith('image/')) {
-                newItem.previewUrl = URL.createObjectURL(file);
-            }
-
-            newAttachments.push(newItem);
-        });
-
-        setAttachments(prev => [...prev, ...newAttachments]);
-        event.target.value = '';
-    };
-
-    const removeAttachment = (id: string) => {
-        setAttachments(prev => {
-            const item = prev.find(a => a.id === id);
-            if (item?.previewUrl) {
-                URL.revokeObjectURL(item.previewUrl);
-            }
-            return prev.filter(a => a.id !== id);
-        });
-    };
-
-    const formatFileSize = (bytes: number): string => {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-    };
-
     // ========================================================================
     // SUBMIT
     // ========================================================================
@@ -857,12 +794,11 @@ function BuatSuratContent() {
             if (response.success) {
                 // Upload attachments jika ada
                 const documentId = (response.data as any)?.documentId;
-                if (attachments.length > 0 && documentId) {
+                if (attachmentFiles.length > 0 && documentId) {
                     try {
                         setIsUploadingAttachment(true);
-                        const filesToUpload = attachments.map(a => a.file);
-                        await suratService.uploadAttachments(documentId, filesToUpload);
-                        toast.success(`${filesToUpload.length} lampiran berhasil diupload`);
+                        await suratService.uploadAttachments(documentId, attachmentFiles);
+                        toast.success(`${attachmentFiles.length} lampiran berhasil diupload`);
                     } catch (attachmentError) {
                         console.error("Failed to upload attachments:", attachmentError);
                         toast.error("Lampiran gagal diupload, tetapi surat berhasil dibuat");
@@ -1781,98 +1717,16 @@ function BuatSuratContent() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {/* Upload Area */}
-                            <div className="border-2 border-dashed border-zinc-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                                <input
-                                    type="file"
-                                    id="attachment-upload"
-                                    multiple
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    onChange={handleAttachmentUpload}
-                                    className="hidden"
-                                />
-                                <label
-                                    htmlFor="attachment-upload"
-                                    className="cursor-pointer flex flex-col items-center gap-2"
-                                >
-                                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <Upload className="w-6 h-6 text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-blue-600">Klik untuk upload file</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            atau drag & drop file ke sini
-                                        </p>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-2">
-                                        Format: PDF, JPG, PNG • Maks. 10MB per file
-                                    </p>
-                                </label>
-                            </div>
+                            {/* FileUpload Component - konsisten dengan implementasi Pengaju */}
+                            <FileUpload
+                                files={attachmentFiles}
+                                onFilesChange={setAttachmentFiles}
+                                maxFiles={10}
+                                maxSizeKB={10240} // 10MB
+                                acceptedTypes={['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']}
+                            />
 
-                            {/* Attachment List */}
-                            {attachments.length > 0 && (
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium">
-                                        File Terupload ({attachments.length})
-                                    </Label>
-                                    <div className="space-y-2">
-                                        {attachments.map((attachment) => (
-                                            <div
-                                                key={attachment.id}
-                                                className="flex items-center gap-3 p-3 bg-white rounded-lg border"
-                                            >
-                                                {/* Icon based on type */}
-                                                <div className={cn(
-                                                    "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-                                                    attachment.type === 'application/pdf' 
-                                                        ? "bg-red-100" 
-                                                        : "bg-green-100"
-                                                )}>
-                                                    {attachment.type === 'application/pdf' ? (
-                                                        <File className="w-5 h-5 text-red-600" />
-                                                    ) : (
-                                                        <Image className="w-5 h-5 text-green-600" />
-                                                    )}
-                                                </div>
-                                                
-                                                {/* File info */}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-sm truncate">
-                                                        {attachment.name}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {formatFileSize(attachment.size)}
-                                                    </p>
-                                                </div>
-
-                                                {/* Preview for images */}
-                                                {attachment.previewUrl && (
-                                                    <div className="w-12 h-12 rounded overflow-hidden border shrink-0">
-                                                        <img
-                                                            src={attachment.previewUrl}
-                                                            alt={attachment.name}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                {/* Remove button */}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => removeAttachment(attachment.id)}
-                                                    className="text-destructive hover:text-destructive h-8 w-8 shrink-0"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {attachments.length === 0 && (
+                            {attachmentFiles.length === 0 && (
                                 <Alert className="bg-blue-50 border-blue-200">
                                     <Info className="h-4 w-4 text-blue-600" />
                                     <AlertDescription className="text-blue-800 text-sm">
@@ -1979,30 +1833,32 @@ function BuatSuratContent() {
                                 {/* Lampiran Review */}
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Lampiran ({attachments.length})
+                                        Lampiran ({attachmentFiles.length})
                                     </Label>
-                                    {attachments.length > 0 ? (
+                                    {attachmentFiles.length > 0 ? (
                                         <div className="space-y-2">
-                                            {attachments.map((attachment) => (
+                                            {attachmentFiles.map((file, index) => (
                                                 <div
-                                                    key={attachment.id}
+                                                    key={`${file.name}-${index}`}
                                                     className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200"
                                                 >
                                                     <div className={cn(
                                                         "w-8 h-8 rounded flex items-center justify-center shrink-0",
-                                                        attachment.type === 'application/pdf' 
+                                                        file.type === 'application/pdf' 
                                                             ? "bg-red-100" 
                                                             : "bg-green-100"
                                                     )}>
-                                                        {attachment.type === 'application/pdf' ? (
+                                                        {file.type === 'application/pdf' ? (
                                                             <File className="w-4 h-4 text-red-600" />
                                                         ) : (
                                                             <Image className="w-4 h-4 text-green-600" />
                                                         )}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-sm truncate">{attachment.name}</p>
-                                                        <p className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</p>
+                                                        <p className="font-medium text-sm truncate">{file.name}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {(file.size / (1024 * 1024)).toFixed(1)} MB
+                                                        </p>
                                                     </div>
                                                 </div>
                                             ))}

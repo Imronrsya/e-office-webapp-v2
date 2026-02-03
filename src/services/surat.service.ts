@@ -35,7 +35,7 @@ export interface DocumentSummary {
     content?: Record<string, unknown> | null; // Form data untuk generate preview
     contentHtml?: string | null; // HTML content jika sudah di-generate
     tembusan?: Array<{ name: string; description?: string }> | null; // Tembusan recipients dari draft
-    attachmentUrls?: string[] | null; // Lampiran PDF/JPG/PNG yang diupload oleh staf/supervisor
+    attachmentUrls?: Array<{ url: string; name: string }> | null; // Lampiran PDF/JPG/PNG yang diupload oleh staf/supervisor
     signatures: SignatureSummary[];
 }
 
@@ -612,13 +612,13 @@ export const suratService = {
     async uploadAttachments(
         documentId: string,
         files: File[]
-    ): Promise<ApiResponse<{ attachmentUrls: string[] }>> {
+    ): Promise<ApiResponse<{ attachmentUrls: Array<{ url: string; name: string }> }>> {
         const formData = new FormData();
         files.forEach((file) => {
             formData.append('files', file);
         });
 
-        const response = await api.post<ApiResponse<{ attachmentUrls: string[] }>>(
+        const response = await api.post<ApiResponse<{ attachmentUrls: Array<{ url: string; name: string }> }>>(
             `/api/surat-hasil/document/${documentId}/attachments`,
             formData,
             {
@@ -636,8 +636,8 @@ export const suratService = {
     async removeAttachment(
         documentId: string,
         index: number
-    ): Promise<ApiResponse<{ attachmentUrls: string[] }>> {
-        const response = await api.delete<ApiResponse<{ attachmentUrls: string[] }>>(
+    ): Promise<ApiResponse<{ attachmentUrls: Array<{ url: string; name: string }> }>> {
+        const response = await api.delete<ApiResponse<{ attachmentUrls: Array<{ url: string; name: string }> }>>(
             `/api/surat-hasil/document/${documentId}/attachments/${index}`
         );
         return response.data;
@@ -646,8 +646,8 @@ export const suratService = {
     /**
      * Get attachments for document
      */
-    async getAttachments(documentId: string): Promise<ApiResponse<{ attachmentUrls: string[] }>> {
-        const response = await api.get<ApiResponse<{ attachmentUrls: string[] }>>(
+    async getAttachments(documentId: string): Promise<ApiResponse<{ attachmentUrls: Array<{ url: string; name: string }> }>> {
+        const response = await api.get<ApiResponse<{ attachmentUrls: Array<{ url: string; name: string }> }>>(
             `/api/surat-hasil/document/${documentId}/attachments`
         );
         return response.data;

@@ -189,6 +189,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const [attachmentPreviewOpen, setAttachmentPreviewOpen] = useState(false);
     const [previewAttachment, setPreviewAttachment] = useState<{id: string, fileName: string, fileUrl: string, mimeType: string | null} | null>(null);
     
+    // Document attachment preview modal (for staff uploaded attachments in surat hasil)
+    const [docAttachmentPreviewOpen, setDocAttachmentPreviewOpen] = useState(false);
+    const [previewDocAttachment, setPreviewDocAttachment] = useState<{ name: string; url: string; isPdf: boolean } | null>(null);
+    
     // Supervisor selection modal state - untuk kategori UMUM saat Ajukan Verifikasi
     const [supervisorModalOpen, setSupervisorModalOpen] = useState(false);
     const [selectedSupervisor, setSelectedSupervisor] = useState<'SUPERVISOR_AKADEMIK' | 'SUPERVISOR_SUMBER_DAYA' | null>(null);
@@ -1187,27 +1191,30 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             d.type === 'SURAT_KEPUTUSAN'
         );
         
-        // Defensive type checking: ensure attachmentUrls is array of strings
+        // Support new format: array of { url, name } or old format: array of strings
         const rawAttachments = suratHasilDoc?.attachmentUrls || [];
-        const docAttachments = Array.isArray(rawAttachments) 
-            ? rawAttachments.filter((url): url is string => typeof url === 'string' && url.length > 0)
+        const docAttachments: Array<{ url: string; name: string }> = Array.isArray(rawAttachments) 
+            ? rawAttachments.map((item: any) => {
+                if (typeof item === 'string') {
+                    // Old format: just URL - extract filename from path
+                    const urlWithoutParams = item.split('?')[0];
+                    const parts = urlWithoutParams.split('/');
+                    const fullName = parts[parts.length - 1] || 'Lampiran';
+                    const cleanName = fullName.replace(/^\d+-/, ''); // Remove timestamp prefix
+                    return { url: item, name: decodeURIComponent(cleanName) };
+                }
+                // New format: { url, name }
+                return { url: item.url || '', name: item.name || 'Lampiran' };
+            }).filter((item) => item.url && item.url.length > 0)
             : [];
         
         if (docAttachments.length === 0) return null;
 
-        // Extract clean filename from URL
-        const getFileName = (url: string): string => {
-            try {
-                // Remove query params first
-                const urlWithoutParams = url.split('?')[0];
-                const parts = urlWithoutParams.split('/');
-                const fullName = parts[parts.length - 1] || `Lampiran`;
-                // Remove timestamp prefix if exists (e.g., "1234567890-filename.pdf" -> "filename.pdf")
-                const cleanName = fullName.replace(/^\d+-/, '');
-                return decodeURIComponent(cleanName);
-            } catch {
-                return `Lampiran`;
-            }
+        // Handle preview with modal
+        const handlePreview = (url: string, name: string) => {
+            const isPdf = url.toLowerCase().includes('.pdf');
+            setPreviewDocAttachment({ url, name, isPdf });
+            setDocAttachmentPreviewOpen(true);
         };
 
         // Handle download with proper filename
@@ -1223,10 +1230,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 link.click();
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(downloadUrl);
+                toast.success(`Berhasil mengunduh ${fileName}`);
             } catch (error) {
                 console.error('Download failed:', error);
-                // Fallback to open in new tab
-                window.open(url, '_blank');
+                toast.error('Gagal mengunduh file');
             }
         };
         
@@ -1238,8 +1245,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     </h3>
                     
                     <div className="space-y-3">
-                        {docAttachments.map((url, index) => {
-                            const fileName = getFileName(url);
+                        {docAttachments.map((attachment, index) => {
+                            const { url, name } = attachment;
                             const isPdf = url.toLowerCase().includes('.pdf');
                             const isImage = /\.(jpg|jpeg|png|gif)/i.test(url);
                             
@@ -1259,8 +1266,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                             )} />
                                         </div>
                                         <div>
-                                            <p className="text-sm text-black truncate max-w-[180px]" title={fileName}>
-                                                {fileName}
+                                            <p className="text-sm text-black truncate max-w-[180px]" title={name}>
+                                                {name}
                                             </p>
                                             <p className="text-xs text-amber-600">
                                                 {isPdf ? 'PDF Document' : isImage ? 'Image' : 'Attachment'}
@@ -1268,11 +1275,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        {/* Preview button - opens in new tab for PDF and images */}
+                                        {/* Preview button - opens modal */}
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => window.open(url, '_blank')}
+                                            onClick={() => handlePreview(url, name)}
                                             title="Preview"
                                             className="h-8 w-8"
                                         >
@@ -1282,7 +1289,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => handleDownload(url, fileName)}
+                                            onClick={() => handleDownload(url, name)}
                                             title="Download"
                                             className="h-8 w-8"
                                         >
@@ -2381,6 +2388,35 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             {actionLoading ? "Memproses..." : "Ajukan Verifikasi"}
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Preview Modal untuk Lampiran Dokumen (Surat Keluar) */}
+            <Dialog open={docAttachmentPreviewOpen} onOpenChange={setDocAttachmentPreviewOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <FileText className="w-5 h-5" />
+                            {previewDocAttachment?.name || 'Preview Lampiran'}
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-auto min-h-[500px]">
+                        {previewDocAttachment?.isPdf ? (
+                            <iframe
+                                src={previewDocAttachment.url}
+                                className="w-full h-full min-h-[500px] border-0"
+                                title="PDF Preview"
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center p-4">
+                                <img
+                                    src={previewDocAttachment?.url}
+                                    alt={previewDocAttachment?.name}
+                                    className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                                />
+                            </div>
+                        )}
+                    </div>
                 </DialogContent>
             </Dialog>
         </>

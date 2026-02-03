@@ -123,16 +123,6 @@ interface KeputusanItem {
     content: string;
 }
 
-// Attachment item untuk file yang diupload
-interface AttachmentItem {
-    id: string;
-    file: File;
-    name: string;
-    size: number;
-    type: string;
-    previewUrl?: string;
-}
-
 type Step = "form" | "signature" | "tembusan" | "attachments" | "review";
 
 // Form data for each surat type
@@ -364,21 +354,16 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [isSearchingUsers, setIsSearchingUsers] = useState(false);
     const [showUserResults, setShowUserResults] = useState(false);
     
-    // Attachment state - untuk file PDF/JPG/PNG yang diupload
-    const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
-    
-    // Preview modal state
-    const [previewModalOpen, setPreviewModalOpen] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState<string>("");
-    const [previewFileName, setPreviewFileName] = useState<string>("");
-    
-    // Delete confirmation modal state
-    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-    const [attachmentToDelete, setAttachmentToDelete] = useState<string | null>(null);
+    // Attachment state - using FileUpload component from pengajuan (clean implementation)
+    const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
     
-    // Existing attachments from server (already uploaded before)
-    const [existingAttachments, setExistingAttachments] = useState<string[]>([]);
+    // Existing attachments from server (for edit mode only) - new format with metadata
+    const [existingAttachments, setExistingAttachments] = useState<Array<{ url: string; name: string }>>([]);
+    
+    // Delete confirmation for existing attachments
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [attachmentToDelete, setAttachmentToDelete] = useState<{ url: string; name: string } | null>(null);
     const [deletingAttachment, setDeletingAttachment] = useState<string | null>(null);
     
     // Loading state for fetching existing data
@@ -758,13 +743,17 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     setTembusanTexts([]);
                 }
 
-                // Load existing attachments from document
+                // Load existing attachments from document (new format { url, name })
                 if (existingDoc?.attachmentUrls && Array.isArray(existingDoc.attachmentUrls)) {
-                    const validUrls = existingDoc.attachmentUrls.filter(
-                        (url): url is string => typeof url === 'string' && url.length > 0
+                    const validAttachments = existingDoc.attachmentUrls.filter(
+                        (item): item is { url: string; name: string } => 
+                            typeof item === 'object' && 
+                            item !== null && 
+                            typeof item.url === 'string' && 
+                            item.url.length > 0
                     );
-                    console.log('📎 Loaded existing attachments:', validUrls.length, 'files');
-                    setExistingAttachments(validUrls);
+                    console.log('📎 Loaded existing attachments:', validAttachments.length, 'files');
+                    setExistingAttachments(validAttachments);
                 } else {
                     console.log('ℹ️ No existing attachments found');
                 }
@@ -1151,30 +1140,28 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // ========================================================================
 
     // Open delete confirmation modal
-    const confirmDeleteAttachment = (url: string) => {
-        setAttachmentToDelete(url);
+    const confirmDeleteAttachment = (attachment: { url: string; name: string }) => {
+        setAttachmentToDelete(attachment);
         setDeleteConfirmOpen(true);
     };
 
     // Delete existing attachment (from server)
     const deleteExistingAttachment = async () => {
-        const url = attachmentToDelete;
-        if (!url || !existingDocumentId) {
+        const attachment = attachmentToDelete;
+        if (!attachment || !existingDocumentId) {
             toast.error("Dokumen tidak ditemukan");
             return;
         }
 
-        setDeletingAttachment(url);
+        setDeletingAttachment(attachment.url);
         try {
-            // Extract filename from signed URL (remove query parameters)
-            // URL format: https://minio.../path/to/file.pdf?X-Amz-Algorithm=...
-            const urlWithoutQuery = url.split('?')[0]; // Remove query params
-            const fileName = urlWithoutQuery.split('/').pop();
+            // Use the original filename from metadata instead of extracting from signed URL
+            const fileName = attachment.name;
             
             if (!fileName) throw new Error("Nama file tidak valid");
 
-            console.log('[DELETE ATTACHMENT] Full URL:', url);
-            console.log('[DELETE ATTACHMENT] Extracted fileName:', fileName);
+            console.log('[DELETE ATTACHMENT] Attachment:', attachment);
+            console.log('[DELETE ATTACHMENT] Using fileName:', fileName);
 
             const apiUrl = `/api/surat-hasil/document/${existingDocumentId}/attachments/file/${encodeURIComponent(fileName)}`;
             console.log('[DELETE ATTACHMENT] Calling API:', apiUrl);
@@ -1207,7 +1194,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             }
 
             // Remove from state
-            setExistingAttachments(prev => prev.filter(a => a !== url));
+            setExistingAttachments(prev => prev.filter(a => a.url !== attachment.url));
             toast.success("Lampiran berhasil dihapus");
             setDeleteConfirmOpen(false);
             setAttachmentToDelete(null);
@@ -1219,69 +1206,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         }
     };
 
-    // Open preview modal
-    const openPreviewModal = (url: string) => {
-        const fileName = url.split('/').pop() || 'Lampiran';
-        setPreviewUrl(url);
-        setPreviewFileName(fileName);
-        setPreviewModalOpen(true);
-    };
 
-    const handleAttachmentUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = event.target.files;
-        if (!files) return;
-
-        const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-        const maxSize = 10 * 1024 * 1024; // 10MB
-
-        const newAttachments: AttachmentItem[] = [];
-
-        Array.from(files).forEach((file) => {
-            if (!validTypes.includes(file.type)) {
-                toast.error(`Format file ${file.name} tidak didukung. Gunakan PDF, JPG, atau PNG`);
-                return;
-            }
-            if (file.size > maxSize) {
-                toast.error(`File ${file.name} terlalu besar. Maksimal 10MB`);
-                return;
-            }
-
-            const newItem: AttachmentItem = {
-                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                file,
-                name: file.name,
-                size: file.size,
-                type: file.type,
-            };
-
-            // Create preview URL for images
-            if (file.type.startsWith('image/')) {
-                newItem.previewUrl = URL.createObjectURL(file);
-            }
-
-            newAttachments.push(newItem);
-        });
-
-        setAttachments(prev => [...prev, ...newAttachments]);
-        // Reset input
-        event.target.value = '';
-    };
-
-    const removeAttachment = (id: string) => {
-        setAttachments(prev => {
-            const item = prev.find(a => a.id === id);
-            if (item?.previewUrl) {
-                URL.revokeObjectURL(item.previewUrl);
-            }
-            return prev.filter(a => a.id !== id);
-        });
-    };
-
-    const formatFileSize = (bytes: number): string => {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-    };
 
     // ========================================================================
     // SUBMIT
@@ -1451,12 +1376,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             if (response.success) {
                 // Upload attachments jika ada
                 const documentId = (response.data as any)?.documentId || (response.data as any)?.id || existingDocumentId;
-                if (attachments.length > 0 && documentId) {
+                if (attachmentFiles.length > 0 && documentId) {
                     try {
                         setIsUploadingAttachment(true);
-                        const filesToUpload = attachments.map(a => a.file);
-                        await suratService.uploadAttachments(documentId, filesToUpload);
-                        toast.success(`${filesToUpload.length} lampiran berhasil diupload`);
+                        await suratService.uploadAttachments(documentId, attachmentFiles);
+                        toast.success(`${attachmentFiles.length} lampiran berhasil diupload`);
                     } catch (attachmentError) {
                         console.error("Failed to upload attachments:", attachmentError);
                         toast.error("Lampiran gagal diupload, tetapi draft berhasil disimpan");
@@ -2656,107 +2580,25 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {/* Upload Area */}
-                            <div className="border-2 border-dashed border-zinc-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                                <input
-                                    type="file"
-                                    id="attachment-upload"
-                                    multiple
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    onChange={handleAttachmentUpload}
-                                    className="hidden"
-                                />
-                                <label
-                                    htmlFor="attachment-upload"
-                                    className="cursor-pointer flex flex-col items-center gap-2"
-                                >
-                                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <Upload className="w-6 h-6 text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-blue-600">Klik untuk upload file</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            atau drag & drop file ke sini
-                                        </p>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-2">
-                                        Format: PDF, JPG, PNG • Maks. 10MB per file
-                                    </p>
-                                </label>
-                            </div>
+                            {/* FileUpload Component - konsisten dengan implementasi Pengaju */}
+                            <FileUpload
+                                files={attachmentFiles}
+                                onFilesChange={setAttachmentFiles}
+                                maxFiles={10}
+                                maxSizeKB={10240} // 10MB
+                                acceptedTypes={['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']}
+                            />
 
-                            {/* Attachment List */}
-                            {attachments.length > 0 && (
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium">
-                                        File Terupload ({attachments.length})
-                                    </Label>
-                                    <div className="space-y-2">
-                                        {attachments.map((attachment) => (
-                                            <div
-                                                key={attachment.id}
-                                                className="flex items-center gap-3 p-3 bg-white rounded-lg border"
-                                            >
-                                                {/* Icon based on type */}
-                                                <div className={cn(
-                                                    "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-                                                    attachment.type === 'application/pdf' 
-                                                        ? "bg-red-100" 
-                                                        : "bg-green-100"
-                                                )}>
-                                                    {attachment.type === 'application/pdf' ? (
-                                                        <File className="w-5 h-5 text-red-600" />
-                                                    ) : (
-                                                        <Image className="w-5 h-5 text-green-600" />
-                                                    )}
-                                                </div>
-                                                
-                                                {/* File info */}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-sm truncate">
-                                                        {attachment.name}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {formatFileSize(attachment.size)}
-                                                    </p>
-                                                </div>
-
-                                                {/* Preview for images */}
-                                                {attachment.previewUrl && (
-                                                    <div className="w-12 h-12 rounded overflow-hidden border shrink-0">
-                                                        <img
-                                                            src={attachment.previewUrl}
-                                                            alt={attachment.name}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                {/* Remove button */}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => removeAttachment(attachment.id)}
-                                                    className="text-destructive hover:text-destructive h-8 w-8 shrink-0"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Existing Attachments (already uploaded) */}
+                            {/* Existing Attachments (already uploaded - Edit Mode only) */}
                             {existingAttachments.length > 0 && (
-                                <div className="space-y-2">
+                                <div className="space-y-2 mt-6">
                                     <Label className="text-sm font-medium text-amber-700">
                                         Lampiran Tersimpan ({existingAttachments.length})
                                     </Label>
                                     <div className="space-y-2">
-                                        {existingAttachments.map((url, index) => {
-                                            const fileName = url.split('/').pop() || `Lampiran ${index + 1}`;
-                                            const isPdf = url.toLowerCase().endsWith('.pdf');
+                                        {existingAttachments.map((attachment, index) => {
+                                            const { url, name } = attachment;
+                                            const isPdf = url.toLowerCase().includes('.pdf');
                                             
                                             return (
                                                 <div
@@ -2774,14 +2616,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                         )}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-sm truncate">{fileName}</p>
+                                                        <p className="font-medium text-sm truncate" title={name}>{name}</p>
                                                         <p className="text-xs text-amber-600">Sudah tersimpan di server</p>
                                                     </div>
                                                     <div className="flex gap-1 shrink-0">
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            onClick={() => openPreviewModal(url)}
+                                                            onClick={() => window.open(url, '_blank')}
                                                             className="text-blue-600 hover:text-blue-800 h-8 w-8"
                                                             title="Preview"
                                                         >
@@ -2790,7 +2632,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            onClick={() => confirmDeleteAttachment(url)}
+                                                            onClick={() => confirmDeleteAttachment(attachment)}
                                                             disabled={deletingAttachment === url}
                                                             className="text-destructive hover:text-destructive h-8 w-8"
                                                             title="Hapus"
@@ -2812,7 +2654,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 </div>
                             )}
 
-                            {attachments.length === 0 && existingAttachments.length === 0 && (
+                            {attachmentFiles.length === 0 && existingAttachments.length === 0 && (
                                 <Alert className="bg-blue-50 border-blue-200">
                                     <Info className="h-4 w-4 text-blue-600" />
                                     <AlertDescription className="text-blue-800 text-sm">
@@ -2920,14 +2762,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 {/* Lampiran Review */}
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Lampiran ({existingAttachments.length + attachments.length})
+                                        Lampiran ({existingAttachments.length + attachmentFiles.length})
                                     </Label>
-                                    {(existingAttachments.length > 0 || attachments.length > 0) ? (
+                                    {(existingAttachments.length > 0 || attachmentFiles.length > 0) ? (
                                         <div className="space-y-2">
                                             {/* Existing attachments from server */}
-                                            {existingAttachments.map((url, index) => {
-                                                const fileName = url.split('/').pop() || `Lampiran ${index + 1}`;
-                                                const isPdf = url.toLowerCase().endsWith('.pdf');
+                                            {existingAttachments.map((attachment, index) => {
+                                                const { url, name } = attachment;
+                                                const isPdf = url.toLowerCase().includes('.pdf');
                                                 return (
                                                     <div
                                                         key={`existing-${index}`}
@@ -2944,34 +2786,34 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                             )}
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="font-medium text-sm truncate">{fileName}</p>
+                                                            <p className="font-medium text-sm truncate" title={name}>{name}</p>
                                                             <Badge variant="secondary" className="text-xs">Sudah Tersimpan</Badge>
                                                         </div>
                                                     </div>
                                                 );
                                             })}
                                             {/* New attachments to be uploaded */}
-                                            {attachments.map((attachment) => (
+                                            {attachmentFiles.map((file, index) => (
                                                 <div
-                                                    key={attachment.id}
+                                                    key={`new-${index}`}
                                                     className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200"
                                                 >
                                                     <div className={cn(
                                                         "w-8 h-8 rounded flex items-center justify-center shrink-0",
-                                                        attachment.type === 'application/pdf' 
+                                                        file.type === 'application/pdf' 
                                                             ? "bg-red-100" 
                                                             : "bg-green-100"
                                                     )}>
-                                                        {attachment.type === 'application/pdf' ? (
+                                                        {file.type === 'application/pdf' ? (
                                                             <File className="w-4 h-4 text-red-600" />
                                                         ) : (
                                                             <Image className="w-4 h-4 text-green-600" />
                                                         )}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-sm truncate">{attachment.name}</p>
+                                                        <p className="font-medium text-sm truncate">{file.name}</p>
                                                         <div className="flex items-center gap-2">
-                                                            <p className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</p>
+                                                            <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(1)} MB</p>
                                                             <Badge variant="outline" className="text-xs">Baru</Badge>
                                                         </div>
                                                     </div>
