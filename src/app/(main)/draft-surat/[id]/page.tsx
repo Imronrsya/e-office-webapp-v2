@@ -166,8 +166,6 @@ interface SuratKeputusanForm {
     menetapkan: string;
     keputusan: KeputusanItem[];
     tanggalDitetapkan: string;
-    namaPejabat: string;
-    nipPejabat: string;
 }
 
 // ============================================================================
@@ -285,8 +283,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         menetapkan: "",
         keputusan: [{ key: "1", label: "KESATU", content: "" }],
         tanggalDitetapkan: "",
-        namaPejabat: "",
-        nipPejabat: "",
     });
     
     // Signature state - position data no longer needed with template-based positioning
@@ -2054,32 +2050,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah Keputusan
                                         </Button>
-                                    </CardContent>
-                                </Card>
-
-                                <Card className="bg-neutral-50 border-zinc-400">
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Penandatangan</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="namaPejabat">Nama Pejabat</Label>
-                                            <Input
-                                                id="namaPejabat"
-                                                value={suratKeputusanForm.namaPejabat}
-                                                onChange={(e) => updateSuratKeputusan("namaPejabat", e.target.value)}
-                                                placeholder="Nama pejabat penandatangan"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="nipPejabat">NIP Pejabat</Label>
-                                            <Input
-                                                id="nipPejabat"
-                                                value={suratKeputusanForm.nipPejabat}
-                                                onChange={(e) => updateSuratKeputusan("nipPejabat", e.target.value)}
-                                                placeholder="NIP. 197403171998021001"
-                                            />
-                                        </div>
                                     </CardContent>
                                 </Card>
                             </>
