@@ -5,6 +5,7 @@ export interface SignatureData {
     signerRole: string;
     signerName: string;
     signerNip?: string | null;
+    prefix?: string | null; // Awalan/keterangan seperti "Mengetahui,"
     signatureUrl?: string | null; // URL of the actual signature image
     signatureData?: string | null; // Base64 data untuk signature baru
     order: number;

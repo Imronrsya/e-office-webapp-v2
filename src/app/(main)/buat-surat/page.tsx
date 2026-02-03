@@ -273,6 +273,9 @@ function BuatSuratContent() {
     const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
 
+    // Pejabat list for autofill nama dan NIP
+    const [pejabatList, setPejabatList] = useState<Array<{ role: string; name: string; nip?: string }>>([]);
+
     // Redirect if no valid params
     useEffect(() => {
         if (!categoryParam || !suratType || (categoryParam !== 'AKADEMIK' && categoryParam !== 'SUMBER_DAYA' && categoryParam !== 'UMUM')) {
@@ -280,6 +283,17 @@ function BuatSuratContent() {
             router.push("/dashboard");
         }
     }, [categoryParam, suratType, router]);
+
+    // Fetch pejabat list for autofill
+    useEffect(() => {
+        async function loadPejabatList() {
+            const result = await suratService.getPejabatList();
+            if (result.success && result.data) {
+                setPejabatList(result.data);
+            }
+        }
+        loadPejabatList();
+    }, []);
 
 
     // ========================================================================
@@ -457,11 +471,26 @@ function BuatSuratContent() {
 
     const updateSignerRole = (id: string, role: string) => {
         const roleLabel = ALL_SIGNER_ROLES.find(r => r.value === role)?.label || role;
-        setSigners(signers.map(s => s.id === id ? { ...s, role, name: roleLabel } : s));
+        // Autofill nama dan NIP dari database
+        const pejabat = pejabatList.find(p => p.role === role);
+        setSigners(signers.map(s => s.id === id ? { 
+            ...s, 
+            role, 
+            name: pejabat?.name || roleLabel,
+            nip: pejabat?.nip || ""
+        } : s));
     };
 
     const updateSignerPrefix = (id: string, prefix: string) => {
         setSigners(signers.map(s => s.id === id ? { ...s, prefix } : s));
+    };
+
+    const updateSignerName = (id: string, name: string) => {
+        setSigners(signers.map(s => s.id === id ? { ...s, name } : s));
+    };
+
+    const updateSignerNip = (id: string, nip: string) => {
+        setSigners(signers.map(s => s.id === id ? { ...s, nip } : s));
     };
 
     // ========================================================================
@@ -1329,7 +1358,7 @@ function BuatSuratContent() {
                                 </Alert>
 
                                 {signers.map((signer, index) => (
-                                    <div key={signer.id} className="space-y-2 p-3 bg-white rounded-lg border">
+                                    <div key={signer.id} className="space-y-3 p-4 bg-white rounded-lg border">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-sm font-medium">
                                                 {index + 1}
@@ -1365,14 +1394,40 @@ function BuatSuratContent() {
                                                 </Button>
                                             )}
                                         </div>
-                                        {/* Input Awalan/Prefix */}
-                                        <div className="ml-11">
-                                            <Input
-                                                placeholder="Awalan (opsional), contoh: Mengetahui,"
-                                                value={signer.prefix || ""}
-                                                onChange={(e) => updateSignerPrefix(signer.id, e.target.value)}
-                                                className="text-sm"
-                                            />
+                                        {/* Input fields dalam grid */}
+                                        <div className="ml-11 space-y-2">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <Label htmlFor={`nama-${signer.id}`} className="text-xs text-muted-foreground">Nama Pejabat</Label>
+                                                    <Input
+                                                        id={`nama-${signer.id}`}
+                                                        placeholder="Nama lengkap"
+                                                        value={signer.name || ""}
+                                                        onChange={(e) => updateSignerName(signer.id, e.target.value)}
+                                                        className="text-sm mt-1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor={`nip-${signer.id}`} className="text-xs text-muted-foreground">NIP</Label>
+                                                    <Input
+                                                        id={`nip-${signer.id}`}
+                                                        placeholder="NIP pejabat"
+                                                        value={signer.nip || ""}
+                                                        onChange={(e) => updateSignerNip(signer.id, e.target.value)}
+                                                        className="text-sm mt-1"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <Label htmlFor={`prefix-${signer.id}`} className="text-xs text-muted-foreground">Awalan (opsional)</Label>
+                                                <Input
+                                                    id={`prefix-${signer.id}`}
+                                                    placeholder="Contoh: Mengetahui,"
+                                                    value={signer.prefix || ""}
+                                                    onChange={(e) => updateSignerPrefix(signer.id, e.target.value)}
+                                                    className="text-sm mt-1"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

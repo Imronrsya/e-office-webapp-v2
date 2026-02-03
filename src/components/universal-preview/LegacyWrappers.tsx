@@ -286,6 +286,7 @@ export function LegacyTemplatePreview({
         signerRole: signer.role,
         signerName: signer.name || '',
         signerNip: signer.nip,
+        prefix: signer.prefix, // Include prefix/awalan
         signatureUrl: signer.signatureUrl,
         order: index,
     }));

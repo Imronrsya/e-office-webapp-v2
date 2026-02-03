@@ -99,7 +99,7 @@ export function UniversalDocumentPreview({
                 signerName: sig.signerName,
                 signerNip: sig.signerNip || undefined,
                 signatureUrl: sig.signatureUrl || undefined,
-                prefix: undefined,
+                prefix: sig.prefix || undefined,
             }));
             
             // Extract tembusan from content if available
@@ -152,10 +152,12 @@ export function UniversalDocumentPreview({
                         namaKaprodi: kaprodiSig?.signerName || pengantarData.namaKaprodi,
                         nipKaprodi: kaprodiSig?.signerNip || pengantarData.nipKaprodi,
                         signatureKaprodi: kaprodiSig?.signatureUrl || pengantarData.signatureKaprodi,
+                        prefixKaprodi: kaprodiSig?.prefix || pengantarData.prefixKaprodi,
                         // Kadep signature
                         namaKadep: kadepSig?.signerName || pengantarData.namaKadep,
                         nipKadep: kadepSig?.signerNip || pengantarData.nipKadep,
                         signatureKadep: kadepSig?.signatureUrl || pengantarData.signatureKadep,
+                        prefixKadep: kadepSig?.prefix || pengantarData.prefixKadep,
                     });
                 }
                 default:
