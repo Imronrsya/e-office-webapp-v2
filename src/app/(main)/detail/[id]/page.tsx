@@ -1103,7 +1103,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // LAMPIRAN CARD (Lampiran Submission dari Pengaju)
     // Aturan tampilan:
     // - UPA scope: SEMBUNYIKAN (UPA hanya perlu lihat Lampiran Surat final)
-    // - Tab surat-hasil aktif: SEMBUNYIKAN untuk SEMUA user (termasuk mahasiswa/dosen)
+    // - Tab surat-hasil aktif DAN ada dokumen surat-hasil: SEMBUNYIKAN untuk SEMUA user
     // - FAKULTAS scope + surat keluar (filterType=keluar): SEMBUNYIKAN (kecuali pengaju sendiri)
     // - Selain itu: TAMPILKAN jika ada attachments
     // ========================================================================
@@ -1118,9 +1118,14 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             return null;
         }
         
-        // ATURAN 1: Tab surat-hasil aktif -> SEMBUNYIKAN untuk SEMUA user (termasuk mahasiswa/dosen)
-        // Logika: Saat lihat Surat Tugas/Keputusan, fokus HANYA ke lampiran surat final
-        if (activeDocTab === 'surat-hasil') {
+        // ATURAN 1: Tab surat-hasil aktif DAN benar-benar ada dokumen surat-hasil
+        // -> SEMBUNYIKAN untuk SEMUA user (termasuk mahasiswa/dosen)
+        // PENTING: Hanya sembunyikan jika MEMANG ADA dokumen surat-hasil (bukan default fallback)
+        // Logika: Saat lihat Surat Tugas/Keputusan yang sudah ada, fokus HANYA ke lampiran surat final
+        const hasSuratHasilDoc = detail?.documents?.some(d => 
+            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
+        );
+        if (activeDocTab === 'surat-hasil' && hasSuratHasilDoc) {
             return null;
         }
         
