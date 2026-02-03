@@ -40,6 +40,9 @@ interface ReturnDialogProps {
 // CONSTANTS
 // ============================================================================
 
+/**
+ * Label display untuk setiap role
+ */
 const ROLE_LABELS: Record<string, string> = {
     ADMIN_PRODI: "Admin Prodi",
     ADMIN_FAKULTAS: "Admin Surat Fakultas",
@@ -53,8 +56,11 @@ const ROLE_LABELS: Record<string, string> = {
     STAF_SUMBER_DAYA: "Staf Sumber Daya"
 };
 
-// Default return target is ADMIN_PRODI (dead end - letter goes back to prodi)
-const DEFAULT_RETURN_TARGETS = ["ADMIN_PRODI"];
+/**
+ * Default return target jika backend tidak memberikan
+ * PENTING: Return FLEKSIBEL - bisa ke role manapun di bawah posisi user
+ */
+const DEFAULT_RETURN_TARGETS = ["STAF_AKADEMIK", "STAF_SUMBER_DAYA"];
 
 // ============================================================================
 // COMPONENT
@@ -106,7 +112,7 @@ export function ReturnDialog({
                 <DialogHeader>
                     <DialogTitle>Kembalikan Surat</DialogTitle>
                     <DialogDescription>
-                        Kembalikan surat ke pejabat sebelumnya untuk ditinjau ulang.
+                        Kembalikan surat ke role sebelumnya untuk revisi atau perbaikan.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -114,7 +120,8 @@ export function ReturnDialog({
                     <Alert variant="default" className="border-amber-200 bg-amber-50">
                         <Info className="h-4 w-4 text-amber-600" />
                         <AlertDescription className="text-amber-800">
-                            Default pengembalian adalah ke Admin Prodi. Anda juga dapat mengembalikan ke role lain yang sudah pernah memproses surat ini.
+                            <strong>Catatan:</strong> Anda dapat mengembalikan surat ke role manapun yang ada di bawah posisi Anda. 
+                            Pengembalian bersifat <strong>fleksibel</strong> dan tidak harus urut.
                         </AlertDescription>
                     </Alert>
 
@@ -125,7 +132,7 @@ export function ReturnDialog({
                         </Label>
                         <Select value={targetRole} onValueChange={setTargetRole}>
                             <SelectTrigger id="target-role">
-                                <SelectValue placeholder="Pilih Tujuan" />
+                                <SelectValue placeholder="Pilih Tujuan Pengembalian" />
                             </SelectTrigger>
                             <SelectContent>
                                 {availableTargets.map((role) => (
@@ -135,6 +142,9 @@ export function ReturnDialog({
                                 ))}
                             </SelectContent>
                         </Select>
+                        <p className="text-xs text-muted-foreground">
+                            Pilih role tujuan dari daftar yang tersedia.
+                        </p>
                     </div>
                     
                     {/* Alasan */}

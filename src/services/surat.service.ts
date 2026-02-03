@@ -524,12 +524,27 @@ export const suratService = {
     },
 
     /**
-     * Supervisor/Pejabat approves verification
+     * Supervisor/Manajer TU approves verification
      * Uses letterId (not documentId)
+     * PENTING: Endpoint ini untuk SUPERVISOR dan MANAJER_TU
      */
     async approveSuratHasil(letterId: string, notes?: string): Promise<ApiResponse<unknown>> {
         const response = await api.post<ApiResponse<unknown>>(
             `/api/surat-hasil/${letterId}/approve`,
+            { notes }
+        );
+        return response.data;
+    },
+
+    /**
+     * Pejabat (Wadek/Dekan) verifies and forwards to next role
+     * Uses letterId (not documentId)
+     * PENTING: Ini untuk pejabat yang BUKAN penandatangan, hanya verifikasi
+     * Flow SELALU urut sesuai hierarki kategori
+     */
+    async pejabatVerifySuratHasil(letterId: string, notes?: string): Promise<ApiResponse<unknown>> {
+        const response = await api.post<ApiResponse<unknown>>(
+            `/api/surat-hasil/${letterId}/pejabat-verify`,
             { notes }
         );
         return response.data;
