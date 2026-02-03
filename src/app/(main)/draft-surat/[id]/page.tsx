@@ -382,6 +382,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
             try {
                 const detail = await suratService.getDetail(resolvedParams.id);
+                console.log('🔍 Fetched detail for editing:', {
+                    id: resolvedParams.id,
+                    suratType,
+                    hasDetail: !!detail,
+                    documentsCount: detail?.documents?.length
+                });
+                
                 if (!detail) {
                     setLoading(false);
                     return;
@@ -402,8 +409,19 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                 // Set edit mode if existing document found
                 if (existingDoc) {
+                    console.log('✏️ Edit mode enabled. Document found:', {
+                        id: existingDoc.id,
+                        type: existingDoc.type,
+                        hasContent: !!existingDoc.content,
+                        hasTembusan: !!existingDoc.tembusan,
+                        hasAttachments: !!existingDoc.attachmentUrls,
+                        attachmentCount: existingDoc.attachmentUrls?.length || 0,
+                        signatureCount: existingDoc.signatures?.length || 0
+                    });
                     setIsEditMode(true);
                     setExistingDocumentId(existingDoc.id);
+                } else {
+                    console.log('📝 Create mode - no existing document found');
                 }
 
                 // Check if in verification mode (supervisor/manajer editing during verification)
@@ -608,50 +626,50 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 }
 
                 // Load tembusan from existing document
-                if (existingDoc?.content) {
-                    const content = existingDoc.content as Record<string, unknown>;
-                    const existingTembusan = content.tembusan;
+                // Try to get from document.tembusan first (new format), fallback to content.tembusan (old format)
+                const existingTembusan = existingDoc?.tembusan || (existingDoc?.content as Record<string, unknown>)?.tembusan;
+                
+                if (Array.isArray(existingTembusan) && existingTembusan.length > 0) {
+                    const users: TembusanUser[] = [];
+                    const texts: TembusanText[] = [];
+                    let hasPengaju = false;
                     
-                    // Parse tembusan - could be string[] (old format) or TembusanRecipient[] (new format)
-                    if (Array.isArray(existingTembusan)) {
-                        const users: TembusanUser[] = [];
-                        const texts: TembusanText[] = [];
-                        let hasPengaju = false;
-                        
-                        existingTembusan.forEach((item: any, index: number) => {
-                            if (typeof item === 'string') {
-                                // Old format: string[]
-                                if (item.toLowerCase() === 'pengaju') {
-                                    hasPengaju = true;
-                                } else {
-                                    texts.push({
-                                        id: String(texts.length + 1),
-                                        text: item
-                                    });
-                                }
-                            } else if (item && typeof item === 'object' && 'userId' in item) {
-                                // New format: TembusanRecipient[]
-                                if (item.userId) {
-                                    // This is a user account
-                                    users.push({
-                                        userId: item.userId,
-                                        name: item.name || '',
-                                        email: item.description || '',
-                                    });
-                                } else {
-                                    // This is a text-only tembusan
-                                    texts.push({
-                                        id: String(texts.length + 1),
-                                        text: item.name || item.description || ''
-                                    });
-                                }
+                    existingTembusan.forEach((item: any, index: number) => {
+                        if (typeof item === 'string') {
+                            // Old format: string[]
+                            if (item.toLowerCase() === 'pengaju') {
+                                hasPengaju = true;
+                            } else {
+                                texts.push({
+                                    id: String(texts.length + 1),
+                                    text: item
+                                });
                             }
-                        });
-                        
-                        setIncludePengaju(hasPengaju);
-                        setTembusanUsers(users);
-                        setTembusanTexts(texts);
-                    }
+                        } else if (item && typeof item === 'object' && 'userId' in item) {
+                            // New format: TembusanRecipient[]
+                            if (item.userId) {
+                                // This is a user account
+                                users.push({
+                                    userId: item.userId,
+                                    name: item.name || '',
+                                    email: item.description || item.email || '',
+                                });
+                            } else {
+                                // This is a text-only tembusan
+                                texts.push({
+                                    id: String(texts.length + 1),
+                                    text: item.name || item.description || ''
+                                });
+                            }
+                        }
+                    });
+                    
+                    console.log('📦 Loaded tembusan:', { users, texts, hasPengaju });
+                    setIncludePengaju(hasPengaju);
+                    setTembusanUsers(users);
+                    setTembusanTexts(texts);
+                } else {
+                    console.log('ℹ️ No existing tembusan found');
                 }
 
                 // Load existing attachments from document
@@ -659,7 +677,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     const validUrls = existingDoc.attachmentUrls.filter(
                         (url): url is string => typeof url === 'string' && url.length > 0
                     );
+                    console.log('📎 Loaded existing attachments:', validUrls.length, 'files');
                     setExistingAttachments(validUrls);
+                } else {
+                    console.log('ℹ️ No existing attachments found');
                 }
 
             } catch (error) {
