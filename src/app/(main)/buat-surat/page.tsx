@@ -287,9 +287,18 @@ function BuatSuratContent() {
     // Fetch pejabat list for autofill
     useEffect(() => {
         async function loadPejabatList() {
-            const result = await suratService.getPejabatList();
-            if (result.success && result.data) {
-                setPejabatList(result.data);
+            try {
+                console.log('📡 Fetching pejabat list...');
+                const result = await suratService.getPejabatList();
+                console.log('📦 Pejabat List Response:', result);
+                if (result.success && result.data) {
+                    setPejabatList(result.data);
+                    console.log('✅ Pejabat list loaded:', result.data);
+                } else {
+                    console.error('❌ Failed to load pejabat list:', result);
+                }
+            } catch (error) {
+                console.error('❌ Error loading pejabat list:', error);
             }
         }
         loadPejabatList();
@@ -473,6 +482,15 @@ function BuatSuratContent() {
         const roleLabel = ALL_SIGNER_ROLES.find(r => r.value === role)?.label || role;
         // Autofill nama dan NIP dari database
         const pejabat = pejabatList.find(p => p.role === role);
+        
+        console.log('🔍 Autofill Debug:', {
+            selectedRole: role,
+            pejabatList: pejabatList,
+            foundPejabat: pejabat,
+            willFillName: pejabat?.name || roleLabel,
+            willFillNip: pejabat?.nip || ""
+        });
+        
         setSigners(signers.map(s => s.id === id ? { 
             ...s, 
             role, 

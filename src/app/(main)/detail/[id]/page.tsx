@@ -978,14 +978,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     const { permissions, submissionValues, logs, attachments } = detail;
     
-    // Debug: Log detail data
-    console.log('📦 Detail Data:', {
-        hasDetail: !!detail,
-        attachmentsCount: attachments?.length || 0,
-        attachments: attachments,
-        submissionValues: submissionValues
-    });
-    
     // Check if status is waiting
     const isWaiting = !['COMPLETED', 'REJECTED', 'CANCELLED'].includes(detail.status);
 
@@ -1111,35 +1103,20 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // - Selain itu: TAMPILKAN jika ada attachments
     // ========================================================================
     const LampiranCard = () => {
-        // Debug: Log attachments data
-        console.log('🔍 LampiranCard Debug:', {
-            attachmentsCount: attachments.length,
-            attachments: attachments,
-            userScope: userScope,
-            activeDocTab: activeDocTab,
-            filterType: filterType,
-            isMahasiswa: isMahasiswa
-        });
-        
         // Jika tidak ada attachments, jangan tampilkan
         if (attachments.length === 0) {
-            console.log('❌ LampiranCard: No attachments, returning null');
             return null;
         }
         
         // ATURAN 1: Lingkup FAKULTAS dengan filter surat keluar -> SEMBUNYIKAN
         if (userScope === 'FAKULTAS' && filterType === 'keluar') {
-            console.log('❌ LampiranCard: FAKULTAS + surat keluar, hiding lampiran pengaju');
             return null;
         }
         
         // ATURAN 2: Mahasiswa di tab surat hasil (SK/ST) -> SEMBUNYIKAN
         if (isMahasiswa && activeDocTab === 'surat-hasil') {
-            console.log('❌ LampiranCard: Mahasiswa + surat hasil tab, hiding lampiran pengaju');
             return null;
         }
-        
-        console.log('✅ LampiranCard: Rendering attachments');
         
 
         
