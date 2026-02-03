@@ -1471,9 +1471,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         : "Draft surat berhasil dibuat";
                 toast.success(successMessage);
                 
-                // Redirect ke halaman detail untuk melihat tombol "Ajukan Verifikasi"
-                const filterType = isSuratMasuk ? 'masuk' : 'keluar';
-                router.push(`/detail/${resolvedParams.id}?filterType=${filterType}`);
+                // Redirect to Surat Keluar dashboard (surat hasil are always "keluar")
+                // Using role mapper to get correct path based on user role
+                const redirectPath = getPostDraftRedirectPath(user?.role || '');
+                router.push(redirectPath);
                 router.refresh();
             } else {
                 toast.error(response.message || "Gagal menyimpan draft surat");
