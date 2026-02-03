@@ -355,8 +355,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [tembusanTexts, setTembusanTexts] = useState<TembusanText[]>([]);
     const [newTembusanTextInput, setNewTembusanTextInput] = useState("");
     
-    // Checkbox pengaju - default false, akan di-set true jika ada marker __PENGAJU__ saat load
-    const [includePengaju, setIncludePengaju] = useState(false);
+    // Checkbox pengaju - default TRUE (tercentang otomatis untuk semua alur pembuatan surat)
+    const [includePengaju, setIncludePengaju] = useState(true);
     
     // User search for tembusan akun
     const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -750,8 +750,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     setTembusanUsers(users);
                     setTembusanTexts(texts);
                 } else {
-                    console.log('ℹ️ No existing tembusan found, setting includePengaju to false');
-                    setIncludePengaju(false);
+                    console.log('ℹ️ No existing tembusan found, setting includePengaju to TRUE (default checked)');
+                    setIncludePengaju(true);
                     setTembusanUsers([]);
                     setTembusanTexts([]);
                 }
