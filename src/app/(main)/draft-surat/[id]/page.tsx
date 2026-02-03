@@ -159,7 +159,7 @@ interface SuratTugasTabelForm {
 }
 
 interface SuratKeputusanForm {
-    nomorSurat: string;
+    nomorSurat?: string; // Optional - diisi oleh UPA nanti
     tentang: string;
     menimbang: string[];
     mengingat: string[];
@@ -279,7 +279,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     });
 
     const [suratKeputusanForm, setSuratKeputusanForm] = useState<SuratKeputusanForm>({
-        nomorSurat: "",
         tentang: "",
         menimbang: [""],
         mengingat: [""],
@@ -1887,15 +1886,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         <CardTitle className="text-lg">Informasi Dasar</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="nomorSurat">Nomor Surat <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                id="nomorSurat"
-                                                value={suratKeputusanForm.nomorSurat}
-                                                onChange={(e) => updateSuratKeputusan("nomorSurat", e.target.value)}
-                                                placeholder="363/UN7.F8/HK/IX/2025"
-                                            />
-                                        </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="tentang">Tentang <span className="text-red-500">*</span></Label>
                                             <Textarea
