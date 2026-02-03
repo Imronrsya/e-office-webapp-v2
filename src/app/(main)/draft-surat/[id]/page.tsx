@@ -2900,18 +2900,26 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
             {/* Preview Modal */}
             <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
-                <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+                <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
                     <DialogHeader className="px-6 py-4 border-b">
                         <DialogTitle>Preview Lampiran</DialogTitle>
                         <DialogDescription>{previewFileName}</DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 overflow-hidden p-6">
+                    <div className="flex-1 overflow-auto p-6 flex items-center justify-center">
                         {previewUrl && (
-                            <iframe
-                                src={previewUrl}
-                                className="w-full h-full border-0 rounded"
-                                title={previewFileName}
-                            />
+                            previewUrl.toLowerCase().includes('.pdf') ? (
+                                <iframe
+                                    src={previewUrl}
+                                    className="w-full h-[70vh] border-0 rounded"
+                                    title={previewFileName}
+                                />
+                            ) : (
+                                <img
+                                    src={previewUrl}
+                                    alt={previewFileName}
+                                    className="max-w-full max-h-[70vh] object-contain rounded"
+                                />
+                            )
                         )}
                     </div>
                     <DialogFooter className="px-6 py-4 border-t">
@@ -2920,13 +2928,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             onClick={() => setPreviewModalOpen(false)}
                         >
                             Tutup
-                        </Button>
-                        <Button
-                            onClick={() => window.open(previewUrl, '_blank')}
-                            className="gap-2"
-                        >
-                            <FileText className="w-4 h-4" />
-                            Buka di Tab Baru
                         </Button>
                     </DialogFooter>
                 </DialogContent>
