@@ -978,6 +978,14 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     const { permissions, submissionValues, logs, attachments } = detail;
     
+    // Debug: Log detail data
+    console.log('📦 Detail Data:', {
+        hasDetail: !!detail,
+        attachmentsCount: attachments?.length || 0,
+        attachments: attachments,
+        submissionValues: submissionValues
+    });
+    
     // Check if status is waiting
     const isWaiting = !['COMPLETED', 'REJECTED', 'CANCELLED'].includes(detail.status);
 
@@ -1096,23 +1104,44 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     );
 
     // ========================================================================
-    // LAMPIRAN CARD (Lampiran Submission dari Pengaju - HANYA UNTUK SURAT MASUK)
-    // Tidak ditampilkan untuk surat keluar (surat yang dibuat langsung oleh staf)
-    // Untuk pengaju, hanya tampil saat tab surat-pengantar aktif
+    // LAMPIRAN CARD (Lampiran Submission dari Pengaju)
+    // Aturan tampilan:
+    // - FAKULTAS scope + surat keluar (filterType=keluar): SEMBUNYIKAN
+    // - MAHASISWA + surat hasil aktif: SEMBUNYIKAN
+    // - Selain itu: TAMPILKAN jika ada attachments
     // ========================================================================
     const LampiranCard = () => {
-        // Hanya tampilkan untuk surat masuk (surat yang berasal dari submission)
-        // Surat keluar (dibuat langsung staf) TIDAK PUNYA lampiran pengaju
-        const isSuratKeluar = filterType === 'keluar' || !submissionValues;
+        // Debug: Log attachments data
+        console.log('🔍 LampiranCard Debug:', {
+            attachmentsCount: attachments.length,
+            attachments: attachments,
+            userScope: userScope,
+            activeDocTab: activeDocTab,
+            filterType: filterType,
+            isMahasiswa: isMahasiswa
+        });
         
-        if (isSuratKeluar || attachments.length === 0) {
+        // Jika tidak ada attachments, jangan tampilkan
+        if (attachments.length === 0) {
+            console.log('❌ LampiranCard: No attachments, returning null');
             return null;
         }
         
-        // Untuk DEPARTEMEN scope, hanya tampilkan jika tab surat-pengantar aktif
-        if (userScope === 'DEPARTEMEN' && activeDocTab !== 'surat-pengantar') {
+        // ATURAN 1: Lingkup FAKULTAS dengan filter surat keluar -> SEMBUNYIKAN
+        if (userScope === 'FAKULTAS' && filterType === 'keluar') {
+            console.log('❌ LampiranCard: FAKULTAS + surat keluar, hiding lampiran pengaju');
             return null;
         }
+        
+        // ATURAN 2: Mahasiswa di tab surat hasil (SK/ST) -> SEMBUNYIKAN
+        if (isMahasiswa && activeDocTab === 'surat-hasil') {
+            console.log('❌ LampiranCard: Mahasiswa + surat hasil tab, hiding lampiran pengaju');
+            return null;
+        }
+        
+        console.log('✅ LampiranCard: Rendering attachments');
+        
+
         
         return (
             <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
@@ -2241,6 +2270,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Preview: {previewAttachment?.fileName}</DialogTitle>
+                        <DialogDescription>
+                            Preview file lampiran dari pengajuan surat
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         {previewAttachment && (
