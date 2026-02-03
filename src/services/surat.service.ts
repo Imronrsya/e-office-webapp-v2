@@ -644,6 +644,19 @@ export const suratService = {
     },
 
     /**
+     * Remove attachment from document by filename
+     */
+    async removeAttachmentByName(
+        documentId: string,
+        fileName: string
+    ): Promise<ApiResponse<{ attachmentUrls: Array<{ url: string; name: string }> }>> {
+        const response = await api.delete<ApiResponse<{ attachmentUrls: Array<{ url: string; name: string }> }>>(
+            `/api/surat-hasil/document/${documentId}/attachments/file/${encodeURIComponent(fileName)}`
+        );
+        return response.data;
+    },
+
+    /**
      * Get attachments for document
      */
     async getAttachments(documentId: string): Promise<ApiResponse<{ attachmentUrls: Array<{ url: string; name: string }> }>> {

@@ -66,6 +66,7 @@ import { userService } from "@/services/user.service";
 import { TemplatePreview } from "@/components/universal-preview";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { getPostDraftRedirectPath } from "@/lib/role-mapper";
+import { FileUpload } from "@/features/pengajuan/components/file-upload";
 
 // ============================================================================
 // TYPES
@@ -365,6 +366,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [attachmentToDelete, setAttachmentToDelete] = useState<{ url: string; name: string } | null>(null);
     const [deletingAttachment, setDeletingAttachment] = useState<string | null>(null);
+    
+    // Preview modal state for existing attachments
+    const [previewModalOpen, setPreviewModalOpen] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string>("");
+    const [previewFileName, setPreviewFileName] = useState<string>("");
     
     // Loading state for fetching existing data
     const [loading, setLoading] = useState(true);
@@ -1155,42 +1161,22 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
         setDeletingAttachment(attachment.url);
         try {
-            // Use the original filename from metadata instead of extracting from signed URL
+            // Use the original filename from metadata
             const fileName = attachment.name;
             
             if (!fileName) throw new Error("Nama file tidak valid");
 
             console.log('[DELETE ATTACHMENT] Attachment:', attachment);
             console.log('[DELETE ATTACHMENT] Using fileName:', fileName);
+            console.log('[DELETE ATTACHMENT] Document ID:', existingDocumentId);
 
-            const apiUrl = `/api/surat-hasil/document/${existingDocumentId}/attachments/file/${encodeURIComponent(fileName)}`;
-            console.log('[DELETE ATTACHMENT] Calling API:', apiUrl);
-
-            // Call API to delete attachment
-            const response = await fetch(apiUrl, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            console.log('[DELETE ATTACHMENT] Response status:', response.status);
-            console.log('[DELETE ATTACHMENT] Response headers:', Object.fromEntries(response.headers.entries()));
-
-            // Handle non-JSON responses (HTML error pages)
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                // Try to get response text for debugging
-                const responseText = await response.text();
-                console.error('[DELETE ATTACHMENT] Non-JSON response:', responseText.substring(0, 500));
-                throw new Error(`Server error (${response.status}): Silakan coba lagi atau hubungi admin.`);
-            }
-
-            const data = await response.json();
-            console.log('[DELETE ATTACHMENT] Response data:', data);
+            // Call API using suratService
+            const response = await suratService.removeAttachmentByName(existingDocumentId, fileName);
             
-            if (!response.ok) {
-                throw new Error(data.message || 'Gagal menghapus lampiran');
+            console.log('[DELETE ATTACHMENT] Response:', response);
+            
+            if (!response.success) {
+                throw new Error(response.message || 'Gagal menghapus lampiran');
             }
 
             // Remove from state
@@ -2623,7 +2609,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            onClick={() => window.open(url, '_blank')}
+                                                            onClick={() => {
+                                                                setPreviewUrl(url);
+                                                                setPreviewFileName(name);
+                                                                setPreviewModalOpen(true);
+                                                            }}
                                                             className="text-blue-600 hover:text-blue-800 h-8 w-8"
                                                             title="Preview"
                                                         >
