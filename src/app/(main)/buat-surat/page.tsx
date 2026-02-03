@@ -280,7 +280,7 @@ function BuatSuratContent() {
     const [signers, setSigners] = useState<SignerItem[]>([
         { 
             id: String(Date.now()), 
-            role: "DEKAN", 
+            role: "", // Empty - user MUST select manually
             order: 1, 
             isRequired: true,
             name: "",

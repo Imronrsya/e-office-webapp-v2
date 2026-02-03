@@ -339,7 +339,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [signers, setSigners] = useState<SignerItem[]>([
         { 
             id: String(Date.now()), 
-            role: suratType === "SURAT_PENGANTAR" ? "KADEP" : "DEKAN", 
+            role: "", // Empty - user MUST select manually
             order: 1, 
             isRequired: true,
             name: "",
@@ -650,13 +650,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     }));
                     setSigners(existingSigners);
                 } else if (suratType === "SURAT_PENGANTAR" && detail.signatureConfig) {
-                    // No existing signatures, initialize based on signatureConfig
+                    // No existing signatures, initialize based on signatureConfig count
+                    // But don't auto-fill roles - user must select manually
                     const needsKadep = detail.signatureConfig.requestKadepSign || false;
                     const baseTimestamp = Date.now();
                     const initialSigners: SignerItem[] = [
                         {
                             id: String(baseTimestamp),
-                            role: "KAPRODI",
+                            role: "", // Empty - user MUST select manually
                             order: 1,
                             isRequired: true,
                             name: "",
@@ -669,7 +670,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     if (needsKadep) {
                         initialSigners.push({
                             id: String(baseTimestamp + 1),
-                            role: "KADEP",
+                            role: "", // Empty - user MUST select manually
                             order: 2,
                             isRequired: true,
                             name: "",
@@ -681,10 +682,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     }
                     setSigners(initialSigners);
                 } else if (!existingDoc && suratType !== "SURAT_PENGANTAR") {
-                    // For SK/ST without existing doc, initialize with DEKAN as default signer
+                    // For SK/ST without existing doc, initialize with empty role
+                    // User MUST select penandatangan manually
                     setSigners([{
                         id: String(Date.now()),
-                        role: "DEKAN",
+                        role: "", // Empty - user MUST select manually
                         order: 1,
                         isRequired: true,
                         name: "",
