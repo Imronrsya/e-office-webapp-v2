@@ -176,6 +176,37 @@ const SURAT_FAKULTAS_ROLES = [
     { value: "WADEK_2", label: "Wakil Dekan II" },
 ];
 
+// Filter pejabat berdasarkan kategori surat
+// - AKADEMIK: Wadek 1 + Dekan
+// - SUMBER_DAYA: Wadek 2 + Dekan  
+// - UMUM: Wadek 1 + Wadek 2 + Dekan
+const getFilteredRolesByCategory = (category: Category | null) => {
+    if (!category) {
+        // Backward compatibility - tampilkan semua
+        return SURAT_FAKULTAS_ROLES;
+    }
+    
+    if (category === "AKADEMIK") {
+        return [
+            { value: "WADEK_1", label: "Wakil Dekan I" },
+            { value: "DEKAN", label: "Dekan" },
+        ];
+    }
+    
+    if (category === "SUMBER_DAYA") {
+        return [
+            { value: "WADEK_2", label: "Wakil Dekan II" },
+            { value: "DEKAN", label: "Dekan" },
+        ];
+    }
+    
+    if (category === "UMUM") {
+        return SURAT_FAKULTAS_ROLES; // Semua pejabat
+    }
+    
+    return SURAT_FAKULTAS_ROLES;
+};
+
 const SURAT_TYPE_LABELS: Record<SuratType, string> = {
     SURAT_TUGAS: "Surat Tugas",
     SURAT_TUGAS_TABEL: "Surat Tugas (Tabel)",
@@ -1368,6 +1399,20 @@ function BuatSuratContent() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {/* Info kategori surat dan filter pejabat */}
+                                {categoryParam && (
+                                    <Alert className="bg-blue-50 border-blue-200">
+                                        <Info className="h-4 w-4 text-blue-600" />
+                                        <AlertDescription className="text-blue-900">
+                                            <strong>Kategori Surat: {CATEGORY_LABELS[categoryParam]}</strong>
+                                            <br />
+                                            {categoryParam === "AKADEMIK" && "Pejabat yang dapat menandatangani: Wakil Dekan I dan Dekan"}
+                                            {categoryParam === "SUMBER_DAYA" && "Pejabat yang dapat menandatangani: Wakil Dekan II dan Dekan"}
+                                            {categoryParam === "UMUM" && "Pejabat yang dapat menandatangani: Wakil Dekan I, Wakil Dekan II, dan Dekan"}
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                                
                                 <Alert>
                                     <Info className="h-4 w-4" />
                                     <AlertDescription>
@@ -1389,8 +1434,8 @@ function BuatSuratContent() {
                                                     <SelectValue placeholder="Pilih Pejabat" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {/* Surat di tingkat fakultas: hanya pejabat fakultas */}
-                                                    {SURAT_FAKULTAS_ROLES.map((role) => (
+                                                    {/* Filter pejabat berdasarkan kategori surat */}
+                                                    {getFilteredRolesByCategory(categoryParam).map((role) => (
                                                         <SelectItem 
                                                             key={role.value} 
                                                             value={role.value}

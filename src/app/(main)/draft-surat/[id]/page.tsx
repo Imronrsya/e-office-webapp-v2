@@ -195,6 +195,38 @@ const SURAT_FAKULTAS_ROLES = [
     { value: "WADEK_2", label: "Wakil Dekan II" },
 ];
 
+// Filter pejabat berdasarkan kategori surat
+// - AKADEMIK: Wadek 1 + Dekan
+// - SUMBER_DAYA: Wadek 2 + Dekan  
+// - UMUM: Wadek 1 + Wadek 2 + Dekan
+// - null/undefined: Semua pejabat (backward compatibility)
+const getFilteredRolesByCategory = (category: "AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null) => {
+    if (!category) {
+        // Backward compatibility - tampilkan semua
+        return SURAT_FAKULTAS_ROLES;
+    }
+    
+    if (category === "AKADEMIK") {
+        return [
+            { value: "WADEK_1", label: "Wakil Dekan I" },
+            { value: "DEKAN", label: "Dekan" },
+        ];
+    }
+    
+    if (category === "SUMBER_DAYA") {
+        return [
+            { value: "WADEK_2", label: "Wakil Dekan II" },
+            { value: "DEKAN", label: "Dekan" },
+        ];
+    }
+    
+    if (category === "UMUM") {
+        return SURAT_FAKULTAS_ROLES; // Semua pejabat
+    }
+    
+    return SURAT_FAKULTAS_ROLES;
+};
+
 const ROLE_LABELS: Record<string, string> = {
     KAPRODI: "Ketua Prodi",
     KADEP: "Ketua Departemen",
@@ -338,6 +370,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Verification mode - true if supervisor/manajer TU is editing during verification
     const [isVerificationMode, setIsVerificationMode] = useState(false);
     
+    // Kategori surat - untuk filter pejabat penandatangan
+    const [suratCategory, setSuratCategory] = useState<"AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null>(null);
+    
     // Save mode - "patch" for normal edit, "overwrite" for full reset
     // Default to 'overwrite' if reset parameter is set (supervisor creating new draft)
     const [saveMode, setSaveMode] = useState<'patch' | 'overwrite'>(shouldResetDraft ? 'overwrite' : 'patch');
@@ -427,6 +462,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 // Check if in verification mode (supervisor/manajer editing during verification)
                 if (detail.status === 'FAKULTAS_VERIFICATION' && existingDoc) {
                     setIsVerificationMode(true);
+                }
+                
+                // Set surat category for filtering pejabat penandatangan
+                // HANYA untuk surat fakultas (bukan surat pengantar)
+                if (suratType !== "SURAT_PENGANTAR" && detail.category) {
+                    setSuratCategory(detail.category);
+                    console.log('📋 Surat category:', detail.category);
                 }
                 
                 // Determine if this is surat masuk (from submission) or surat keluar (staff-created)
@@ -2118,6 +2160,20 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {/* Info kategori surat dan filter pejabat */}
+                                {suratType !== "SURAT_PENGANTAR" && suratCategory && (
+                                    <Alert className="bg-blue-50 border-blue-200">
+                                        <Info className="h-4 w-4 text-blue-600" />
+                                        <AlertDescription className="text-blue-900">
+                                            <strong>Kategori Surat: {suratCategory}</strong>
+                                            <br />
+                                            {suratCategory === "AKADEMIK" && "Pejabat yang dapat menandatangani: Wakil Dekan I dan Dekan"}
+                                            {suratCategory === "SUMBER_DAYA" && "Pejabat yang dapat menandatangani: Wakil Dekan II dan Dekan"}
+                                            {suratCategory === "UMUM" && "Pejabat yang dapat menandatangani: Wakil Dekan I, Wakil Dekan II, dan Dekan"}
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                                
                                 <Alert>
                                     <Info className="h-4 w-4" />
                                     <AlertDescription>
@@ -2142,8 +2198,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {/* Surat Pengantar: hanya pejabat prodi (Kaprodi, Kadep) */}
-                                                    {/* Surat Tugas/Keputusan: hanya pejabat fakultas (Dekan, Wadek 1, Wadek 2) */}
-                                                    {(suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : SURAT_FAKULTAS_ROLES).map((role) => (
+                                                    {/* Surat Tugas/Keputusan: filter pejabat fakultas berdasarkan kategori */}
+                                                    {(suratType === "SURAT_PENGANTAR" 
+                                                        ? SURAT_PENGANTAR_ROLES 
+                                                        : getFilteredRolesByCategory(suratCategory)
+                                                    ).map((role) => (
                                                         <SelectItem 
                                                             key={role.value} 
                                                             value={role.value}
