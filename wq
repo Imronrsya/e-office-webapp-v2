@@ -1,0 +1,449 @@
+[33mcommit e4ca7ed38ed12fc51cf3882981ff45960479ede2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mteam-9[m[33m)[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 15:53:44 2026 +0700
+
+    Fix Verifikasi/TTD Dekan
+
+[33mcommit d8e8d9e83fad27408c02731140bec6fc8c9441c1[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 15:47:56 2026 +0700
+
+    Fix Preview
+
+[33mcommit aeba385b408902b7e6c91eed9b2162c7b31cf642[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 14:50:02 2026 +0700
+
+    Fix Verifikasi Dekan
+
+[33mcommit b086df2b44c93abdd19253c9b60e1f3d75b6c162[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 14:17:41 2026 +0700
+
+    Fix centang pengaju surat
+
+[33mcommit f7fb7dbd205955797c80520b78534b58f2829243[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 13:17:11 2026 +0700
+
+    Fix: Load existing tembusan and attachments when editing draft
+    
+    - Fix tembusan loading: check both doc.tembusan and doc.content.tembusan
+    - Fix attachment loading: properly load from doc.attachmentUrls
+    - Add comprehensive logging for debugging data loading
+    - Ensure existing data persists when editing draft surat
+
+[33mcommit feee8fcf52bf78ff58ec3aafbb7952dd02e44eba[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 13:11:36 2026 +0700
+
+    Fix autofill bagian tanda tangan
+
+[33mcommit 25afe567f26034911e83429887bf4fb191ccdb60[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 11:42:40 2026 +0700
+
+    Fix: Lapiran Part 1
+
+[33mcommit 8f0a8445f34dca0b7dbb84c98ba464558aabc456[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 11:06:17 2026 +0700
+
+    Fix: Surat Keputusan 1
+
+[33mcommit 453a74ebfc82b15cb4b51e02a6513f6b076fe449[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 10:54:54 2026 +0700
+
+    Fix: Awalan Signature
+
+[33mcommit dea68ee97cd9c9a09ad15100b920a4485b58859b[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 10:21:21 2026 +0700
+
+    Fix: Number Input New
+
+[33mcommit e3a3fb380e182f4aea3b189483f428cf85b8dde1[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 10:07:43 2026 +0700
+
+    Fix: Number Input
+
+[33mcommit a77fdea2312416fd6bb4fde5b0f9712769710647[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Tue Feb 3 09:56:12 2026 +0700
+
+    Fix: Verifikasi (Surat Keluar)
+
+[33mcommit d023ad77c75701f03108cd273a1f7dc1a26b2f09[m
+Merge: 43a54bf eded32a
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Mon Feb 2 22:07:32 2026 +0700
+
+    Resolve merge conflicts - accept remote changes
+
+[33mcommit eded32a9846d2326b9c93dbe3f67ea648d679d2b[m[33m ([m[1;31morigin/team-9[m[33m)[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Mon Feb 2 16:41:35 2026 +0700
+
+    fix revisi surat umum
+
+[33mcommit 5a5f6617dedc7d0113dfd3bf9985fa68e81beeae[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Mon Feb 2 16:11:19 2026 +0700
+
+    fix tujuan revisi mtu
+
+[33mcommit 521d773d41079a8b67d29b35d9f388375027fe13[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Mon Feb 2 16:04:44 2026 +0700
+
+    fix lampiran pengaju
+
+[33mcommit 09bd32f0a292f73119078fb2c28563ae8e2955ae[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Mon Feb 2 15:55:10 2026 +0700
+
+    fix lampiran di detail page
+
+[33mcommit e7d58a0bce7ed2e6e3c6f794f1345ca319234e29[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Mon Feb 2 15:48:49 2026 +0700
+
+    fix lampiran staf/supervisor
+
+[33mcommit 3546613207eab19f179177bc1ee32f87703d6c30[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Mon Feb 2 15:08:17 2026 +0700
+
+    fix surat tugas tabel
+
+[33mcommit 0a756fa123bc7bb3831a463f9021d0cd644320b0[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Mon Feb 2 14:42:35 2026 +0700
+
+    fix tembusan
+
+[33mcommit be5bf38ac6e20f85de3143cbe7def33dcf189ae7[m
+Author: TheInstinc <juliustegar123456@gmail.com>
+Date:   Mon Feb 2 06:47:11 2026 +0700
+
+    feat: change all document viewer and unify them
+
+[33mcommit c79aaea09a09e4987243683bfcbd9c2be4349d67[m
+Author: TheInstinc <juliustegar123456@gmail.com>
+Date:   Mon Feb 2 01:45:55 2026 +0700
+
+    feat: fix pencarian tembusan
+
+[33mcommit 915ebef3f279b3a2d49ac0db7045296c987763a6[m
+Author: TheInstinc <juliustegar123456@gmail.com>
+Date:   Sun Feb 1 22:42:49 2026 +0700
+
+    feat: fix Post-Drafting Navigation & Redirect
+
+[33mcommit ba2bb2cc662492530f3ce6dcd482d752381b5082[m
+Author: TheInstinc <juliustegar123456@gmail.com>
+Date:   Sun Feb 1 22:02:02 2026 +0700
+
+    feat: fix Duplikasi Key pada Signature Selection
+
+[33mcommit d7d27b126cbf247e7de97f8ebc2e00e0f681436f[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Sun Feb 1 20:36:44 2026 +0700
+
+    fix disposisi jenis surat umum
+
+[33mcommit c3ad01bf3a54a04a8702828d1e83f757fccf2ec8[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Sun Feb 1 20:26:55 2026 +0700
+
+    fix buat surat kategori umum
+
+[33mcommit 8ec01e4f69cd48e1dea83a6bfc58637b410dde21[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Sun Feb 1 19:43:19 2026 +0700
+
+    delete positioner penomoran
+
+[33mcommit e369a06b51cc404e6dea97bc37d29566235cf5ef[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Sun Feb 1 19:35:44 2026 +0700
+
+    fix overflow deskripsi history
+
+[33mcommit d177807cb8b6f93b0267f69bf1d6fb7e4c007f49[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Sun Feb 1 18:24:08 2026 +0700
+
+    fix tembusan ui
+
+[33mcommit 5d1465549e9130e277bc70ff45ea99ae01b3e1bf[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Sun Feb 1 16:17:59 2026 +0700
+
+    feat: fix target disposisition
+
+[33mcommit 1649c6b9939988e110ebd4b8a9a53a46c898fe0e[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Sun Feb 1 15:50:03 2026 +0700
+
+    feat: fix dropdown tanda tangan fakultas
+
+[33mcommit 6edb06c934f2d113b87c1dbb7dd2e2cbfb76e34d[m
+Merge: ff227dc 8e2cee5
+Author: Tio <hadyan.kp@gmail.com>
+Date:   Sat Jan 31 23:07:40 2026 +0700
+
+    Merge pull request #2 from Imronrsya/Tio
+    
+    fix signature kalo surat dibuat di staff
+
+[33mcommit 8e2cee5881e116c337fbe9ab52f3c6a814bd7723[m
+Author: KyoneCode <hadyan.kp@gmail.com>
+Date:   Sat Jan 31 23:00:14 2026 +0700
+
+    fix signature kalo surat dibuat di staff
+
+[33mcommit ff227dcb3df3d6f57ff8cd4b8e26ae2a5751db96[m
+Merge: 3038e05 f52d5e8
+Author: Tio <hadyan.kp@gmail.com>
+Date:   Sat Jan 31 22:04:40 2026 +0700
+
+    Fixing some staff's bug
+
+[33mcommit f52d5e8c4abdd9ee6001b37917f565696bc90f5e[m
+Author: KyoneCode <hadyan.kp@gmail.com>
+Date:   Sat Jan 31 21:46:59 2026 +0700
+
+    fix bug Judul Null kalo surat dibuat di staff
+
+[33mcommit a380481ed49baeb4d988ceb365c19c82d23f1b60[m
+Author: KyoneCode <hadyan.kp@gmail.com>
+Date:   Sat Jan 31 21:03:26 2026 +0700
+
+    fix bug lanjutan dari fix sebelumnya
+
+[33mcommit c3e122cce1605d01f26faac19eecc1ff5f1a382c[m
+Author: KyoneCode <hadyan.kp@gmail.com>
+Date:   Sat Jan 31 19:03:31 2026 +0700
+
+    Fixing Staff's buat surat umum Template parameter invalid
+
+[33mcommit 3038e0597e97970c449d8c013d139ac41caf6100[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Sat Jan 31 14:02:10 2026 +0700
+
+    fix jenis surat staf sudah sesuai
+
+[33mcommit a3efa79c47d1ef1728a9f5d08d55260a81b69af6[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Sat Jan 31 13:47:21 2026 +0700
+
+    fix download lampiran
+
+[33mcommit 1d1d90b6159d1f32ec13f2e577cd33721247185e[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Sat Jan 31 13:40:00 2026 +0700
+
+    fix stepper draft admin prodi
+
+[33mcommit 04f7a88efa7a768802a5dbd949b1f94bc4396320[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Sat Jan 31 13:22:03 2026 +0700
+
+    fix pilihan jenis surat saat draft surat
+
+[33mcommit 9d84f5eb57653cad50ac5b59921840c85023c3d9[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Sat Jan 31 13:13:58 2026 +0700
+
+    fix Identitas Pengaju
+
+[33mcommit fc113addcbb21124852f0cf80bb786e3d4d62c6e[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Sat Jan 31 12:34:19 2026 +0700
+
+    fixing tampilan draft surat
+
+[33mcommit 1191550374149eb09011ade22cc691c52be2f2e3[m
+Author: AlvinHarist <alvinharist57@gmail.com>
+Date:   Sat Jan 31 12:10:03 2026 +0700
+
+    fix surat masuk/keluar part 2
+
+[33mcommit 441293cf3d64026e7b7ae6b663ab77290ae1b0cf[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Sat Jan 31 12:02:12 2026 +0700
+
+    fixing default route
+
+[33mcommit 25fc241ea2e4c27555008f2e25cbb3572beaa97e[m
+Author: AlvinHarist <alvinharist57@gmail.com>
+Date:   Sat Jan 31 11:28:46 2026 +0700
+
+    fix gerbang surat masuk/keluar
+
+[33mcommit 60814113ef6169f2ac2d70a2fedf0e5f2e7a261f[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Fri Jan 30 23:06:16 2026 +0700
+
+    Bug Fixing Day 1 Done
+
+[33mcommit 753a25470f53901cf99e23820d80bb871139bea0[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Fri Jan 30 22:32:35 2026 +0700
+
+    Fixing Pengembalian From Faculty
+
+[33mcommit 7cf2ac4a125464cc1e0c2f088ad09731a8aeb9ea[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Fri Jan 30 22:09:49 2026 +0700
+
+    Changing String on Pengajuan Form
+
+[33mcommit e334d76eace497e888950d0e9edab29f7003f29b[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Fri Jan 30 22:05:46 2026 +0700
+
+    fix major bug lettertype
+
+[33mcommit b33263c86021081b7411a045b890879adc4f820c[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Fri Jan 30 21:52:34 2026 +0700
+
+    fix filter date
+
+[33mcommit f5ab43539c6e587fae0f5f8218c5a23607303c67[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Fri Jan 30 21:18:18 2026 +0700
+
+    fix surat tidak menghilang
+
+[33mcommit 6e41dcf410247129ccca9753c7a9d3c21b6629e6[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Fri Jan 30 21:02:02 2026 +0700
+
+    signature bug fixed
+
+[33mcommit 97f96482fd8535a6b4b9935caa0b5513b47cfa7f[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Fri Jan 30 19:43:37 2026 +0700
+
+    adding user identity on Surat Pengantar
+
+[33mcommit b2943d2576473830beaa490bd53eb835cfd2339b[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Fri Jan 30 19:12:25 2026 +0700
+
+    fix filtering dashboard
+
+[33mcommit 9cf005def09fc02e71e2c1ac7e464bf277684d7c[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Fri Jan 30 18:40:09 2026 +0700
+
+    fixing
+
+[33mcommit 0d057a374ecc8a159048a0a421350f3ed1de5a1b[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Fri Jan 30 17:22:19 2026 +0700
+
+    feat:bug fixing 1 30/02/2026
+
+[33mcommit 9ff4dbd8f99a700707c70943e4a6a7df1adc9239[m
+Author: AlvinHarist <alvinharist57@gmail.com>
+Date:   Thu Jan 29 21:29:31 2026 +0700
+
+    penomoran, stempel, qr code
+
+[33mcommit db3b5decafeb3826dd1dc10f1e333d18f07d8126[m
+Merge: eb6e1a3 8856902
+Author: AlvinHarist <alvinharist57@gmail.com>
+Date:   Thu Jan 29 13:12:58 2026 +0700
+
+    Merge branch 'team-9' of gitlab.fsm.internal:pkl/e-office/e-office-webapp-v2 into team-9
+
+[33mcommit eb6e1a3ff22a042759d1c21c6c8f1023728502bf[m
+Author: AlvinHarist <alvinharist57@gmail.com>
+Date:   Thu Jan 29 13:12:52 2026 +0700
+
+    penomoran but still failed
+
+[33mcommit 8856902ecd077dffebbd0b16c56b8aee89d1a111[m
+Author: gustiayugenta <gentaparamitha@gmail.com>
+Date:   Thu Jan 29 12:07:14 2026 +0700
+
+    ttd kaprodi dan kadep
+
+[33mcommit ce6a64370103692f8ff544edadfe7e850db916ab[m
+Author: AlvinHarist <alvinharist57@gmail.com>
+Date:   Wed Jan 28 15:07:27 2026 +0700
+
+    nempelin ttd
+
+[33mcommit 974be33c64c95a208afb14bc7c0d004bac6a744e[m
+Author: Brammy611 <bramantyo989@gmail.com>
+Date:   Wed Jan 28 11:16:25 2026 +0700
+
+    feat: add draft surat feature with signature configuration
+
+[33mcommit edb207e1d10a8dc43bbbf718943831ac5b8a2cf1[m
+Author: TheInstinc <juliustegar123456@gmail.com>
+Date:   Mon Jan 26 12:33:24 2026 +0700
+
+    feat(integration): standardize backend/frontend; fix workflow, signing, file-preview, tembusan dropdowns, status handling, and UI/permission sync
+
+[33mcommit 427974f68b2c8bcf448d892266dafdf8e95f2bea[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Sun Jan 25 15:41:43 2026 +0700
+
+    feat: update page pengajuan  e-office webapp v2 frontend
+
+[33mcommit d8b681ef0fca39322d20d0aa50c6d63063c1db5d[m
+Author: MOHAMMAD IMRON ROSYADI <imronrsya@gmail.com>
+Date:   Sun Jan 25 12:00:58 2026 +0700
+
+    feat: initialize e-office webapp v2 frontend
+
+[33mcommit 2523e34e8685bfcca8b67b457b05ff41f42e1abb[m
+Merge: ba58ad9 8147856
+Author: AlvinHarist <alvinharist57@gmail.com>
+Date:   Mon Jan 19 14:34:48 2026 +0700
+
+    translate readme to indo
+
+[33mcommit ba58ad92bd89b3bb0f8299d91c612b73fa39e24b[m
+Author: AlvinHarist <alvinharist57@gmail.com>
+Date:   Mon Jan 19 14:27:28 2026 +0700
+
+    setup
+
+[33mcommit 8147856f6324ffd4b49a8d3e989eb590b4da4af1[m
+Author: TheInstinc <juliustegar123456@gmail.com>
+Date:   Mon Jan 19 14:23:39 2026 +0700
+
+    docs(client): add frontend architecture and component usage guide
+
+[33mcommit 21d7505665ea8d5659037cc923df7adadff41906[m
+Author: AlvinHarist <alvinharist57@gmail.com>
+Date:   Mon Jan 19 14:03:22 2026 +0700
+
+    create documentation
+
+[33mcommit dcae1d5adfb295ed8d481d81dc973fe4adcf759b[m
+Author: AlvinHarist <alvinharist57@gmail.com>
+Date:   Mon Jan 19 13:57:11 2026 +0700
+
+    struktur proyek frontend
+
+[33mcommit 43a54bf08d82da6be45e57442659488485ef9315[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;31morigin/AK006-SA[m[33m, [m[1;32mmain[m[33m)[m
+Author: AnandaRachmawatiPurwanto <anandarachmawati287@gmail.com>
+Date:   Sat Dec 20 18:52:39 2025 +0700
+
+    Add pages router with form dataDiri and other features
+
+[33mcommit bbfec8fc3a911ac9ae0e15cb1e4d73b5ae7787d8[m[33m ([m[1;31morigin/ak006[m[33m)[m
+Author: Reylyer <reylyercross@gmail.com>
+Date:   Sat Dec 20 10:31:38 2025 +0700
+
+    Initial commit

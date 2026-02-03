@@ -1098,9 +1098,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // ========================================================================
     // LAMPIRAN CARD (Lampiran Submission dari Pengaju)
     // Aturan tampilan:
-    // - FAKULTAS scope + surat keluar (filterType=keluar): SEMBUNYIKAN
-    // - MAHASISWA + surat hasil aktif: SEMBUNYIKAN
+    // - FAKULTAS scope + surat keluar (filterType=keluar): SEMBUNYIKAN (kecuali pengaju sendiri)
     // - Selain itu: TAMPILKAN jika ada attachments
+    // FIXED: Pengaju (Mahasiswa/Dosen) SELALU bisa lihat lampiran mereka sendiri
     // ========================================================================
     const LampiranCard = () => {
         // Jika tidak ada attachments, jangan tampilkan
@@ -1108,15 +1108,17 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             return null;
         }
         
+        // Check if current user is the original submitter (pengaju)
+        const isPengaju = isMahasiswa || currentUserRole === 'DOSEN';
+        
         // ATURAN 1: Lingkup FAKULTAS dengan filter surat keluar -> SEMBUNYIKAN
-        if (userScope === 'FAKULTAS' && filterType === 'keluar') {
+        // KECUALI jika user adalah pengaju (mereka harus bisa lihat lampiran sendiri)
+        if (!isPengaju && userScope === 'FAKULTAS' && filterType === 'keluar') {
             return null;
         }
         
-        // ATURAN 2: Mahasiswa di tab surat hasil (SK/ST) -> SEMBUNYIKAN
-        if (isMahasiswa && activeDocTab === 'surat-hasil') {
-            return null;
-        }
+        // ATURAN 2 DIHAPUS - Bug fix: Pengaju harus selalu bisa lihat lampiran mereka
+        // Old buggy rule: if (isMahasiswa && activeDocTab === 'surat-hasil') return null;
         
 
         

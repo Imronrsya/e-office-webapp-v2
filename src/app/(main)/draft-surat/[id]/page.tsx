@@ -10,6 +10,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -348,10 +366,20 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     
     // Attachment state - untuk file PDF/JPG/PNG yang diupload
     const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+    
+    // Preview modal state
+    const [previewModalOpen, setPreviewModalOpen] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string>("");
+    const [previewFileName, setPreviewFileName] = useState<string>("");
+    
+    // Delete confirmation modal state
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [attachmentToDelete, setAttachmentToDelete] = useState<string | null>(null);
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
     
     // Existing attachments from server (already uploaded before)
     const [existingAttachments, setExistingAttachments] = useState<string[]>([]);
+    const [deletingAttachment, setDeletingAttachment] = useState<string | null>(null);
     
     // Loading state for fetching existing data
     const [loading, setLoading] = useState(true);
@@ -1119,6 +1147,83 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // ========================================================================
     // ATTACHMENT HANDLERS
     // ========================================================================
+
+    // Open delete confirmation modal
+    const confirmDeleteAttachment = (url: string) => {
+        setAttachmentToDelete(url);
+        setDeleteConfirmOpen(true);
+    };
+
+    // Delete existing attachment (from server)
+    const deleteExistingAttachment = async () => {
+        const url = attachmentToDelete;
+        if (!url || !existingDocumentId) {
+            toast.error("Dokumen tidak ditemukan");
+            return;
+        }
+
+        setDeletingAttachment(url);
+        try {
+            // Extract filename from signed URL (remove query parameters)
+            // URL format: https://minio.../path/to/file.pdf?X-Amz-Algorithm=...
+            const urlWithoutQuery = url.split('?')[0]; // Remove query params
+            const fileName = urlWithoutQuery.split('/').pop();
+            
+            if (!fileName) throw new Error("Nama file tidak valid");
+
+            console.log('[DELETE ATTACHMENT] Full URL:', url);
+            console.log('[DELETE ATTACHMENT] Extracted fileName:', fileName);
+
+            const apiUrl = `/api/surat-hasil/document/${existingDocumentId}/attachments/file/${encodeURIComponent(fileName)}`;
+            console.log('[DELETE ATTACHMENT] Calling API:', apiUrl);
+
+            // Call API to delete attachment
+            const response = await fetch(apiUrl, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            console.log('[DELETE ATTACHMENT] Response status:', response.status);
+            console.log('[DELETE ATTACHMENT] Response headers:', Object.fromEntries(response.headers.entries()));
+
+            // Handle non-JSON responses (HTML error pages)
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                // Try to get response text for debugging
+                const responseText = await response.text();
+                console.error('[DELETE ATTACHMENT] Non-JSON response:', responseText.substring(0, 500));
+                throw new Error(`Server error (${response.status}): Silakan coba lagi atau hubungi admin.`);
+            }
+
+            const data = await response.json();
+            console.log('[DELETE ATTACHMENT] Response data:', data);
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Gagal menghapus lampiran');
+            }
+
+            // Remove from state
+            setExistingAttachments(prev => prev.filter(a => a !== url));
+            toast.success("Lampiran berhasil dihapus");
+            setDeleteConfirmOpen(false);
+            setAttachmentToDelete(null);
+        } catch (error) {
+            console.error('[DELETE ATTACHMENT] Error:', error);
+            toast.error(error instanceof Error ? error.message : "Gagal menghapus lampiran");
+        } finally {
+            setDeletingAttachment(null);
+        }
+    };
+
+    // Open preview modal
+    const openPreviewModal = (url: string) => {
+        const fileName = url.split('/').pop() || 'Lampiran';
+        setPreviewUrl(url);
+        setPreviewFileName(fileName);
+        setPreviewModalOpen(true);
+    };
 
     const handleAttachmentUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
@@ -2669,15 +2774,31 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                         <p className="font-medium text-sm truncate">{fileName}</p>
                                                         <p className="text-xs text-amber-600">Sudah tersimpan di server</p>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => window.open(url, '_blank')}
-                                                        className="text-blue-600 hover:text-blue-800"
-                                                        title="Preview"
-                                                    >
-                                                        <FileText className="w-4 h-4" />
-                                                    </Button>
+                                                    <div className="flex gap-1 shrink-0">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => openPreviewModal(url)}
+                                                            className="text-blue-600 hover:text-blue-800 h-8 w-8"
+                                                            title="Preview"
+                                                        >
+                                                            <FileText className="w-4 h-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => confirmDeleteAttachment(url)}
+                                                            disabled={deletingAttachment === url}
+                                                            className="text-destructive hover:text-destructive h-8 w-8"
+                                                            title="Hapus"
+                                                        >
+                                                            {deletingAttachment === url ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="w-4 h-4" />
+                                                            )}
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
@@ -2796,10 +2917,37 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 {/* Lampiran Review */}
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Lampiran ({attachments.length})
+                                        Lampiran ({existingAttachments.length + attachments.length})
                                     </Label>
-                                    {attachments.length > 0 ? (
+                                    {(existingAttachments.length > 0 || attachments.length > 0) ? (
                                         <div className="space-y-2">
+                                            {/* Existing attachments from server */}
+                                            {existingAttachments.map((url, index) => {
+                                                const fileName = url.split('/').pop() || `Lampiran ${index + 1}`;
+                                                const isPdf = url.toLowerCase().endsWith('.pdf');
+                                                return (
+                                                    <div
+                                                        key={`existing-${index}`}
+                                                        className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                                    >
+                                                        <div className={cn(
+                                                            "w-8 h-8 rounded flex items-center justify-center shrink-0",
+                                                            isPdf ? "bg-red-100" : "bg-green-100"
+                                                        )}>
+                                                            {isPdf ? (
+                                                                <File className="w-4 h-4 text-red-600" />
+                                                            ) : (
+                                                                <Image className="w-4 h-4 text-green-600" />
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-medium text-sm truncate">{fileName}</p>
+                                                            <Badge variant="secondary" className="text-xs">Sudah Tersimpan</Badge>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {/* New attachments to be uploaded */}
                                             {attachments.map((attachment) => (
                                                 <div
                                                     key={attachment.id}
@@ -2819,7 +2967,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <p className="font-medium text-sm truncate">{attachment.name}</p>
-                                                        <p className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</p>
+                                                            <Badge variant="outline" className="text-xs">Baru</Badge>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -2911,6 +3062,72 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     )
                 }
             />
+
+            {/* Preview Modal */}
+            <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
+                <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+                    <DialogHeader className="px-6 py-4 border-b">
+                        <DialogTitle>Preview Lampiran</DialogTitle>
+                        <DialogDescription>{previewFileName}</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-hidden p-6">
+                        {previewUrl && (
+                            <iframe
+                                src={previewUrl}
+                                className="w-full h-full border-0 rounded"
+                                title={previewFileName}
+                            />
+                        )}
+                    </div>
+                    <DialogFooter className="px-6 py-4 border-t">
+                        <Button
+                            variant="outline"
+                            onClick={() => setPreviewModalOpen(false)}
+                        >
+                            Tutup
+                        </Button>
+                        <Button
+                            onClick={() => window.open(previewUrl, '_blank')}
+                            className="gap-2"
+                        >
+                            <FileText className="w-4 h-4" />
+                            Buka di Tab Baru
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Modal */}
+            <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Lampiran?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            File akan dihapus secara permanen dari server dan tidak dapat dikembalikan.
+                            Apakah Anda yakin ingin melanjutkan?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deletingAttachment !== null}>
+                            Batal
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={deleteExistingAttachment}
+                            disabled={deletingAttachment !== null}
+                            className="bg-destructive hover:bg-destructive/90"
+                        >
+                            {deletingAttachment !== null ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                    Menghapus...
+                                </>
+                            ) : (
+                                'Ya, Hapus'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
