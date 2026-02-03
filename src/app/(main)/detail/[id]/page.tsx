@@ -1102,9 +1102,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // ========================================================================
     // LAMPIRAN CARD (Lampiran Submission dari Pengaju)
     // Aturan tampilan:
+    // - UPA scope: SEMBUNYIKAN (UPA hanya perlu lihat Lampiran Surat final)
+    // - Tab surat-hasil aktif: SEMBUNYIKAN untuk SEMUA user (termasuk mahasiswa/dosen)
     // - FAKULTAS scope + surat keluar (filterType=keluar): SEMBUNYIKAN (kecuali pengaju sendiri)
     // - Selain itu: TAMPILKAN jika ada attachments
-    // FIXED: Pengaju (Mahasiswa/Dosen) SELALU bisa lihat lampiran mereka sendiri
     // ========================================================================
     const LampiranCard = () => {
         // Jika tidak ada attachments, jangan tampilkan
@@ -1112,17 +1113,25 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             return null;
         }
         
+        // ATURAN 0: UPA tidak perlu melihat lampiran pengaju (hanya lihat lampiran surat final)
+        if (isUPA) {
+            return null;
+        }
+        
+        // ATURAN 1: Tab surat-hasil aktif -> SEMBUNYIKAN untuk SEMUA user (termasuk mahasiswa/dosen)
+        // Logika: Saat lihat Surat Tugas/Keputusan, fokus HANYA ke lampiran surat final
+        if (activeDocTab === 'surat-hasil') {
+            return null;
+        }
+        
         // Check if current user is the original submitter (pengaju)
         const isPengaju = isMahasiswa || currentUserRole === 'DOSEN';
         
-        // ATURAN 1: Lingkup FAKULTAS dengan filter surat keluar -> SEMBUNYIKAN
+        // ATURAN 2: Lingkup FAKULTAS dengan filter surat keluar -> SEMBUNYIKAN
         // KECUALI jika user adalah pengaju (mereka harus bisa lihat lampiran sendiri)
         if (!isPengaju && userScope === 'FAKULTAS' && filterType === 'keluar') {
             return null;
         }
-        
-        // ATURAN 2 DIHAPUS - Bug fix: Pengaju harus selalu bisa lihat lampiran mereka
-        // Old buggy rule: if (isMahasiswa && activeDocTab === 'surat-hasil') return null;
         
 
         
@@ -1175,14 +1184,20 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // ========================================================================
     // LAMPIRAN DOKUMEN CARD (Lampiran dari Staf/Supervisor - PDF/JPG/PNG)
     // Hanya tampil di surat keluar atau saat tab surat-hasil aktif
+    // KHUSUS UPA: Selalu tampilkan (tidak ada filter)
     // ========================================================================
     const LampiranDokumenCard = () => {
-        // Hanya tampilkan di surat keluar (filterType !== 'masuk')
-        // atau ketika tab aktif adalah 'surat-hasil' (surat tugas/keputusan)
-        if (filterType === 'masuk') return null;
-        
-        // Untuk DEPARTEMEN scope, hanya tampilkan jika tab surat-hasil aktif
-        if (userScope === 'DEPARTEMEN' && activeDocTab !== 'surat-hasil') return null;
+        // KHUSUS UPA: Selalu tampilkan lampiran surat, skip semua kondisi lain
+        if (isUPA) {
+            // Langsung lompat ke logic render lampiran
+        } else {
+            // Hanya tampilkan di surat keluar (filterType !== 'masuk')
+            // atau ketika tab aktif adalah 'surat-hasil' (surat tugas/keputusan)
+            if (filterType === 'masuk') return null;
+            
+            // Untuk DEPARTEMEN scope, hanya tampilkan jika tab surat-hasil aktif
+            if (userScope === 'DEPARTEMEN' && activeDocTab !== 'surat-hasil') return null;
+        }
         
         // Ambil lampiran dari dokumen (attachmentUrls dari LetterDocument)
         const suratHasilDoc = detail?.documents?.find(d => 
