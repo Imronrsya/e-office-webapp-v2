@@ -954,7 +954,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 return false;
             }
         } else if (suratType === "SURAT_KEPUTUSAN") {
-            if (!suratKeputusanForm.nomorSurat || !suratKeputusanForm.tentang || !suratKeputusanForm.tanggalDitetapkan) {
+            if (!suratKeputusanForm.tentang || !suratKeputusanForm.tanggalDitetapkan) {
                 toast.error("Lengkapi semua field yang wajib diisi");
                 return false;
             }
