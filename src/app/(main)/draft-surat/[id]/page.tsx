@@ -305,8 +305,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [tembusanTexts, setTembusanTexts] = useState<TembusanText[]>([]);
     const [newTembusanTextInput, setNewTembusanTextInput] = useState("");
     
-    // Checkbox pengaju
-    const [includePengaju, setIncludePengaju] = useState(true);
+    // Checkbox pengaju - default false, akan di-set true jika ada marker __PENGAJU__ saat load
+    const [includePengaju, setIncludePengaju] = useState(false);
     
     // User search for tembusan akun
     const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -637,7 +637,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     existingTembusan.forEach((item: any, index: number) => {
                         if (typeof item === 'string') {
                             // Old format: string[]
-                            if (item.toLowerCase() === 'pengaju') {
+                            const itemLower = item.toLowerCase();
+                            if (itemLower === 'pengaju' || itemLower === 'pengaju surat') {
                                 hasPengaju = true;
                             } else {
                                 texts.push({
@@ -647,8 +648,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             }
                         } else if (item && typeof item === 'object' && 'userId' in item) {
                             // New format: TembusanRecipient[]
-                            if (item.userId) {
-                                // This is a user account
+                            // Check if this is the special "__PENGAJU__" marker
+                            if (item.userId === '__PENGAJU__') {
+                                hasPengaju = true;
+                                console.log('✅ Found __PENGAJU__ marker, setting includePengaju = true');
+                                // Don't add to users list - this is just a checkbox state flag
+                            } else if (item.userId) {
+                                // This is a regular user account
                                 users.push({
                                     userId: item.userId,
                                     name: item.name || '',
@@ -656,20 +662,28 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 });
                             } else {
                                 // This is a text-only tembusan
-                                texts.push({
-                                    id: String(texts.length + 1),
-                                    text: item.name || item.description || ''
-                                });
+                                const textValue = item.name || item.description || '';
+                                // Filter out any text entries that might be "Pengaju Surat"
+                                if (textValue.toLowerCase() !== 'pengaju surat' && textValue.toLowerCase() !== 'pengaju') {
+                                    texts.push({
+                                        id: String(texts.length + 1),
+                                        text: textValue
+                                    });
+                                }
                             }
                         }
                     });
                     
-                    console.log('📦 Loaded tembusan:', { users, texts, hasPengaju });
+                    console.log('📦 Loaded tembusan:', { users: users.length, texts: texts.length, hasPengaju });
+                    console.log('🔍 Setting includePengaju to:', hasPengaju);
                     setIncludePengaju(hasPengaju);
                     setTembusanUsers(users);
                     setTembusanTexts(texts);
                 } else {
-                    console.log('ℹ️ No existing tembusan found');
+                    console.log('ℹ️ No existing tembusan found, setting includePengaju to false');
+                    setIncludePengaju(false);
+                    setTembusanUsers([]);
+                    setTembusanTexts([]);
                 }
 
                 // Load existing attachments from document
@@ -1205,6 +1219,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 name: u.name,
                 email: u.email,
             }));
+            
+            // Add special "__PENGAJU__" marker if checkbox is checked
+            // This marker will be detected when loading to restore checkbox state
+            if (includePengaju) {
+                tembusanUsersList.push({
+                    userId: '__PENGAJU__', // Special marker (not a real userId)
+                    name: 'Pengaju Surat',
+                    email: '',
+                });
+            }
+            
+            console.log('💾 Saving tembusan with includePengaju:', includePengaju, 'usersList:', tembusanUsersList.length);
 
             let response;
             
