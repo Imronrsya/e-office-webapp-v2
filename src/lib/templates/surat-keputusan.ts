@@ -208,6 +208,9 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       max-width: 21cm;
       color: #000000 !important;
       background: #ffffff !important;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      box-sizing: border-box;
     }
     .logo-container {
       text-align: center;
@@ -245,10 +248,13 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     .content-section {
       text-align: justify;
       margin: 15px 0;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
     .section-header {
       display: flex;
       align-items: flex-start;
+      max-width: 100%;
     }
     .section-label {
       min-width: 120px;
@@ -260,6 +266,11 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     }
     .section-content {
       flex: 1;
+      min-width: 0;
+      max-width: calc(100% - 140px);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-all;
     }
     .point-list {
       margin-left: 0;
@@ -275,13 +286,19 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     }
     .point-content {
       flex: 1;
+      min-width: 0;
       text-align: justify;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-all;
     }
     .keputusan-section {
       margin: 20px 0;
+      max-width: 100%;
     }
     .keputusan-point {
       margin: 15px 0;
+      max-width: 100%;
     }
     .keputusan-label {
       margin-bottom: 5px;
@@ -481,10 +498,10 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
   <div class="keputusan-section">
     ${data.keputusan.map((item) => `
     <div class="keputusan-point">
-      <div style="display: flex; align-items: flex-start;">
+      <div style="display: flex; align-items: flex-start; max-width: 100%;">
         <div style="min-width: 120px; flex-shrink: 0;"><span class="keputusan-label">${item.label}</span></div>
         <div style="min-width: 20px; flex-shrink: 0;">:</div>
-        <div style="flex: 1; text-align: justify;">${item.content}</div>
+        <div style="flex: 1; min-width: 0; max-width: calc(100% - 140px); text-align: justify; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;">${item.content}</div>
       </div>
     </div>
     `).join('')}

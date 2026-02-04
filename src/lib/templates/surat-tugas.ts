@@ -213,6 +213,8 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       color: #000000 !important;
       background: #ffffff !important;
       box-sizing: border-box;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
     .header-container {
       display: flex;
@@ -279,6 +281,9 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       margin: 15px 0;
       text-indent: 40px;
       line-height: 1.5;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     .penutup {
       margin: 15px 0;

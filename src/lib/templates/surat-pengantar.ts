@@ -118,6 +118,8 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             color: #000000;
             background: #ffffff;
             box-sizing: border-box;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         .header-container {
             display: flex;
@@ -195,6 +197,9 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             text-align: justify;
             margin: 25px 0;
             line-height: 1.8;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
         .data-table {
             margin: 20px 0 20px 50px;
