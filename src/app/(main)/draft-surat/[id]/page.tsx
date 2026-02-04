@@ -2280,7 +2280,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     </div>
                                 ))}
 
-                                {signers.length < (suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : SURAT_FAKULTAS_ROLES).length && (
+                                {signers.length < (suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : getFilteredRolesByCategory(suratCategory)).length && (
                                     <Button
                                         variant="outline"
                                         onClick={addSigner}

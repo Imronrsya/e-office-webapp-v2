@@ -1431,7 +1431,7 @@ function BuatSuratContent() {
                                     </div>
                                 ))}
 
-                                {signers.length < SURAT_FAKULTAS_ROLES.length && (
+                                {signers.length < getFilteredRolesByCategory(categoryParam).length && (
                                     <Button
                                         variant="outline"
                                         onClick={addSigner}
