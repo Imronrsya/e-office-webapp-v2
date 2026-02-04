@@ -43,6 +43,7 @@ export interface SignatureSummary {
     signerRole: string;
     signerName: string;
     signerNip?: string | null;
+    prefix?: string | null; // Awalan/keterangan seperti "Mengetahui,"
     signatureUrl?: string | null; // URL of the actual signature image
     signedAt: string;
     order: number;

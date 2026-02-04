@@ -82,6 +82,7 @@ export interface LegalisasiQueueItem {
   signatures: Array<{
     signerName: string;
     signerRole: string;
+    prefix?: string | null;
     signedAt: string | null;
     status: string;
   }>;
@@ -138,6 +139,7 @@ export interface LegalisasiDetail {
       signerName: string;
       signerRole: string;
       signerNip: string | null;
+      prefix?: string | null;
       signatureUrl: string | null;
       status: string;
       signedAt: string | null;

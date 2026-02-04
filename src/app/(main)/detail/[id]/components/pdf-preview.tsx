@@ -106,7 +106,7 @@ export function PDFPreview({
                 signerName: sig.signerName,
                 signerNip: sig.signerNip || undefined,
                 signatureUrl: sig.signatureUrl || undefined,
-                prefix: undefined,
+                prefix: sig.prefix || undefined, // Include prefix/awalan from signature data
             }));
             
             // Extract tembusan from content if available
@@ -186,6 +186,7 @@ export function PDFPreview({
                         role: sig.signerRole,
                         name: sig.signerName,
                         nip: sig.signerNip || undefined,
+                        prefix: sig.prefix || undefined, // Include prefix/awalan
                         x: sig.positionX || 0,
                         y: sig.positionY || 0,
                         page: sig.positionPage || 1,

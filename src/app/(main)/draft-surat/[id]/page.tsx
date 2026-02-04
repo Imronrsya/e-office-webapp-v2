@@ -635,6 +635,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         isRequired: true,
                         name: sig.signerName || "",
                         nip: sig.signerNip || "",
+                        prefix: sig.prefix || "", // Include prefix/awalan
                         x: sig.positionX || 0,
                         y: sig.positionY || 0,
                         page: sig.positionPage || 1

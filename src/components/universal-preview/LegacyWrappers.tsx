@@ -67,6 +67,7 @@ export function LegacyPDFPreview({
         signerName: sig.signerName,
         signerNip: sig.signerNip,
         signatureUrl: sig.signatureUrl,
+        prefix: sig.prefix, // Include prefix/awalan
         order: sig.order,
         positionX: sig.positionX,
         positionY: sig.positionY,
@@ -216,6 +217,7 @@ export function LegacySuratPreview({
         signerName: sig.signerName,
         signerNip: sig.signerNip,
         signatureUrl: sig.signatureUrl,
+        prefix: sig.prefix, // Include prefix/awalan
         order: index,
         positionX: sig.positionX,
         positionY: sig.positionY,
