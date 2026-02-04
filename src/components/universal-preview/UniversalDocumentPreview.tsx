@@ -259,24 +259,69 @@ export function UniversalDocumentPreview({
         }
     }, [onPrint]);
 
-    // Handle download
-    const handleDownload = useCallback(() => {
+    // Handle download - langsung download PDF dengan kualitas yang sama seperti print
+    const handleDownload = useCallback(async () => {
         if (onDownload) {
             onDownload();
             return;
         }
         
-        // Default download behavior
+        // Jika ada HTML content, generate PDF dan download langsung
+        if (effectiveHtmlContent) {
+            try {
+                const { htmlToPdfBlob } = await import('@/lib/pdf-generator');
+                const pdfBlob = await htmlToPdfBlob(effectiveHtmlContent);
+                const blobUrl = URL.createObjectURL(pdfBlob);
+                
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+            } catch (error) {
+                console.error('PDF generation failed:', error);
+            }
+            return;
+        }
+        
+        // Default download behavior for URL-based PDFs
         const url = fileUrl || pdfBlobUrl;
         if (url) {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${fileName}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            try {
+                // Fetch the file and create a proper download
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                // Cleanup blob URL after download
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+            } catch (error) {
+                console.error('Download failed:', error);
+                // Fallback to direct link
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        } else {
+            console.warn('No content available for download');
         }
-    }, [onDownload, fileUrl, pdfBlobUrl, fileName]);
+    }, [onDownload, fileUrl, pdfBlobUrl, fileName, effectiveHtmlContent]);
 
     // Page navigation
     const handlePrevPage = useCallback(() => {
@@ -525,6 +570,11 @@ export function UniversalDocumentPreview({
             return renderEmpty();
         }
 
+        // Add #toolbar=0 to hide browser's built-in PDF toolbar
+        const pdfUrlWithoutToolbar = pdfUrl.includes('#') 
+            ? `${pdfUrl}&toolbar=0&navpanes=0&scrollbar=0`
+            : `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`;
+
         return (
             <div className={cn("flex-1 overflow-auto", themeClasses.preview)}>
                 <div 
@@ -537,7 +587,7 @@ export function UniversalDocumentPreview({
                 >
                     <iframe
                         ref={iframeRef}
-                        src={pdfUrl}
+                        src={pdfUrlWithoutToolbar}
                         className="bg-white rounded shadow-lg"
                         style={{ 
                             width: '21cm', 
@@ -577,7 +627,7 @@ export function UniversalDocumentPreview({
                             width: '21cm', 
                             minHeight: '29.7cm',
                             border: 'none',
-                            pointerEvents: 'none',
+                            pointerEvents: 'auto',
                         }}
                         onLoad={handleIframeLoad}
                         title="HTML Preview"

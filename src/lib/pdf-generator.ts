@@ -57,6 +57,12 @@ export function generateSuratHTML(
 /**
  * Convert HTML to PDF blob using browser's print functionality
  * This creates a PDF that can be displayed in the positioner
+ * 
+ * Features:
+ * - First page: margin top 1cm, margin bottom 3cm
+ * - Page 2+: margin top 3cm, margin bottom 3cm
+ * - Smart pagination with signature block handling
+ * - Proper image loading for logos
  */
 export async function htmlToPdfBlob(html: string): Promise<Blob> {
     // Create an iframe to render the HTML
@@ -64,7 +70,7 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
     iframe.style.position = 'absolute';
     iframe.style.left = '-9999px';
     iframe.style.width = '210mm'; // A4 width
-    iframe.style.height = 'auto'; // Let content determine height
+    iframe.style.height = 'auto';
     document.body.appendChild(iframe);
 
     try {
@@ -73,32 +79,61 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
             throw new Error('Could not access iframe document');
         }
 
+        // Inject CSS for proper pagination into the HTML
+        const paginatedHtml = injectPaginationStyles(html);
+        
         iframeDoc.open();
-        iframeDoc.write(html);
+        iframeDoc.write(paginatedHtml);
         iframeDoc.close();
 
-        // Wait for images to load
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait for all images to load properly
+        await waitForImages(iframeDoc);
 
-        // Get the actual content height
-        const contentHeight = iframeDoc.body.scrollHeight;
-        const contentWidth = 794; // A4 width in pixels at 96 DPI
-        const a4HeightPixels = 1123; // A4 height in pixels at 96 DPI
-        
-        // Calculate number of pages needed
-        const numPages = Math.ceil(contentHeight / a4HeightPixels);
+        // A4 dimensions
+        const a4WidthMm = 210;
+        const a4HeightMm = 297;
+        const marginTopFirstPageMm = 10; // 1cm for first page
+        const marginTopMm = 30;  // 3cm for page 2+
+        const marginBottomMm = 30; // 3cm
+
+        // Convert mm to pixels (96 DPI)
+        const mmToPixels = (mm: number) => (mm / 25.4) * 96;
+        const contentWidthPx = mmToPixels(a4WidthMm);
+        const contentHeightPx = mmToPixels(a4HeightMm); // Full page height for first page
+
+        // Get actual content dimensions
+        const bodyHeight = iframeDoc.body.scrollHeight;
 
         // Use html2canvas to capture the content
         const html2canvas = (await import('html2canvas')).default;
         const canvas = await html2canvas(iframeDoc.body, {
             scale: 2,
             useCORS: true,
+            allowTaint: true,
             logging: false,
             backgroundColor: '#ffffff',
-            width: contentWidth,
-            height: contentHeight, // Capture full content height
-            windowWidth: contentWidth,
-            windowHeight: contentHeight,
+            width: contentWidthPx,
+            height: bodyHeight,
+            windowWidth: contentWidthPx,
+            windowHeight: bodyHeight,
+            imageTimeout: 15000, // Wait up to 15 seconds for images
+            onclone: (clonedDoc) => {
+                // Force font rendering in cloned document
+                const style = clonedDoc.createElement('style');
+                style.textContent = `
+                    * {
+                        font-family: 'Times New Roman', Times, Georgia, serif !important;
+                        -webkit-font-smoothing: antialiased;
+                        text-rendering: optimizeLegibility;
+                    }
+                `;
+                clonedDoc.head.appendChild(style);
+                
+                // Wait for fonts in cloned doc
+                if (clonedDoc.fonts && clonedDoc.fonts.ready) {
+                    return clonedDoc.fonts.ready;
+                }
+            }
         });
 
         // Convert canvas to PDF using jsPDF
@@ -109,32 +144,80 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
             format: 'a4',
         });
 
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
+        const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
         
-        // If content fits in one page
+        // Calculate pixels per mm
+        const pixelsPerMm = canvas.width / a4WidthMm;
+        
+        // First page: content area = 297mm - 10mm top margin - 30mm bottom margin = 257mm
+        // Page 2+: content area = 297mm - 30mm top margin - 30mm bottom margin = 237mm
+        const firstPageHeightPx = (a4HeightMm - marginTopFirstPageMm - marginBottomMm) * pixelsPerMm;
+        const subsequentPageHeightPx = (a4HeightMm - marginTopMm - marginBottomMm) * pixelsPerMm;
+
+        // Calculate number of pages
+        let remainingHeight = canvas.height;
+        let numPages = 1;
+        remainingHeight -= firstPageHeightPx;
+        while (remainingHeight > 0) {
+            numPages++;
+            remainingHeight -= subsequentPageHeightPx;
+        }
+
         if (numPages <= 1) {
+            // Single page - add 1cm top margin
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            const imgHeight = (canvas.height / canvas.width) * pdfWidth;
+            pdf.addImage(imgData, 'JPEG', 0, marginTopFirstPageMm, pdfWidth, Math.min(pdfHeight - marginTopFirstPageMm, imgHeight));
         } else {
-            // Split content across multiple pages
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            const imgWidth = pdfWidth;
-            const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+            // Multi-page - slice the canvas for each page
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
             
-            let heightLeft = imgHeight;
-            let position = 0;
+            if (!tempCtx) {
+                throw new Error('Could not get canvas context');
+            }
+
+            let sourceY = 0;
             
-            // First page
-            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pdfHeight;
-            
-            // Add more pages if needed
-            while (heightLeft > 0) {
-                position = -pdfHeight + (imgHeight - heightLeft - pdfHeight);
-                pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pdfHeight;
+            for (let pageNum = 0; pageNum < numPages; pageNum++) {
+                if (pageNum > 0) {
+                    pdf.addPage();
+                }
+
+                // Determine content height for this page
+                const pageContentHeightPx = pageNum === 0 ? firstPageHeightPx : subsequentPageHeightPx;
+                const sourceHeight = Math.min(pageContentHeightPx, canvas.height - sourceY);
+                
+                if (sourceHeight <= 0) break;
+
+                // Set temp canvas size for this page's content
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = sourceHeight;
+
+                // Draw the portion of the original canvas
+                tempCtx.fillStyle = '#ffffff';
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                tempCtx.drawImage(
+                    canvas,
+                    0, sourceY,                 // Source x, y
+                    canvas.width, sourceHeight, // Source width, height
+                    0, 0,                       // Dest x, y
+                    canvas.width, sourceHeight  // Dest width, height
+                );
+
+                const pageImgData = tempCanvas.toDataURL('image/jpeg', 0.95);
+                
+                // Calculate height in mm for this page content
+                const pageContentHeightMm = (sourceHeight / canvas.width) * pdfWidth;
+                
+                // First page: y = marginTopFirstPageMm (1cm top margin)
+                // Page 2+: y = marginTopMm (3cm top margin)
+                const yPosition = pageNum === 0 ? marginTopFirstPageMm : marginTopMm;
+                
+                pdf.addImage(pageImgData, 'JPEG', 0, yPosition, pdfWidth, pageContentHeightMm);
+                
+                sourceY += sourceHeight;
             }
         }
 
@@ -142,6 +225,128 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
         return pdf.output('blob');
     } finally {
         document.body.removeChild(iframe);
+    }
+}
+
+/**
+ * Wait for all images in the document to load
+ */
+async function waitForImages(doc: Document): Promise<void> {
+    const images = doc.querySelectorAll('img');
+    const imagePromises: Promise<void>[] = [];
+    
+    images.forEach((img) => {
+        if (!img.complete) {
+            imagePromises.push(
+                new Promise((resolve) => {
+                    img.onload = () => resolve();
+                    img.onerror = () => {
+                        console.warn('Image failed to load:', img.src);
+                        resolve(); // Continue even if image fails
+                    };
+                    // Set timeout to avoid waiting forever
+                    setTimeout(resolve, 5000);
+                })
+            );
+        }
+    });
+    
+    // Also add a minimum wait time for rendering
+    imagePromises.push(new Promise(resolve => setTimeout(resolve, 500)));
+    
+    await Promise.all(imagePromises);
+    
+    // Wait for fonts to be loaded
+    if (doc.fonts && doc.fonts.ready) {
+        await doc.fonts.ready;
+    }
+    
+    // Additional wait for font rendering
+    await new Promise(resolve => setTimeout(resolve, 300));
+}
+
+/**
+ * Inject CSS styles for proper pagination handling
+ * Apply @media print styles directly since html2canvas doesn't respect @media print
+ * Also remove body padding since pdf-generator handles margins
+ */
+function injectPaginationStyles(html: string): string {
+    const paginationCSS = `
+        <style id="pagination-styles">
+            /* Force print styles to apply (html2canvas doesn't use @media print) */
+            body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                /* Remove padding - pdf-generator handles margins for download */
+                padding: 0 76px 0 76px !important;
+                /* Ensure font is loaded */
+                font-family: 'Times New Roman', Times, Georgia, serif !important;
+            }
+            
+            /* Force all text to use proper font */
+            *, *::before, *::after {
+                font-family: inherit !important;
+            }
+            
+            /* Page break handling */
+            .ttd-section, .signature-section, .ttd-wrapper, .ttd-container {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            
+            /* Keep MEMUTUSKAN with Menetapkan */
+            .memutuskan-wrapper {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            
+            /* Keep footer section (date, signatures, tembusan) together */
+            .footer-section-wrapper {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            
+            /* Prevent widows and orphans */
+            p, li {
+                widows: 2;
+                orphans: 2;
+            }
+            
+            /* Tembusan should stay with signature */
+            .tembusan-container {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                position: static !important;
+            }
+            
+            /* ttd-tembusan-wrapper should not be split */
+            .ttd-tembusan-wrapper {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            
+            /* QR Code positioning */
+            .qr-code-container {
+                position: fixed !important;
+                bottom: 20px !important;
+                right: 20px !important;
+            }
+            
+            /* Ensure text wraps properly */
+            .section-content, .point-content, .keputusan-content {
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+            }
+        </style>
+    `;
+    
+    // Insert before </head> or at the start of the document
+    if (html.includes('</head>')) {
+        return html.replace('</head>', `${paginationCSS}</head>`);
+    } else if (html.includes('<body')) {
+        return html.replace('<body', `${paginationCSS}<body`);
+    } else {
+        return paginationCSS + html;
     }
 }
 

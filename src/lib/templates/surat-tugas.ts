@@ -162,14 +162,9 @@ const renderTembusan = (tembusan?: (TembusanRecipient | string)[]): string => {
     return `<li style="color: #000000 !important; margin-bottom: 2px;">${t.name}${desc}</li>`;
   }).join('\n');
   
-  // Calculate bottom position based on number of tembusan items
-  const itemCount = textBasedTembusan.length;
-  const baseBottom = 110; // Base position above QR code
-  const additionalHeight = Math.max(0, (itemCount - 2) * 18); // 18px per extra item
-  const bottomPosition = baseBottom + additionalHeight;
-  
+  // Tembusan sekarang menggunakan static position agar tidak muncul di setiap halaman
   return `
-    <div class="tembusan-container" style="position: fixed; bottom: ${bottomPosition}px; left: 60px; max-width: 280px; z-index: 100; background: white;">
+    <div class="tembusan-container">
       <p style="margin: 0 0 5px 0; color: #000000 !important; font-weight: bold;">Tembusan:</p>
       <ol style="margin: 0; padding-left: 20px; color: #000000 !important; line-height: 1.4;">
         ${recipients}
@@ -197,7 +192,7 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
     }
     @page {
       size: A4;
-      margin: 0;
+      margin: 3cm 2cm 3cm 2cm;
     }
     html, body {
       width: 21cm;
@@ -206,9 +201,9 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
     body {
       font-family: 'Times New Roman', Times, serif;
       font-size: 12pt;
-      line-height: 1.6;
+      line-height: 1;
       margin: 0;
-      padding: 50px 60px 80px 60px;
+      padding: 38px 76px 113px 76px;
       max-width: 21cm;
       color: #000000 !important;
       background: #ffffff !important;
@@ -367,12 +362,18 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       z-index: 1000;
     }
     .tembusan-container {
-      margin-top: 50px;
+      position: static;
+      margin-top: 30px;
       max-width: 300px;
       font-size: 11pt;
       line-height: 1.5;
       page-break-inside: avoid;
       clear: both;
+      background: white;
+    }
+    /* Wrapper untuk TTD dan Tembusan agar tidak terpisah antar halaman */
+    .ttd-tembusan-wrapper {
+      page-break-inside: avoid;
     }
     @media print {
       .qr-code-container {
@@ -396,7 +397,7 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
 <body style="color: #000000;">
   <div class="header-container" style="border-bottom: 3px solid #000000;">
     <div class="logo-container">
-      <img src="https://mm.feb.undip.ac.id/wp-content/uploads/2021/11/universitas-diponegoro-logo.png" alt="Logo UNDIP" class="logo">
+      <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
     </div>
     <div class="kop-surat">
       <h3 style="color: #000000;">KEMENTERIAN PENDIDIKAN TINGGI, SAINS,<br>DAN TEKNOLOGI</h3>
@@ -444,10 +445,12 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
     <p style="color: #000000;">Demikian surat ${data.jenisSurat === 'keputusan' ? 'keputusan' : 'tugas'} ini dibuat untuk dapat dipergunakan sebagaimana mestinya.</p>
   </div>
   ${data.tanggalSurat ? `<p style="text-align: right; margin-top: 30px; color: #000000 !important;">${data.tanggalSurat}</p>` : ''}
-  <div class="ttd-container">
-    ${renderSignatures(data.signatures)}
+  <div class="ttd-tembusan-wrapper">
+    <div class="ttd-container">
+      ${renderSignatures(data.signatures)}
+    </div>
+    ${renderTembusan(data.tembusan)}
   </div>
-  ${renderTembusan(data.tembusan)}
   ${renderQRCode(data.qrCodeDataUrl, data.verificationUrl)}
 </body>
 </html>`;

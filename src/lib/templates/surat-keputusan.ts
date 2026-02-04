@@ -158,13 +158,9 @@ const renderTembusan = (tembusan?: (TembusanRecipient | string)[]): string => {
     return `<li style="color: #000000 !important; margin-bottom: 2px;">${t.name}${desc}</li>`;
   }).join('\n');
   
-  const itemCount = textBasedTembusan.length;
-  const baseBottom = 110;
-  const additionalHeight = Math.max(0, (itemCount - 2) * 18);
-  const bottomPosition = baseBottom + additionalHeight;
-  
+  // Menggunakan position static agar tidak muncul di setiap halaman saat print
   return `
-    <div class="tembusan-container" style="position: fixed; bottom: ${bottomPosition}px; left: 50px; max-width: 280px; z-index: 100; background: white;">
+    <div class="tembusan-container">
       <p style="margin: 0 0 5px 0; color: #000000 !important; font-weight: bold;">Tembusan:</p>
       <ol style="margin: 0; padding-left: 20px; color: #000000 !important; line-height: 1.4;">
         ${recipients}
@@ -182,7 +178,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
   <style>
     @page {
       size: A4;
-      margin: 0;
+      margin: 3cm 2cm 3cm 2cm;
     }
     html, body {
       width: 21cm;
@@ -202,9 +198,9 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     body {
       font-family: 'Times New Roman', Times, serif;
       font-size: 11pt;
-      line-height: 1.6;
+      line-height: 1;
       margin: 0;
-      padding: 40px 50px 100px 50px;
+      padding: 38px 76px 113px 76px;
       max-width: 21cm;
       color: #000000 !important;
       background: #ffffff !important;
@@ -223,7 +219,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     .judul-keputusan {
       text-align: center;
       margin-bottom: 25px;
-      line-height: 1.4;
+      line-height: 1.2;
     }
     .judul-keputusan h4 {
       margin: 3px 0;
@@ -408,11 +404,25 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       z-index: 1000;
     }
     .tembusan-container {
-      margin-top: 50px;
-      margin-bottom: 30px;
+      margin-top: 30px;
+      margin-bottom: 20px;
       max-width: 300px;
       font-size: 11pt;
       line-height: 1.5;
+      page-break-inside: avoid;
+      position: static;
+      background: white;
+    }
+    /* Wrapper untuk ttd + tembusan agar tidak terpotong */
+    .ttd-tembusan-wrapper {
+      page-break-inside: avoid;
+    }
+    /* Wrapper untuk MEMUTUSKAN + Menetapkan agar tidak terpisah */
+    .memutuskan-wrapper {
+      page-break-inside: avoid;
+    }
+    /* Wrapper untuk footer (tanggal, ttd, tembusan) agar tembusan tidak sendirian */
+    .footer-section-wrapper {
       page-break-inside: avoid;
     }
     @media print {
@@ -420,6 +430,9 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
         position: fixed;
         bottom: 20px;
         right: 20px;
+      }
+      .tembusan-container {
+        position: static !important;
       }
     }
     b, strong {
@@ -429,7 +442,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
 </head>
 <body>
   <div class="logo-container">
-    <img src="https://mm.feb.undip.ac.id/wp-content/uploads/2021/11/universitas-diponegoro-logo.png" alt="Logo UNDIP" class="logo">
+    <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
   </div>
   
   <div class="judul-keputusan">
@@ -481,16 +494,18 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     </div>
   </div>
   
-  <div class="section-title">
-    <p>MEMUTUSKAN</p>
-  </div>
-  
-  <div class="content-section">
-    <div class="section-header">
-      <div class="section-label">Menetapkan</div>
-      <div class="section-colon">:</div>
-      <div class="section-content">
-        <p style="margin: 0; text-align: justify;">${data.menetapkan}</p>
+  <div class="memutuskan-wrapper">
+    <div class="section-title">
+      <p>MEMUTUSKAN</p>
+    </div>
+    
+    <div class="content-section">
+      <div class="section-header">
+        <div class="section-label">Menetapkan</div>
+        <div class="section-colon">:</div>
+        <div class="section-content">
+          <p style="margin: 0; text-align: justify;">${data.menetapkan}</p>
+        </div>
       </div>
     </div>
   </div>
@@ -507,15 +522,19 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     `).join('')}
   </div>
   
-  <div class="tanggal-ditetapkan" style="text-align: right; margin-top: 30px; margin-bottom: 20px;">
-    <p style="margin: 0;">Ditetapkan di Semarang</p>
-    <p style="margin: 0;">pada tanggal ${data.tanggalDitetapkan}</p>
+  <div class="footer-section-wrapper">
+    <div class="tanggal-ditetapkan" style="text-align: right; margin-top: 30px; margin-bottom: 20px;">
+      <p style="margin: 0;">Ditetapkan di Semarang</p>
+      <p style="margin: 0;">pada tanggal ${data.tanggalDitetapkan}</p>
+    </div>
+    
+    <div class="ttd-tembusan-wrapper">
+      <div class="ttd-section">
+        ${renderSignatures(data.signatures)}
+      </div>
+      ${renderTembusan(data.tembusan)}
+    </div>
   </div>
-  
-  <div class="ttd-section">
-    ${renderSignatures(data.signatures)}
-  </div>
-  ${renderTembusan(data.tembusan)}
   ${renderQRCode(data.qrCodeDataUrl)}
   
   ${data.lampiran && data.dataPeserta ? `

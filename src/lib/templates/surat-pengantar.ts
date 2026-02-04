@@ -102,7 +102,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         }
         @page {
             size: A4;
-            margin: 0;
+            margin: 3cm 2cm 3cm 2cm;
         }
         html, body {
             width: 21cm;
@@ -111,9 +111,9 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 12pt;
-            line-height: 1.6;
+            line-height: 1;
             margin: 0;
-            padding: 50px 60px 80px 60px;
+            padding: 38px 76px 113px 76px;
             max-width: 21cm;
             color: #000000;
             background: #ffffff;
@@ -191,12 +191,12 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         }
         .alamat-tujuan {
             margin: 20px 0;
-            line-height: 1.6;
+            line-height: 1.2;
         }
         .isi-surat {
             text-align: justify;
             margin: 25px 0;
-            line-height: 1.8;
+            line-height: 1.2;
             word-wrap: break-word;
             overflow-wrap: break-word;
             word-break: break-word;
@@ -225,6 +225,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             display: flex;
             width: 100%;
             clear: both;
+            page-break-inside: avoid;
         }
         
         /* JIKA DUA TTD: Kaprodi di kiri, Kadep di kanan */
@@ -241,6 +242,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         .ttd-box {
             width: 45%;
             text-align: center;
+            page-break-inside: avoid;
         }
         .ttd-box p {
             margin: 3px 0;
@@ -298,7 +300,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
     
     <div class="header-container">
         <div class="logo-container">
-            <img src="https://mm.feb.undip.ac.id/wp-content/uploads/2021/11/universitas-diponegoro-logo.png" alt="Logo UNDIP" class="logo">
+            <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
         </div>
         <div class="kop-surat">
             <h3>KEMENTERIAN PENDIDIKAN TINGGI, SAINS,<br>DAN TEKNOLOGI</h3>
