@@ -105,6 +105,11 @@ export function UniversalDocumentPreview({
             // Extract tembusan from content if available
             const contentData = content as Record<string, unknown>;
             const tembusanData = contentData.tembusan as Array<{ name: string; description?: string }> | undefined;
+            
+            // Get stempel and QR code URLs
+            // Stempel only appears after UPA clicks "bubuhkan stempel" which sets sealImageUrl in database
+            const stempelUrl = stempel?.imageUrl || stempel?.imageData || (contentData.stempelUrl as string) || undefined;
+            const qrCodeDataUrl = qrCode?.content || (contentData.qrCodeDataUrl as string) || undefined;
 
             switch (documentType) {
                 case 'SURAT_TUGAS': {
@@ -112,6 +117,8 @@ export function UniversalDocumentPreview({
                         ...content as unknown as SuratTugasData,
                         signatures: signatureBlocks,
                         tembusan: tembusanData || [],
+                        stempelUrl,
+                        qrCodeDataUrl,
                     };
                     return suratTugasTemplate(data);
                 }
@@ -120,6 +127,8 @@ export function UniversalDocumentPreview({
                         ...content as unknown as SuratTugasTableData,
                         signatures: signatureBlocks,
                         tembusan: tembusanData || [],
+                        stempelUrl,
+                        qrCodeDataUrl,
                     };
                     return suratTugasTableTemplate(data);
                 }
@@ -128,6 +137,8 @@ export function UniversalDocumentPreview({
                         ...content as unknown as SuratKeputusanData,
                         signatures: signatureBlocks,
                         tembusan: tembusanData || [],
+                        stempelUrl,
+                        qrCodeDataUrl,
                     };
                     return suratKeputusanTemplate(data);
                 }

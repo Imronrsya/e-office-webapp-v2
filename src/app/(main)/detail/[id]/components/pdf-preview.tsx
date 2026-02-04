@@ -30,6 +30,7 @@ interface SignatureData {
     signerName: string;
     signerNip?: string | null;
     signatureUrl?: string | null; // URL of the actual signature image
+    prefix?: string | null; // Prefix/awalan like "a.n.", "u.b.", "Plt."
     order: number;
     positionX?: number | null;
     positionY?: number | null;
@@ -44,6 +45,7 @@ interface PDFPreviewProps {
     documentType?: 'SURAT_PENGANTAR' | 'SURAT_TUGAS' | 'SURAT_TUGAS_TABEL' | 'SURAT_KEPUTUSAN';
     signatures?: SignatureData[]; // Signature data with positions
     onDownload?: () => void;
+    showToolbar?: boolean; // Control toolbar visibility
 }
 
 // Note: We cannot add cache-busting parameters to presigned URLs from MinIO/S3
@@ -58,7 +60,8 @@ export function PDFPreview({
     content,
     documentType,
     signatures,
-    onDownload 
+    onDownload,
+    showToolbar = true
 }: PDFPreviewProps) {
     const [zoom, setZoom] = useState(100);
     const [rotation, setRotation] = useState(0);
@@ -109,9 +112,17 @@ export function PDFPreview({
                 prefix: sig.prefix || undefined, // Include prefix/awalan from signature data
             }));
             
-            // Extract tembusan from content if available
+            // Extract tembusan and stempelUrl from content if available
             const contentData = content as Record<string, unknown>;
             const tembusanData = contentData.tembusan as Array<{ name: string; description?: string }> | undefined;
+            // Extract stempel URL from content (passed from detail page as stempelUrl or sealImageUrl)
+            // Stempel only appears after UPA clicks "bubuhkan stempel" which sets sealImageUrl in database
+            const stempelUrl = (contentData.stempelUrl || contentData.sealImageUrl) as string | undefined;
+            
+            // Debug logging untuk stempel
+            console.log('[PDFPreview] stempelUrl:', stempelUrl);
+            console.log('[PDFPreview] signatureBlocks:', signatureBlocks);
+            console.log('[PDFPreview] content keys:', Object.keys(contentData));
 
             switch (documentType) {
                 case 'SURAT_TUGAS': {
@@ -119,6 +130,7 @@ export function PDFPreview({
                         ...content as unknown as SuratTugasData,
                         signatures: signatureBlocks,
                         tembusan: tembusanData,
+                        stempelUrl: stempelUrl,
                     };
                     return suratTugasTemplate(data);
                 }
@@ -132,6 +144,7 @@ export function PDFPreview({
                         dataMahasiswa: dataMahasiswa,
                         signatures: signatureBlocks,
                         tembusan: tembusanData,
+                        stempelUrl: stempelUrl,
                     };
                     return suratTugasTableTemplate(data);
                 }
@@ -140,6 +153,7 @@ export function PDFPreview({
                         ...content as unknown as SuratKeputusanData,
                         signatures: signatureBlocks,
                         tembusan: tembusanData,
+                        stempelUrl: stempelUrl,
                     };
                     return suratKeputusanTemplate(data);
                 }
@@ -252,6 +266,7 @@ export function PDFPreview({
         return (
             <div ref={containerRef} className="bg-zinc-800 rounded-xl overflow-hidden flex flex-col h-full min-h-[600px] relative">
                 {/* Toolbar */}
+                {showToolbar && (
                 <div className="flex items-center justify-between bg-zinc-700 px-3 py-2 text-white text-sm">
                     <div className="flex items-center gap-3">
                         <DropdownMenu>
@@ -332,6 +347,7 @@ export function PDFPreview({
                         </Button>
                     </div>
                 </div>
+                )}
 
                 {/* PDF Viewer */}
                 <div className="flex-1 bg-zinc-600 overflow-auto">
@@ -369,6 +385,7 @@ export function PDFPreview({
         return (
             <div ref={containerRef} className="bg-zinc-800 rounded-xl overflow-hidden flex flex-col h-full min-h-[600px] relative">
                 {/* Toolbar */}
+                {showToolbar && (
                 <div className="flex items-center justify-between bg-zinc-700 px-3 py-2 text-white text-sm">
                     <div className="flex items-center gap-3">
                         <DropdownMenu>
@@ -435,8 +452,46 @@ export function PDFPreview({
                         >
                             <Printer className="w-4 h-4" />
                         </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={async () => {
+                                // Download the generated PDF blob properly
+                                if (pdfBlobUrl) {
+                                    try {
+                                        // Fetch the blob from the blob URL
+                                        const response = await fetch(pdfBlobUrl);
+                                        const blob = await response.blob();
+                                        
+                                        // Create a new blob URL for download
+                                        const downloadUrl = window.URL.createObjectURL(blob);
+                                        const link = document.createElement('a');
+                                        link.href = downloadUrl;
+                                        link.download = `${fileName}.pdf`;
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                        
+                                        // Clean up the URL after download
+                                        setTimeout(() => {
+                                            window.URL.revokeObjectURL(downloadUrl);
+                                        }, 100);
+                                    } catch (error) {
+                                        console.error('Download error:', error);
+                                        // Fallback: open in new tab
+                                        window.open(pdfBlobUrl, '_blank');
+                                    }
+                                } else if (onDownload) {
+                                    onDownload();
+                                }
+                            }}
+                            className="text-white hover:bg-zinc-600 h-8 w-8"
+                        >
+                            <Download className="w-4 h-4" />
+                        </Button>
                     </div>
                 </div>
+                )}
 
                 {/* PDF Viewer with signature blocks */}
                 <div className="flex-1 bg-zinc-600 overflow-auto">
@@ -473,6 +528,7 @@ export function PDFPreview({
         return (
             <div ref={containerRef} className="bg-zinc-800 rounded-xl overflow-hidden flex flex-col h-full min-h-[600px] relative">
                 {/* Toolbar */}
+                {showToolbar && (
                 <div className="flex items-center justify-between bg-zinc-700 px-3 py-2 text-white text-sm">
                     <div className="flex items-center gap-3">
                         <DropdownMenu>
@@ -539,8 +595,61 @@ export function PDFPreview({
                         >
                             <Printer className="w-4 h-4" />
                         </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={async () => {
+                                // Download as PDF from HTML content
+                                if (onDownload) {
+                                    onDownload();
+                                } else {
+                                    // Fallback: Generate PDF from HTML and download
+                                    try {
+                                        const signerPlaceholders: SignerPlaceholder[] = (signatures || [])
+                                            .filter(sig => sig.positionX != null && sig.positionY != null)
+                                            .map(sig => ({
+                                                id: `${sig.signerRole}-${sig.order}`,
+                                                role: sig.signerRole,
+                                                name: sig.signerName,
+                                                nip: sig.signerNip || undefined,
+                                                prefix: sig.prefix || undefined,
+                                                x: sig.positionX || 0,
+                                                y: sig.positionY || 0,
+                                                page: sig.positionPage || 1,
+                                                order: sig.order,
+                                                signatureUrl: sig.signatureUrl || undefined
+                                            }));
+
+                                        const pdfBlob = await generatePdfWithSignatures(
+                                            documentType as 'SURAT_TUGAS' | 'SURAT_TUGAS_TABEL' | 'SURAT_KEPUTUSAN',
+                                            content || {},
+                                            signerPlaceholders,
+                                            600
+                                        );
+
+                                        const downloadUrl = window.URL.createObjectURL(pdfBlob);
+                                        const link = document.createElement('a');
+                                        link.href = downloadUrl;
+                                        link.download = `${fileName}.pdf`;
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                        
+                                        setTimeout(() => {
+                                            window.URL.revokeObjectURL(downloadUrl);
+                                        }, 100);
+                                    } catch (error) {
+                                        console.error('Download error:', error);
+                                    }
+                                }
+                            }}
+                            className="text-white hover:bg-zinc-600 h-8 w-8"
+                        >
+                            <Download className="w-4 h-4" />
+                        </Button>
                     </div>
                 </div>
+                )}
 
                 {/* HTML Preview */}
                 <div className="flex-1 bg-zinc-600 overflow-auto">
@@ -580,6 +689,7 @@ export function PDFPreview({
     return (
         <div className="bg-zinc-800 rounded-xl overflow-hidden flex flex-col h-full min-h-[600px]">
             {/* Toolbar */}
+            {showToolbar && (
             <div className="flex items-center justify-between bg-zinc-700 px-3 py-2 text-white text-sm">
                 <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" className="text-white hover:bg-zinc-600 h-8 w-8">
@@ -616,6 +726,7 @@ export function PDFPreview({
                     </Button>
                 </div>
             </div>
+            )}
 
             {/* Placeholder Content */}
             <div className="flex-1 flex items-center justify-center">

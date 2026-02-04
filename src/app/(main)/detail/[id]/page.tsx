@@ -1430,15 +1430,35 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 );
             }
             
-            // Merge tembusan into content for preview rendering
+            // Debug logging untuk stempel
+            console.log('[Detail Page] suratHasilDoc.sealImageUrl:', suratHasilDoc.sealImageUrl);
+            console.log('[Detail Page] suratHasilDoc.signatures:', suratHasilDoc.signatures);
+            
+            // Merge tembusan, stempel, qrCode, and nomorSurat into content for preview rendering
             const contentWithTembusan = suratHasilDoc.content 
-                ? { ...suratHasilDoc.content, tembusan: suratHasilDoc.tembusan || [] }
-                : suratHasilDoc.tembusan ? { tembusan: suratHasilDoc.tembusan } : null;
+                ? { 
+                    ...suratHasilDoc.content, 
+                    // Override nomor surat jika sudah ada dari database
+                    nomorSurat: suratHasilDoc.nomorSurat || (suratHasilDoc.content as any)?.nomorSurat,
+                    tembusan: suratHasilDoc.tembusan || [],
+                    stempelUrl: suratHasilDoc.sealImageUrl || undefined,
+                    qrCodeDataUrl: suratHasilDoc.qrCodeUrl || undefined,
+                  }
+                : suratHasilDoc.tembusan ? { 
+                    nomorSurat: suratHasilDoc.nomorSurat,
+                    tembusan: suratHasilDoc.tembusan,
+                    stempelUrl: suratHasilDoc.sealImageUrl || undefined,
+                    qrCodeDataUrl: suratHasilDoc.qrCodeUrl || undefined,
+                  } : {
+                    nomorSurat: suratHasilDoc.nomorSurat,
+                    stempelUrl: suratHasilDoc.sealImageUrl || undefined,
+                    qrCodeDataUrl: suratHasilDoc.qrCodeUrl || undefined,
+                  };
             
             return (
                 <PDFPreview 
                     key={`surat-hasil-${pdfRefreshKey}`}
-                    fileUrl={suratHasilDoc.fileUrl || null}
+                    fileUrl={null}  // Selalu gunakan HTML template untuk preview agar konsisten
                     fileName={suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
                     isSigned={suratHasilDoc.isSigned || false}
                     content={contentWithTembusan}

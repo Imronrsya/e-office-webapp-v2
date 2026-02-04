@@ -49,6 +49,9 @@ export interface SuratTugasTableData {
   // Tanda tangan
   signatures?: SignatureBlock[];
   
+  // Stempel URL
+  stempelUrl?: string;
+  
   // Tanggal surat
   tanggalSurat?: string;
   
@@ -61,18 +64,62 @@ export interface SuratTugasTableData {
 }
 
 /**
- * Helper untuk render blok tanda tangan
+ * Get hierarchy rank for signature role
  */
-const renderSignatureBlock = (signature: SignatureBlock): string => {
+const getHierarchyRank = (role: string): number => {
+  const upperRole = role.toUpperCase();
+  if (upperRole.includes('DEKAN') && !upperRole.includes('WAKIL')) return 3;
+  if (upperRole.includes('WAKIL') && upperRole.includes('1')) return 2;
+  if (upperRole.includes('WAKIL') && upperRole.includes('2')) return 1;
+  if (upperRole.includes('WADEK') && upperRole.includes('1')) return 2;
+  if (upperRole.includes('WADEK') && upperRole.includes('2')) return 1;
+  return 0;
+};
+
+/**
+ * Find the role that should receive the stempel overlay
+ */
+const findStempelRecipientRole = (signatures: SignatureBlock[]): string | null => {
+  if (!signatures || signatures.length === 0) return null;
+  
+  let highestRank = 0;
+  let stempelRecipientRole: string | null = null;
+  
+  for (const sig of signatures) {
+    const rank = getHierarchyRank(sig.signerRole);
+    if (rank > highestRank) {
+      highestRank = rank;
+      stempelRecipientRole = sig.signerRole;
+    }
+  }
+  
+  return stempelRecipientRole;
+};
+
+/**
+ * Helper untuk render blok tanda tangan dengan dukungan stempel
+ */
+const renderSignatureBlock = (signature: SignatureBlock, stempelUrl?: string, shouldHaveStempel = false): string => {
   const signatureImage = signature.signatureUrl 
-    ? `<img src="${signature.signatureUrl}" alt="Tanda Tangan" style="max-width: 120px; max-height: 60px; object-fit: contain;" />`
+    ? `<img src="${signature.signatureUrl}" alt="Tanda Tangan" style="max-width: 120px; max-height: 60px; object-fit: contain;" crossorigin="anonymous" />`
     : '<div style="height: 60px;"></div>';
   
+  // Stempel overlay untuk jabatan tertinggi
+  // Posisi: di kiri tanda tangan, sedikit overlap
+  const stempelOverlay = shouldHaveStempel && stempelUrl ? `
+    <div style="position: absolute; top: 0; left: -30px; width: 100px; height: 100px; opacity: 0.9; z-index: 10; pointer-events: none;">
+      <img src="${stempelUrl}" alt="Stempel" style="width: 100%; height: 100%; object-fit: contain;" crossorigin="anonymous" />
+    </div>
+  ` : '';
+  
   return `
-    <div class="signature-block" style="text-align: center; min-width: 200px;">
+    <div class="signature-block" style="text-align: center; min-width: 200px; position: relative;">
       ${signature.prefix ? `<p style="margin: 0 0 5px 0; color: #000000 !important; font-style: italic;">${signature.prefix}</p>` : ''}
       <p style="margin: 0 0 5px 0; color: #000000 !important;">${signature.signerRole}</p>
-      ${signatureImage}
+      <div style="position: relative; display: inline-block;">
+        ${stempelOverlay}
+        ${signatureImage}
+      </div>
       <p style="margin: 5px 0 0 0; color: #000000 !important; font-weight: bold; text-decoration: underline;">${signature.signerName}</p>
       ${signature.signerNip ? `<p style="margin: 2px 0 0 0; color: #000000 !important; font-size: 10pt;">NIP. ${signature.signerNip}</p>` : ''}
     </div>
@@ -84,24 +131,13 @@ const renderSignatureBlock = (signature: SignatureBlock): string => {
  */
 const sortSignaturesByHierarchy = (signatures: SignatureBlock[]): SignatureBlock[] => {
   if (signatures.length !== 3) return signatures;
-  
-  const getHierarchyRank = (role: string): number => {
-    const upperRole = role.toUpperCase();
-    if (upperRole.includes('DEKAN') && !upperRole.includes('WAKIL')) return 3;
-    if (upperRole.includes('WAKIL') && upperRole.includes('1')) return 2;
-    if (upperRole.includes('WAKIL') && upperRole.includes('2')) return 1;
-    if (upperRole.includes('WADEK') && upperRole.includes('1')) return 2;
-    if (upperRole.includes('WADEK') && upperRole.includes('2')) return 1;
-    return 0;
-  };
-  
   return [...signatures].sort((a, b) => getHierarchyRank(a.signerRole) - getHierarchyRank(b.signerRole));
 };
 
 /**
  * Helper untuk render semua blok tanda tangan dengan layout berdasarkan jumlah
  */
-const renderSignatures = (signatures?: SignatureBlock[]): string => {
+const renderSignatures = (signatures?: SignatureBlock[], stempelUrl?: string): string => {
   if (!signatures || signatures.length === 0) {
     return `
       <div class="ttd-count-1">
@@ -116,22 +152,29 @@ const renderSignatures = (signatures?: SignatureBlock[]): string => {
   }
   
   const sortedSignatures = sortSignaturesByHierarchy(signatures);
+  
+  // Find which signature should receive the stempel (highest ranking)
+  const stempelRecipientRole = findStempelRecipientRole(signatures);
+  
   const count = sortedSignatures.length;
   const countClass = `ttd-count-${Math.min(count, 4)}`;
   
-  const signatureBlocks = sortedSignatures.map(sig => renderSignatureBlock(sig)).join('');
+  const signatureBlocks = sortedSignatures.map(sig => {
+    const shouldHaveStempel = sig.signerRole === stempelRecipientRole;
+    return renderSignatureBlock(sig, stempelUrl, shouldHaveStempel);
+  }).join('');
   
   return `<div class="${countClass}">${signatureBlocks}</div>`;
 };
 
 /**
- * Helper untuk render QR Code
+ * Helper untuk render QR Code - static positioning in footer
  */
 const renderQRCode = (qrCodeDataUrl?: string): string => {
   if (!qrCodeDataUrl) return '';
   
   return `
-    <div class="qr-code-container" style="position: fixed; bottom: 20px; right: 20px; text-align: center; background: white; padding: 5px;">
+    <div class="qr-code-box">
       <img src="${qrCodeDataUrl}" alt="QR Code Verifikasi" style="width: 80px; height: 80px;" />
       <p style="margin: 2px 0 0 0; font-size: 6pt; color: #666666 !important;">Scan untuk verifikasi</p>
     </div>
@@ -234,7 +277,10 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
     }
     @page {
       size: A4;
-      margin: 3cm 2cm 3cm 2cm;
+      margin: 0;
+    }
+    @page:first {
+      margin-top: 1cm;
     }
     * {
       -webkit-print-color-adjust: exact !important;
@@ -245,7 +291,7 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       font-size: 12pt;
       line-height: 1;
       margin: 0;
-      padding: 38px 76px 113px 76px;
+      padding: 1cm 2cm 2cm 2cm;
       max-width: 21cm;
       color: #000000 !important;
       background: #ffffff !important;
@@ -417,34 +463,28 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       color: #000000 !important;
       text-decoration: underline;
     }
-    .qr-code-container {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      text-align: center;
-      background: white;
-      padding: 5px;
-      z-index: 1000;
+    /* Footer section: Tembusan left, QR Code right */
+    .footer-section {
+      margin-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      page-break-inside: avoid;
     }
     .tembusan-container {
-      position: static;
-      margin-top: 30px;
-      max-width: 300px;
+      flex: 1;
+      max-width: 60%;
       font-size: 11pt;
       line-height: 1.4;
-      page-break-inside: avoid;
-      background: white;
     }
-    /* Wrapper untuk TTD dan Tembusan agar tidak terpisah antar halaman */
+    .qr-code-box {
+      text-align: center;
+      padding: 5px;
+      flex-shrink: 0;
+    }
+    /* Wrapper untuk TTD agar tidak terpisah antar halaman */
     .ttd-tembusan-wrapper {
       page-break-inside: avoid;
-    }
-    @media print {
-      .qr-code-container {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-      }
     }
     b, strong {
       font-weight: bold !important;
@@ -500,10 +540,12 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
   ${data.tanggalSurat ? `<p style="text-align: right; margin-top: 30px; color: #000000 !important;">${data.tanggalSurat}</p>` : ''}
   <div class="ttd-tembusan-wrapper">
     <div class="ttd-container">
-      ${renderSignatures(data.signatures)}
+      ${renderSignatures(data.signatures, data.stempelUrl)}
     </div>
-    ${renderTembusan(data.tembusan)}
   </div>
-  ${renderQRCode(data.qrCodeDataUrl)}
+  <div class="footer-section">
+    ${renderTembusan(data.tembusan)}
+    ${renderQRCode(data.qrCodeDataUrl)}
+  </div>
 </body>
 </html>`;
