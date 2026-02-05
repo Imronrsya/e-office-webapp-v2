@@ -75,7 +75,12 @@ function getWaitingLabel(role: string, status?: string): string {
     return waitingLabels[role] || `Menunggu ${getRoleLabel(role)}`;
 }
 
-function getActionLabel(action: string): string {
+function getActionLabel(action: string, actorRole?: string): string {
+    // Special handling for DISPOSITION action based on actor role
+    if (action.toUpperCase() === 'DISPOSITION' && actorRole === 'ADMIN_FAKULTAS') {
+        return 'Diteruskan';
+    }
+    
     const actionLabels: Record<string, string> = {
         'SUBMIT': 'Pengajuan Dibuat',
         'RESUBMIT': 'Pengajuan Ulang',
@@ -97,6 +102,19 @@ function getActionLabel(action: string): string {
         'VIEW': 'Dilihat',
     };
     return actionLabels[action.toUpperCase()] || action;
+}
+
+function transformNotes(notes: string | null, action: string, actorRole?: string): string | null {
+    if (!notes) return notes;
+    
+    // Transform notes for Admin Fakultas disposition actions
+    if (action.toUpperCase() === 'DISPOSITION' && actorRole === 'ADMIN_FAKULTAS') {
+        // Replace "Disposisi ke" with "Meneruskan ke"
+        // Case variations: "Disposisi ke", "disposisi ke", "DISPOSISI KE"
+        return notes.replace(/Disposisi ke/gi, 'Meneruskan ke');
+    }
+    
+    return notes;
 }
 
 export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStatus, userScope, filterType }: ProcessHistoryProps) {
@@ -235,13 +253,13 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
                                 "min-w-0 flex-1",
                                 idx < displayLogs.length - 1 && "pb-6"
                             )}>
-                                <p className="text-sm font-bold text-black leading-5">{getActionLabel(log.action)}</p>
+                                <p className="text-sm font-bold text-black leading-5">{getActionLabel(log.action, log.actorRole)}</p>
                                 <p className="text-sm text-black leading-5">
                                     Oleh: {log.actorName} • {formatDateTime(log.createdAt)}
                                 </p>
                                 {log.notes && (
                                     <p className="text-sm text-zinc-500 italic mt-1 break-words whitespace-pre-wrap">
-                                        &ldquo;{log.notes}&rdquo;
+                                        &ldquo;{transformNotes(log.notes, log.action, log.actorRole)}&rdquo;
                                     </p>
                                 )}
                             </div>
