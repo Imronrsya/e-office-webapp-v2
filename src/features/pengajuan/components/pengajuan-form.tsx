@@ -16,6 +16,9 @@ import {
 } from "@/services/auth.service";
 import { FileUpload } from "./file-upload";
 import BottomNav from "@/components/layout/bottom-nav";
+import { ProdiSelect } from "@/components/forms/ProdiSelect";
+import { getProdiDetail, type ProgramStudi } from "@/services/masterData.service";
+import { useDepartemenList, useProdiListByDepartemen } from "@/hooks/useMasterData";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +55,7 @@ interface FormState {
     keperluan: string;
     namaLengkap: string;
     nimNip: string;
+    departemen: string;
     programStudi: string;
     namaAcara: string;
     tanggalAcara: string;
@@ -70,7 +74,8 @@ export function PengajuanForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [letterTypes, setLetterTypes] = useState<LetterType[]>([]);
-
+    const [selectedProdiDetail, setSelectedProdiDetail] = useState<ProgramStudi | null>(null);
+    
     // Initial State
     const [formState, setFormState] = useState<FormState>({
         jenisSurat: "",
@@ -78,6 +83,7 @@ export function PengajuanForm() {
         keperluan: "",
         namaLengkap: "",
         nimNip: "",
+        departemen: "",
         programStudi: "",
         namaAcara: "",
         tanggalAcara: "",
@@ -85,6 +91,10 @@ export function PengajuanForm() {
         lokasiAcara: "",
         ttdLevel: "",
     });
+
+    // Fetch master data
+    const { data: departemenList, isLoading: isDeptLoading } = useDepartemenList();
+    const { data: prodiList, isLoading: isProdiLoading } = useProdiListByDepartemen(formState.departemen);
 
     // 1. Fetch Letter Types dari Backend saat component dimuat
     useEffect(() => {
@@ -105,36 +115,50 @@ export function PengajuanForm() {
         if (user) {
             // Extract NIM/NIP and Program Studi from user profile
             let nimNip = "";
-            let programStudiName = "";
+            let programStudiId = "";
 
-            // Get NIM/NIP from profile
+            // Get NIM/NIP and programStudiId from profile
             if (user.profile) {
                 if (isMahasiswaProfile(user.profile)) {
                     nimNip = user.profile.nim || "";
-                    programStudiName = user.profile.programStudi?.name || "";
+                    programStudiId = user.profile.programStudiId || "";
                 } else if (isPegawaiProfile(user.profile)) {
                     nimNip = user.profile.nip || "";
-                    programStudiName = user.profile.programStudi?.name || "";
+                    programStudiId = user.profile.programStudiId || "";
                 }
-            }
-
-            // Fallback to top-level programStudi if profile doesn't have it
-            if (!programStudiName && user.programStudi) {
-                programStudiName = user.programStudi;
             }
 
             setFormState((prev) => ({
                 ...prev,
                 namaLengkap: user.name || "",
                 nimNip: nimNip,
-                programStudi: programStudiName,
+                programStudi: programStudiId,
             }));
         }
     }, [user]);
 
+    // 3. Fetch prodi details when programStudi changes
+    useEffect(() => {
+        if (formState.programStudi) {
+            getProdiDetail(formState.programStudi)
+                .then(setSelectedProdiDetail)
+                .catch((err) => {
+                    console.error('Failed to fetch prodi details:', err);
+                    setSelectedProdiDetail(null);
+                });
+        } else {
+            setSelectedProdiDetail(null);
+        }
+    }, [formState.programStudi]);
+
     // Handle perubahan input form
     const handleInputChange = (field: keyof FormState, value: string) => {
-        setFormState((prev) => ({ ...prev, [field]: value }));
+        // If departemen changes, clear programStudi
+        if (field === "departemen") {
+            setFormState(prev => ({ ...prev, departemen: value, programStudi: "" }));
+        } else {
+            setFormState(prev => ({ ...prev, [field]: value }));
+        }
     };
 
     // Handle Submit Form
@@ -233,6 +257,7 @@ export function PengajuanForm() {
         formState.keperluan &&
         formState.namaLengkap &&
         formState.nimNip &&
+        formState.departemen &&
         formState.programStudi &&
         formState.tanggalAcara &&
         formState.lokasiAcara;
@@ -368,25 +393,64 @@ export function PengajuanForm() {
                         </div>
 
                         <div className="space-y-2">
+                            <Label htmlFor="departemen" className="text-sm font-medium text-gray-700">
+                                Departemen <span className="text-red-500">*</span>
+                            </Label>
+                            <Select
+                                value={formState.departemen}
+                                onValueChange={(value) => handleInputChange("departemen", value)}
+                                disabled={isDeptLoading}
+                            >
+                                <SelectTrigger className="bg-white">
+                                    <SelectValue placeholder={isDeptLoading ? "Memuat..." : "Pilih Departemen"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {departemenList?.map((dept) => (
+                                        <SelectItem key={dept.id} value={dept.id}>
+                                            {dept.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
                             <Label htmlFor="programStudi" className="text-sm font-medium text-gray-700">
                                 Program Studi <span className="text-red-500">*</span>
                             </Label>
-                            <Select
+                            <ProdiSelect
                                 value={formState.programStudi}
-                                onValueChange={(value) => handleInputChange("programStudi", value)}
-                            >
-                                <SelectTrigger className="bg-white">
-                                    <SelectValue placeholder="Pilih Program Studi" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="S1 Informatika">S1 Informatika</SelectItem>
-                                    <SelectItem value="S1 Matematika">S1 Matematika</SelectItem>
-                                    <SelectItem value="S1 Statistika">S1 Statistika</SelectItem>
-                                    <SelectItem value="S1 Biologi">S1 Biologi</SelectItem>
-                                    <SelectItem value="S1 Kimia">S1 Kimia</SelectItem>
-                                    <SelectItem value="S1 Fisika">S1 Fisika</SelectItem>
-                                </SelectContent>
-                            </Select>
+                                onChange={(value) => handleInputChange("programStudi", value)}
+                                filterDepartemen={formState.departemen}
+                                disabled={!formState.departemen || isProdiLoading}
+                                placeholder={!formState.departemen ? "Pilih departemen terlebih dahulu" : "Pilih Program Studi"}
+                                className="bg-white"
+                            />
+                            {selectedProdiDetail && (
+                                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm">
+                                    <p className="font-medium text-blue-900 mb-1">
+                                        Alur Persetujuan Surat:
+                                    </p>
+                                    <ol className="list-decimal list-inside text-blue-800 space-y-1">
+                                        {!selectedProdiDetail.hasKaprodi ? (
+                                            <>
+                                                <li>Ketua Departemen {selectedProdiDetail.departemen.name}</li>
+                                                <li>Admin Prodi {selectedProdiDetail.name}</li>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <li>Ketua Program Studi {selectedProdiDetail.name}</li>
+                                                {formState.ttdLevel === "kadep" && (
+                                                    <li>Ketua Departemen {selectedProdiDetail.departemen.name}</li>
+                                                )}
+                                                <li>Admin Prodi {selectedProdiDetail.name}</li>
+                                            </>
+                                        )}
+                                        <li>Admin Fakultas</li>
+                                        <li>Dekan/Wadek</li>
+                                    </ol>
+                                </div>
+                            )}
                         </div>
                     </div>
 

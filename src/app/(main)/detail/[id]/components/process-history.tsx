@@ -9,6 +9,8 @@ interface ProcessHistoryProps {
     logs: LogSummary[];
     isWaiting: boolean;
     currentActiveRole: string | null;
+    /** Current status of the letter */
+    currentStatus?: string;
     /** Scope user untuk menyesuaikan tampilan timeline */
     userScope?: 'DEPARTEMEN' | 'FAKULTAS' | 'UPA';
     /** Filter type dari dashboard (masuk/keluar) - hanya untuk lingkup fakultas */
@@ -46,11 +48,20 @@ function getRoleLabel(role: string): string {
     return roleLabels[role] || role;
 }
 
-function getWaitingLabel(role: string): string {
+function getWaitingLabel(role: string, status?: string): string {
+    // Special handling for KADEP - different label based on status
+    if (role === 'KADEP') {
+        // If status is SUBMITTED, KADEP is verifying (approving)
+        // If status is SURAT_PENGANTAR_REVIEW, KADEP is signing
+        if (status === 'SUBMITTED') {
+            return 'Verifikasi Oleh Ketua Departemen';
+        }
+        return 'Tanda Tangan Ketua Departemen';
+    }
+    
     const waitingLabels: Record<string, string> = {
         'KAPRODI': 'Verifikasi Oleh Ketua Prodi',
         'ADMIN_PRODI': 'Pembuatan Surat Pengantar',
-        'KADEP': 'Tanda Tangan Ketua Departemen',
         'ADMIN_FAKULTAS': 'Penerimaan di Admin Fakultas',
         'DEKAN': 'Proses Oleh Dekan',
         'WADEK_1': 'Proses Oleh Wakil Dekan 1',
@@ -88,7 +99,7 @@ function getActionLabel(action: string): string {
     return actionLabels[action.toUpperCase()] || action;
 }
 
-export function ProcessHistory({ logs, isWaiting, currentActiveRole, userScope, filterType }: ProcessHistoryProps) {
+export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStatus, userScope, filterType }: ProcessHistoryProps) {
     // Filter logs berdasarkan scope dan filter type
     // Untuk lingkup fakultas dengan filter:
     // - masuk: hanya tampilkan log terkait surat pengantar (dari pengajuan hingga didisposisikan ke staf)
@@ -202,7 +213,7 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, userScope, 
                             {/* Content */}
                             <div className="min-w-0 flex-1 pb-6">
                                 <p className="text-sm font-bold text-black leading-5">
-                                    {getWaitingLabel(currentActiveRole)}
+                                    {getWaitingLabel(currentActiveRole, currentStatus)}
                                 </p>
                                 <p className="text-sm text-zinc-500 leading-5">Menunggu proses...</p>
                             </div>

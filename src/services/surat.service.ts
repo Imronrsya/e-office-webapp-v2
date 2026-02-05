@@ -120,6 +120,7 @@ export interface SubmissionPermissions {
 export interface SubmissionDetail {
     id: string;
     submissionValues: SubmissionFormData;
+    hasKaprodi: boolean; // Flag from ProgramStudi - true if program has KAPRODI, false if only KADEP
     status: string;
     displayStatus: string;
     priority: string;

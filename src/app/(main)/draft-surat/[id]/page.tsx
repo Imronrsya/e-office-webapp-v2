@@ -196,6 +196,19 @@ const SURAT_PENGANTAR_ROLES = [
     { value: "KADEP", label: "Ketua Departemen" },
 ];
 
+// Filter surat pengantar roles based on program studi hasKaprodi flag
+// - hasKaprodi=true (S2/special programs): Show both KAPRODI and KADEP
+// - hasKaprodi=false (S1 regular programs): Show only KADEP
+const getSuratPengantarRoles = (hasKaprodi: boolean) => {
+    if (hasKaprodi) {
+        // Program has KAPRODI - show both options
+        return SURAT_PENGANTAR_ROLES;
+    } else {
+        // Program has only KADEP - show only KADEP option
+        return SURAT_PENGANTAR_ROLES.filter(role => role.value === "KADEP");
+    }
+};
+
 // Signer roles untuk surat di tingkat fakultas (Surat Tugas, Surat Keputusan)
 // Hanya pejabat fakultas, tidak termasuk Ketua Prodi dan Ketua Departemen
 const SURAT_FAKULTAS_ROLES = [
@@ -392,6 +405,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Kategori surat - untuk filter pejabat penandatangan
     const [suratCategory, setSuratCategory] = useState<"AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null>(null);
     
+    // Flag hasKaprodi from Program Studi - determines available signature roles for surat pengantar
+    // If true: program has KAPRODI, show both KAPRODI and KADEP options
+    // If false: program has only KADEP, show only KADEP option
+    const [hasKaprodi, setHasKaprodi] = useState<boolean>(false);
+    
     // Save mode - "patch" for normal edit, "overwrite" for full reset
     // Default to 'overwrite' if reset parameter is set (supervisor creating new draft)
     const [saveMode, setSaveMode] = useState<'patch' | 'overwrite'>(shouldResetDraft ? 'overwrite' : 'patch');
@@ -488,6 +506,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 if (suratType !== "SURAT_PENGANTAR" && detail.category) {
                     setSuratCategory(detail.category);
                     console.log('📋 Surat category:', detail.category);
+                }
+                
+                // Set hasKaprodi flag from submission detail - determines signature roles for surat pengantar
+                if (suratType === "SURAT_PENGANTAR") {
+                    setHasKaprodi(detail.hasKaprodi ?? false);
+                    console.log('🎓 Program hasKaprodi:', detail.hasKaprodi, '- Signature roles:', detail.hasKaprodi ? 'KAPRODI + KADEP' : 'KADEP only');
                 }
                 
                 // Determine if this is surat masuk (from submission) or surat keluar (staff-created)
@@ -2216,10 +2240,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     <SelectValue placeholder="Pilih Pejabat" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {/* Surat Pengantar: hanya pejabat prodi (Kaprodi, Kadep) */}
+                                                    {/* Surat Pengantar: hanya pejabat prodi (Kaprodi, Kadep) - filtered by hasKaprodi */}
                                                     {/* Surat Tugas/Keputusan: filter pejabat fakultas berdasarkan kategori */}
                                                     {(suratType === "SURAT_PENGANTAR" 
-                                                        ? SURAT_PENGANTAR_ROLES 
+                                                        ? getSuratPengantarRoles(hasKaprodi)
                                                         : getFilteredRolesByCategory(suratCategory)
                                                     ).map((role) => (
                                                         <SelectItem 
@@ -2281,7 +2305,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     </div>
                                 ))}
 
-                                {signers.length < (suratType === "SURAT_PENGANTAR" ? SURAT_PENGANTAR_ROLES : getFilteredRolesByCategory(suratCategory)).length && (
+                                {signers.length < (suratType === "SURAT_PENGANTAR" ? getSuratPengantarRoles(hasKaprodi).length : getFilteredRolesByCategory(suratCategory).length) && (
                                     <Button
                                         variant="outline"
                                         onClick={addSigner}

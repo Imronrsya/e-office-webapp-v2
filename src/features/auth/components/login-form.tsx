@@ -20,18 +20,47 @@ import { Loader2, Zap } from "lucide-react";
 
 // Test accounts for quick login (Development only)
 const TEST_ACCOUNTS = {
-  departemen: [
-    { role: "MAHASISWA", email: "ahmad.budi@students.undip.ac.id", label: "Ahmad Budi (Mahasiswa)" },
-    { role: "MAHASISWA", email: "dewi.sartika@students.undip.ac.id", label: "Dewi Sartika (Mahasiswa)" },
+  mahasiswa: [
+    { role: "MAHASISWA", email: "ahmad.budi@students.undip.ac.id", label: "Ahmad Budi (Mahasiswa S1 IF)" },
+    { role: "MAHASISWA", email: "dewi.sartika@students.undip.ac.id", label: "Dewi Sartika (Mahasiswa S1 Matematika)" },
+  ],
+  dosen: [
     { role: "DOSEN", email: "raden.satrio@lecturer.undip.ac.id", label: "Dr. Raden Satrio (Dosen)" },
-    { role: "KAPRODI", email: "kaprodi.if@undip.ac.id", label: "Kaprodi Informatika" },
-    { role: "ADMIN_PRODI", email: "admin.prodi.if@undip.ac.id", label: "Admin Prodi Informatika" },
-    { role: "KADEP", email: "kadep.if@undip.ac.id", label: "Kadep Informatika" },
+  ],
+  kadep: [
+    { role: "KADEP", email: "kadep.matematika@fsm.undip.ac.id", label: "Dr. Susilo Hariyanto (Kadep Matematika)" },
+    { role: "KADEP", email: "kadep.biologi@fsm.undip.ac.id", label: "Prof. Sapto Purnomo Putro (Kadep Biologi)" },
+    { role: "KADEP", email: "kadep.fisika@fsm.undip.ac.id", label: "Prof. Heri Sutanto (Kadep Fisika)" },
+    { role: "KADEP", email: "kadep.kimia@fsm.undip.ac.id", label: "Adi Darmawan (Kadep Kimia)" },
+    { role: "KADEP", email: "kadep.statistika@fsm.undip.ac.id", label: "Dr. Tarno (Kadep Statistika)" },
+    { role: "KADEP", email: "kadep.informatika@fsm.undip.ac.id", label: "Dr. Aris Sugiharto (Kadep Informatika)" },
+  ],
+  kaprodi: [
+    { role: "KAPRODI", email: "kaprodi.s2.matematika@fsm.undip.ac.id", label: "Dr. Widowati (Kaprodi S2 Matematika)" },
+    { role: "KAPRODI", email: "kaprodi.s1.bioteknologi@fsm.undip.ac.id", label: "Dr. Nur Rahmawati Arfah (Kaprodi S1 Bioteknologi)" },
+    { role: "KAPRODI", email: "kaprodi.s2.biologi@fsm.undip.ac.id", label: "Dr. Sri Widodo Agung Suedy (Kaprodi S2 Biologi)" },
+    { role: "KAPRODI", email: "kaprodi.s2.fisika@fsm.undip.ac.id", label: "Dr. Budi Astuti (Kaprodi S2 Fisika)" },
+    { role: "KAPRODI", email: "kaprodi.profesi.fisikawanmedik@fsm.undip.ac.id", label: "Dr. Suryono (Kaprodi Profesi Fisikawan Medik)" },
+    { role: "KAPRODI", email: "kaprodi.s2.kimia@fsm.undip.ac.id", label: "Dr. Adi Darmawan (Kaprodi S2 Kimia)" },
+  ],
+  adminProdi: [
+    { role: "ADMIN_PRODI", email: "admin.s1.matematika@fsm.undip.ac.id", label: "Admin S1 Matematika" },
+    { role: "ADMIN_PRODI", email: "admin.s2.matematika@fsm.undip.ac.id", label: "Admin S2 Matematika" },
+    { role: "ADMIN_PRODI", email: "admin.s1.biologi@fsm.undip.ac.id", label: "Admin S1 Biologi" },
+    { role: "ADMIN_PRODI", email: "admin.s1.bioteknologi@fsm.undip.ac.id", label: "Admin S1 Bioteknologi" },
+    { role: "ADMIN_PRODI", email: "admin.s2.biologi@fsm.undip.ac.id", label: "Admin S2 Biologi" },
+    { role: "ADMIN_PRODI", email: "admin.s1.fisika@fsm.undip.ac.id", label: "Admin S1 Fisika" },
+    { role: "ADMIN_PRODI", email: "admin.s2.fisika@fsm.undip.ac.id", label: "Admin S2 Fisika" },
+    { role: "ADMIN_PRODI", email: "admin.profesi.fisikawanmedik@fsm.undip.ac.id", label: "Admin Profesi Fisikawan Medik" },
+    { role: "ADMIN_PRODI", email: "admin.s1.kimia@fsm.undip.ac.id", label: "Admin S1 Kimia" },
+    { role: "ADMIN_PRODI", email: "admin.s2.kimia@fsm.undip.ac.id", label: "Admin S2 Kimia" },
+    { role: "ADMIN_PRODI", email: "admin.s1.statistika@fsm.undip.ac.id", label: "Admin S1 Statistika" },
+    { role: "ADMIN_PRODI", email: "admin.s1.informatika@fsm.undip.ac.id", label: "Admin S1 Informatika" },
   ],
   fakultas: [
     { role: "ADMIN_FAKULTAS", email: "admin.fakultas@fsm.undip.ac.id", label: "Admin Fakultas" },
-    { role: "DEKAN", email: "dekan@fsm.undip.ac.id", label: "Dekan FSM" },
-    { role: "WADEK_1", email: "wadek1@fsm.undip.ac.id", label: "Wakil Dekan 1" },
+    { role: "DEKAN", email: "dekan@fsm.undip.ac.id", label: "Prof. Kusworo Adi (Dekan FSM)" },
+    { role: "WADEK_1", email: "wadek1@fsm.undip.ac.id", label: "Dr. Ngadiwiyana (Wakil Dekan 1)" },
     { role: "WADEK_2", email: "wadek2@fsm.undip.ac.id", label: "Wakil Dekan 2" },
     { role: "MANAJER_TU", email: "manajer.tu@fsm.undip.ac.id", label: "Manajer TU" },
     { role: "SUPERVISOR_AKADEMIK", email: "spv.akademik@fsm.undip.ac.id", label: "Supervisor Akademik" },
@@ -186,8 +215,60 @@ export default function LoginForm() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel className="text-xs text-zinc-400">— Lingkup Departemen —</SelectLabel>
-                    {TEST_ACCOUNTS.departemen.map((account) => (
+                    <SelectLabel className="text-xs text-zinc-400">— Mahasiswa —</SelectLabel>
+                    {TEST_ACCOUNTS.mahasiswa.map((account) => (
+                      <SelectItem key={account.email} value={account.email}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-600">
+                            {account.role}
+                          </span>
+                          <span className="text-sm">{account.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className="text-xs text-zinc-400">— Dosen —</SelectLabel>
+                    {TEST_ACCOUNTS.dosen.map((account) => (
+                      <SelectItem key={account.email} value={account.email}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-600">
+                            {account.role}
+                          </span>
+                          <span className="text-sm">{account.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className="text-xs text-zinc-400">— Kepala Departemen (6) —</SelectLabel>
+                    {TEST_ACCOUNTS.kadep.map((account) => (
+                      <SelectItem key={account.email} value={account.email}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-600">
+                            {account.role}
+                          </span>
+                          <span className="text-sm">{account.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className="text-xs text-zinc-400">— Ketua Program Studi (7) —</SelectLabel>
+                    {TEST_ACCOUNTS.kaprodi.map((account) => (
+                      <SelectItem key={account.email} value={account.email}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-600">
+                            {account.role}
+                          </span>
+                          <span className="text-sm">{account.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className="text-xs text-zinc-400">— Admin Prodi (13) —</SelectLabel>
+                    {TEST_ACCOUNTS.adminProdi.map((account) => (
                       <SelectItem key={account.email} value={account.email}>
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-mono bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-600">

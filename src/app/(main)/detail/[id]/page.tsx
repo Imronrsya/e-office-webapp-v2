@@ -1335,6 +1335,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 logs={logs}
                 isWaiting={isWaiting}
                 currentActiveRole={detail.currentActiveRole}
+                currentStatus={detail.status}
                 userScope={userScope}
                 filterType={filterType}
             />
@@ -1517,6 +1518,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 logs={logs}
                                 isWaiting={isWaiting}
                                 currentActiveRole={detail.currentActiveRole}
+                                currentStatus={detail.status}
                                 userScope={userScope}
                                 filterType={filterType}
                             />
@@ -1625,6 +1627,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                     logs={logs}
                                     isWaiting={isWaiting}
                                     currentActiveRole={detail.currentActiveRole}
+                                    currentStatus={detail.status}
                                     userScope={userScope}
                                     filterType={filterType}
                                 />
@@ -1663,6 +1666,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 logs={logs}
                                 isWaiting={isWaiting}
                                 currentActiveRole={detail.currentActiveRole}
+                                currentStatus={detail.status}
                                 userScope={userScope}
                                 filterType={filterType}
                             />
