@@ -1,8 +1,7 @@
 "use client";
 
-
-import { PengajuanForm } from "@/features/pengajuan";
+import { PengajuanFormValidated } from "@/features/pengajuan/components/pengajuan-form-validated";
 
 export default function PengajuanBuatPage() {
-    return <PengajuanForm />;
+    return <PengajuanFormValidated />;
 }

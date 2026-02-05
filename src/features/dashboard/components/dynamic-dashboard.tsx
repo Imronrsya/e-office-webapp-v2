@@ -116,8 +116,8 @@ export default function DynamicDashboard() {
   const userRole = user?.role?.toUpperCase() || "MAHASISWA";
 
   // Read tab from URL query parameter (default to "masuk" if not specified)
-  const tabFromUrl = searchParams.get("tab") as "masuk" | "keluar" | null;
-  const initialTab = tabFromUrl === "surat-keluar" ? "keluar" : tabFromUrl || "masuk";
+  const tabFromUrl = searchParams?.get("tab");
+  const initialTab = tabFromUrl === "keluar" ? "keluar" : "masuk";
 
   // State
   const [data, setData] = useState<DashboardState | null>(null);
