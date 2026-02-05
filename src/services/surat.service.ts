@@ -604,11 +604,19 @@ export const suratService = {
         role: string;
         name: string;
         nip?: string;
+        departemenId?: string | null;
+        departemenName?: string | null;
+        programStudiId?: string | null;
+        programStudiName?: string | null;
     }>>> {
         const response = await api.get<ApiResponse<Array<{
             role: string;
             name: string;
             nip?: string;
+            departemenId?: string | null;
+            departemenName?: string | null;
+            programStudiId?: string | null;
+            programStudiName?: string | null;
         }>>>('/api/users/pejabat');
         return response.data;
     },

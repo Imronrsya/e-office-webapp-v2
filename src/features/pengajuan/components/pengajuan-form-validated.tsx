@@ -218,12 +218,21 @@ export function PengajuanFormValidated() {
       }
 
       // Prepare payload
+      // Get departemen name from departemenList using ID stored in form
+      const selectedDepartemen = departemenList?.find(
+        (dept) => dept.id === data.departemen
+      );
+      const departemenName = selectedDepartemen?.name || "Departemen";
+
+      // Get programStudi name from selectedProdiDetail or pass the ID (backend will resolve it)
+      const programStudiName = selectedProdiDetail?.name || data.programStudi;
+
       const formDataPayload: SubmissionFormData = {
         nama: data.namaLengkap,
         nim: isMahasiswa ? data.nimNip : undefined,
         nip: !isMahasiswa ? data.nimNip : undefined,
-        departemen: "Informatika", // From profile
-        programStudi: data.programStudi,
+        departemen: departemenName, // Use actual departemen name from list
+        programStudi: programStudiName, // Use actual prodi name or pass ID (backend handles conversion)
         jenisSurat: data.jenisSurat as "SURAT_TUGAS" | "SURAT_KEPUTUSAN",
         keperluan: data.keperluan,
         judulAcara: data.judulSurat,

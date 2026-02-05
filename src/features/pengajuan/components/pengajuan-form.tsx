@@ -193,13 +193,20 @@ export function PengajuanForm() {
 
             // 4. SUSUN PAYLOAD
             // Backend meminta struktur Nested Object: { letterTypeId, formData: {}, signatureConfig: {} }
+            // Get departemen name from departemenList using ID stored in form
+            const selectedDepartemen = departemenList?.find(dept => dept.id === formState.departemen);
+            const departemenName = selectedDepartemen?.name || formState.departemen;
+            
+            // Get programStudi name from detail or pass the ID (backend will resolve it)
+            const programStudiName = selectedProdiDetail?.name || formState.programStudi;
+            
             const formDataPayload: SubmissionFormData = {
                 // Data Diri
                 nama: formState.namaLengkap,
                 nim: isMahasiswa ? formState.nimNip : undefined,
                 nip: !isMahasiswa ? formState.nimNip : undefined,
-                departemen: "Informatika",   // Hardcoded sementara (idealnya dari profile)
-                programStudi: formState.programStudi,
+                departemen: departemenName,   // Use actual departemen name from list
+                programStudi: programStudiName,
 
                 // Detail Surat
                 jenisSurat: formState.jenisSurat as JenisSurat,

@@ -56,7 +56,11 @@ import {
     X,
     Image,
     File,
+    Calendar as CalendarIcon,
 } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import BottomNav from "@/components/layout/bottom-nav";
@@ -175,6 +179,31 @@ interface SuratKeputusanForm {
     menetapkan: string;
     keputusan: KeputusanItem[];
     tanggalDitetapkan: string;
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Format date to Indonesian locale string (e.g., "12 Januari 2026")
+ */
+function formatTanggalIndonesia(date: Date | string | null | undefined): string {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '';
+    return format(d, 'd MMMM yyyy', { locale: idLocale });
+}
+
+/**
+ * Parse a date string or Date to Date object
+ * Handles ISO strings, formatted strings, and Date objects
+ */
+function parseToDate(value: string | Date | null | undefined): Date | undefined {
+    if (!value) return undefined;
+    if (value instanceof Date) return value;
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? undefined : d;
 }
 
 // ============================================================================
@@ -339,6 +368,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         tanggalDitetapkan: "",
     });
     
+    // Date picker state for Surat Pengantar (separate from form string state)
+    const [tanggalSuratDate, setTanggalSuratDate] = useState<Date | undefined>(undefined);
+    const [tanggalMulaiDate, setTanggalMulaiDate] = useState<Date | undefined>(undefined);
+    
     // Signature state - position data no longer needed with template-based positioning
     const [signers, setSigners] = useState<SignerItem[]>([
         { 
@@ -414,8 +447,16 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Default to 'overwrite' if reset parameter is set (supervisor creating new draft)
     const [saveMode, setSaveMode] = useState<'patch' | 'overwrite'>(shouldResetDraft ? 'overwrite' : 'patch');
 
-    // Pejabat list for autofill nama dan NIP
-    const [pejabatList, setPejabatList] = useState<Array<{ role: string; name: string; nip?: string }>>([]);
+    // Pejabat list for autofill nama dan NIP - now includes departemen/prodi info
+    const [pejabatList, setPejabatList] = useState<Array<{ 
+        role: string; 
+        name: string; 
+        nip?: string;
+        departemenId?: string | null;
+        departemenName?: string | null;
+        programStudiId?: string | null;
+        programStudiName?: string | null;
+    }>>([]);;
 
     // Redirect if no type specified
     useEffect(() => {
@@ -526,10 +567,25 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 // Populate surat pengantar form from existing content
                 if (suratType === "SURAT_PENGANTAR" && existingDoc?.content) {
                     const content = existingDoc.content as Record<string, unknown>;
+                    
+                    // Parse tanggalSurat - could be formatted string or ISO date
+                    const tanggalSuratValue = (content.tanggalSurat as string) || "";
+                    const parsedTanggalSurat = parseToDate(tanggalSuratValue);
+                    if (parsedTanggalSurat) {
+                        setTanggalSuratDate(parsedTanggalSurat);
+                    }
+                    
+                    // Parse tanggalMulai from content or submission values
+                    const tanggalMulaiValue = (content.tanggalMulai as string) || detail.submissionValues?.tanggalAcara || "";
+                    const parsedTanggalMulai = parseToDate(tanggalMulaiValue);
+                    if (parsedTanggalMulai) {
+                        setTanggalMulaiDate(parsedTanggalMulai);
+                    }
+                    
                     setSuratPengantarForm(prev => ({
                         ...prev,
                         nomorSurat: (content.nomorSurat as string) || "",
-                        tanggalSurat: (content.tanggalSurat as string) || "",
+                        tanggalSurat: parsedTanggalSurat ? formatTanggalIndonesia(parsedTanggalSurat) : tanggalSuratValue,
                         perihal: (content.perihal as string) || detail.submissionValues.keperluan || "",
                         namaTujuan: (content.namaTujuan as string) || "",
                         jabatanTujuan: (content.jabatanTujuan as string) || "",
@@ -540,12 +596,20 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         departemen: (content.departemen as string) || detail.submissionValues.departemen || "",
                         keperluan: (content.keperluan as string) || detail.submissionValues.keperluan || "",
                         judulAcara: (content.judulAcara as string) || detail.submissionValues.judulAcara || "",
-                        tanggalMulai: (content.tanggalMulai as string) || detail.submissionValues.tanggalAcara || "",
+                        tanggalMulai: parsedTanggalMulai ? formatTanggalIndonesia(parsedTanggalMulai) : tanggalMulaiValue,
                         lokasiAcara: (content.lokasiAcara as string) || detail.submissionValues.lokasiAcara || "",
-                        durasiAcara: (content.durasiAcara as string) || "",
+                        durasiAcara: (content.durasiAcara as string) || detail.submissionValues.durasiAcara || "",
                     }));
                 } else if (suratType === "SURAT_PENGANTAR" && detail.submissionValues) {
                     // No existing document, populate from submission values
+                    
+                    // Parse tanggalMulai from submission values
+                    const tanggalMulaiValue = detail.submissionValues?.tanggalAcara || "";
+                    const parsedTanggalMulai = parseToDate(tanggalMulaiValue);
+                    if (parsedTanggalMulai) {
+                        setTanggalMulaiDate(parsedTanggalMulai);
+                    }
+                    
                     setSuratPengantarForm(prev => ({
                         ...prev,
                         perihal: detail.submissionValues.keperluan || "",
@@ -555,8 +619,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         departemen: detail.submissionValues.departemen || "",
                         keperluan: detail.submissionValues.keperluan || "",
                         judulAcara: detail.submissionValues.judulAcara || "",
-                        tanggalMulai: detail.submissionValues.tanggalAcara || "",
+                        tanggalMulai: parsedTanggalMulai ? formatTanggalIndonesia(parsedTanggalMulai) : tanggalMulaiValue,
                         lokasiAcara: detail.submissionValues.lokasiAcara || "",
+                        durasiAcara: detail.submissionValues.durasiAcara || "",
                     }));
                 }
 
@@ -978,8 +1043,38 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
     const updateSignerRole = (id: string, role: string) => {
         const roleLabel = ALL_SIGNER_ROLES.find(r => r.value === role)?.label || role;
+        
         // Autofill nama dan NIP dari database
-        const pejabat = pejabatList.find(p => p.role === role);
+        // Untuk KADEP/KAPRODI: filter berdasarkan departemen/prodi pengaju dari submissionValues
+        let pejabat;
+        
+        if (role === 'KADEP') {
+            // Cari KADEP yang departemennya sesuai dengan pengaju
+            const pengajuDepartemen = suratPengantarForm.departemen;
+            pejabat = pejabatList.find(p => 
+                p.role === role && 
+                p.departemenName?.toLowerCase() === pengajuDepartemen?.toLowerCase()
+            );
+            // Fallback ke pejabat pertama dengan role tersebut jika tidak ditemukan
+            if (!pejabat) {
+                pejabat = pejabatList.find(p => p.role === role);
+            }
+        } else if (role === 'KAPRODI') {
+            // Cari KAPRODI yang program studinya sesuai dengan pengaju
+            const pengajuProdi = suratPengantarForm.programStudi;
+            pejabat = pejabatList.find(p => 
+                p.role === role && 
+                p.programStudiName?.toLowerCase() === pengajuProdi?.toLowerCase()
+            );
+            // Fallback ke pejabat pertama dengan role tersebut jika tidak ditemukan
+            if (!pejabat) {
+                pejabat = pejabatList.find(p => p.role === role);
+            }
+        } else {
+            // Untuk role lain (DEKAN, WADEK_1, WADEK_2), ambil pejabat pertama
+            pejabat = pejabatList.find(p => p.role === role);
+        }
+        
         setSigners(signers.map(s => s.id === id ? { 
             ...s, 
             role, 
@@ -1637,11 +1732,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="tanggalSurat">Tanggal Surat <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    id="tanggalSurat"
-                                                    value={suratPengantarForm.tanggalSurat}
-                                                    onChange={(e) => updateSuratPengantar("tanggalSurat", e.target.value)}
-                                                    placeholder="28 Januari 2026"
+                                                <DatePicker
+                                                    value={tanggalSuratDate}
+                                                    onChange={(date) => {
+                                                        setTanggalSuratDate(date);
+                                                        updateSuratPengantar("tanggalSurat", date ? formatTanggalIndonesia(date) : "");
+                                                    }}
+                                                    placeholder="Pilih tanggal surat"
                                                 />
                                             </div>
                                         </div>
@@ -1724,18 +1821,28 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 <Input
                                                     id="programStudi"
                                                     value={suratPengantarForm.programStudi}
+                                                    disabled={isSuratMasuk}
+                                                    className={isSuratMasuk ? "bg-gray-100 cursor-not-allowed" : ""}
                                                     onChange={(e) => updateSuratPengantar("programStudi", e.target.value)}
                                                     placeholder="S1 Informatika"
                                                 />
+                                                {isSuratMasuk && (
+                                                    <p className="text-xs text-muted-foreground">Otomatis diisi dari data pengaju</p>
+                                                )}
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="departemen">Departemen</Label>
                                                 <Input
                                                     id="departemen"
                                                     value={suratPengantarForm.departemen}
+                                                    disabled={isSuratMasuk}
+                                                    className={isSuratMasuk ? "bg-gray-100 cursor-not-allowed" : ""}
                                                     onChange={(e) => updateSuratPengantar("departemen", e.target.value)}
                                                     placeholder="Informatika"
                                                 />
+                                                {isSuratMasuk && (
+                                                    <p className="text-xs text-muted-foreground">Otomatis diisi dari data pengaju</p>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="space-y-2">
@@ -1772,9 +1879,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 <Input
                                                     id="tanggalMulai"
                                                     value={suratPengantarForm.tanggalMulai}
+                                                    disabled={isSuratMasuk}
+                                                    className={isSuratMasuk ? "bg-gray-100 cursor-not-allowed" : ""}
                                                     onChange={(e) => updateSuratPengantar("tanggalMulai", e.target.value)}
                                                     placeholder="10 Januari 2026"
                                                 />
+                                                {isSuratMasuk && (
+                                                    <p className="text-xs text-muted-foreground">Otomatis diisi dari data pengaju</p>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="space-y-2">
