@@ -123,6 +123,7 @@ interface LegacySuratPreviewDocumentData {
         signerName: string;
         signerNip?: string;
         signatureUrl?: string;
+        prefix?: string | null; // Awalan seperti "Mengetahui,"
         positionX?: number | null;
         positionY?: number | null;
         positionPage?: number | null;
@@ -169,32 +170,40 @@ export function LegacySuratPreview({
             s.signerRole.toLowerCase().includes('ketua departemen')
         );
         
+        // Extract content data - Admin Prodi saves form data here
+        const contentData = documentData?.content as Record<string, unknown> || {};
+        
+        // Use content data as primary source, with fallbacks to separate columns or submission data
+        const nomorSurat = contentData.nomorSurat as string || documentData?.nomorSurat || "-";
+        const tanggalSuratRaw = contentData.tanggalSurat as string || documentData?.tanggalSurat;
+        const tanggalSurat = tanggalSuratRaw 
+            ? formatTanggalIndonesia(new Date(tanggalSuratRaw))
+            : formatTanggalIndonesia(new Date());
+        
         return generateSuratPengantarHTML({
-            nomorSurat: documentData?.nomorSurat || "-",
-            tanggalSurat: documentData?.tanggalSurat 
-                ? formatTanggalIndonesia(new Date(documentData.tanggalSurat))
-                : formatTanggalIndonesia(new Date()),
+            nomorSurat: nomorSurat,
+            tanggalSurat: tanggalSurat,
             
-            // Target dari content jika ada, atau gunakan placeholder
-            namaTujuan: (documentData?.content as Record<string, unknown>)?.namaTujuan as string || "[Nama Tujuan]",
-            jabatanTujuan: (documentData?.content as Record<string, unknown>)?.jabatanTujuan as string || "[Jabatan Tujuan]",
-            alamatTujuan: (documentData?.content as Record<string, unknown>)?.alamatTujuan as string || "",
+            // Target dari content (diisi Admin Prodi)
+            namaTujuan: contentData.namaTujuan as string || "[Nama Tujuan]",
+            jabatanTujuan: contentData.jabatanTujuan as string || "[Jabatan Tujuan]",
+            alamatTujuan: contentData.alamatTujuan as string || "",
             
-            // Perihal dari document atau submission
-            perihal: documentData?.perihal || submissionData.keperluan,
-            keperluan: submissionData.keperluan,
+            // Perihal dari content atau document atau submission
+            perihal: contentData.perihal as string || documentData?.perihal || submissionData.keperluan,
+            keperluan: contentData.keperluan as string || submissionData.keperluan,
             
-            // Data pengaju
-            namaMahasiswa: submissionData.nama,
-            nimMahasiswa: submissionData.nim || "",
-            programStudi: submissionData.programStudi,
-            departemen: submissionData.departemen || "Teknik Informatika",
+            // Data pengaju - dari content jika ada (Admin Prodi bisa edit), atau dari submission
+            namaMahasiswa: contentData.namaMahasiswa as string || submissionData.nama,
+            nimMahasiswa: contentData.nimMahasiswa as string || submissionData.nim || "",
+            programStudi: contentData.programStudi as string || submissionData.programStudi,
+            departemen: contentData.departemen as string || submissionData.departemen || "Teknik Informatika",
             
-            // Detail kegiatan
-            judulAcara: submissionData.judulAcara,
-            tanggalMulai: submissionData.tanggalAcara,
-            lokasiAcara: submissionData.lokasiAcara,
-            durasiAcara: submissionData.durasiAcara || "",
+            // Detail kegiatan - dari content jika ada, atau dari submission
+            judulAcara: contentData.judulAcara as string || submissionData.judulAcara,
+            tanggalMulai: contentData.tanggalMulai as string || submissionData.tanggalAcara,
+            lokasiAcara: contentData.lokasiAcara as string || submissionData.lokasiAcara,
+            durasiAcara: contentData.durasiAcara as string || submissionData.durasiAcara || "",
             
             // Tembusan
             tembusan: documentData?.tembusan || [],
@@ -203,11 +212,13 @@ export function LegacySuratPreview({
             namaKaprodi: kaprodiSig?.signerName,
             nipKaprodi: kaprodiSig?.signerNip,
             signatureKaprodi: kaprodiSig?.signatureUrl,
+            prefixKaprodi: kaprodiSig?.prefix, // Awalan seperti "Mengetahui,"
             
             // Signatures - Kadep
             namaKadep: kadepSig?.signerName,
             nipKadep: kadepSig?.signerNip,
             signatureKadep: kadepSig?.signatureUrl,
+            prefixKadep: kadepSig?.prefix, // Awalan seperti "Mengetahui,"
         });
     }, [submissionData, documentData, fileUrl]);
 

@@ -1486,6 +1486,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 signerName: s.signerName,
                 signerNip: s.signerNip || "",
                 signatureUrl: s.signatureUrl || undefined,
+                prefix: s.prefix || undefined, // Awalan seperti "Mengetahui,"
                 // Include position data from positioner
                 positionX: s.positionX,
                 positionY: s.positionY,

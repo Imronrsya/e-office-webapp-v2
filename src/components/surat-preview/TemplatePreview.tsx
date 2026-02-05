@@ -97,10 +97,12 @@ export function TemplatePreview({
                         namaKaprodi: kaprodiSigner ? (kaprodiSigner.name || "Ketua Program Studi") : undefined,
                         nipKaprodi: kaprodiSigner?.nip,
                         signatureKaprodi: kaprodiSigner?.signatureUrl,
+                        prefixKaprodi: kaprodiSigner?.prefix, // Awalan seperti "Mengetahui,"
                         // TTD Kadep - use name or fallback to role label
                         namaKadep: kadepSigner ? (kadepSigner.name || "Ketua Departemen") : undefined,
                         nipKadep: kadepSigner?.nip,
                         signatureKadep: kadepSigner?.signatureUrl,
+                        prefixKadep: kadepSigner?.prefix, // Awalan seperti "Mengetahui,"
                         tembusan: (formDataMapped.tembusan as string),
                     };
                     return generateSuratPengantarHTML(pengantarData);
