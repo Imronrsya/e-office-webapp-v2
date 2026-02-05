@@ -57,6 +57,7 @@ import {
     Image,
     File,
     Calendar as CalendarIcon,
+    AlertCircle,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -406,7 +407,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
     
     // Existing attachments from server (for edit mode only) - new format with metadata
+    // This includes both document attachments AND pengaju attachments (merged)
     const [existingAttachments, setExistingAttachments] = useState<Array<{ url: string; name: string }>>([]);
+    
+    // Pengaju attachments (from submission) - lampiran yang di-upload pengaju saat mengajukan
+    // Stored separately for tracking purposes, but displayed together with existingAttachments
+    const [pengajuAttachments, setPengajuAttachments] = useState<Array<{ 
+        id: string;
+        fileName: string; 
+        fileUrl: string;
+        fileSize: number | null;
+        mimeType: string | null;
+    }>>([]);
     
     // Delete confirmation for existing attachments
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -840,6 +852,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 }
 
                 // Load existing attachments from document (new format { url, name })
+                // Also load pengaju attachments from detail.attachments
+                let allExistingAttachments: Array<{ url: string; name: string }> = [];
+                
+                // 1. Load document attachments (from existingDoc.attachmentUrls)
                 if (existingDoc?.attachmentUrls && Array.isArray(existingDoc.attachmentUrls)) {
                     const validAttachments = existingDoc.attachmentUrls.filter(
                         (item): item is { url: string; name: string } => 
@@ -848,8 +864,37 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             typeof item.url === 'string' && 
                             item.url.length > 0
                     );
-                    console.log('📎 Loaded existing attachments:', validAttachments.length, 'files');
-                    setExistingAttachments(validAttachments);
+                    console.log('📎 Loaded document attachments:', validAttachments.length, 'files');
+                    allExistingAttachments = [...validAttachments];
+                }
+                
+                // 2. Load pengaju attachments (from detail.attachments) - lampiran dari pengaju saat submit
+                if (detail?.attachments && Array.isArray(detail.attachments) && detail.attachments.length > 0) {
+                    console.log('📎 Found pengaju attachments:', detail.attachments.length, 'files');
+                    // Store pengaju attachments for reference
+                    setPengajuAttachments(detail.attachments.map(att => ({
+                        id: att.id,
+                        fileName: att.fileName,
+                        fileUrl: att.fileUrl,
+                        fileSize: att.fileSize,
+                        mimeType: att.mimeType
+                    })));
+                    
+                    // Add pengaju attachments to display list (avoiding duplicates by URL)
+                    const existingUrls = new Set(allExistingAttachments.map(a => a.url));
+                    const pengajuForDisplay = detail.attachments
+                        .filter(att => !existingUrls.has(att.fileUrl))
+                        .map(att => ({
+                            url: att.fileUrl,
+                            name: att.fileName
+                        }));
+                    allExistingAttachments = [...allExistingAttachments, ...pengajuForDisplay];
+                    console.log('📎 Added pengaju attachments to display:', pengajuForDisplay.length, 'files');
+                }
+                
+                if (allExistingAttachments.length > 0) {
+                    console.log('📎 Total existing attachments:', allExistingAttachments.length, 'files');
+                    setExistingAttachments(allExistingAttachments);
                 } else {
                     console.log('ℹ️ No existing attachments found');
                 }
@@ -1274,24 +1319,41 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Delete existing attachment (from server)
     const deleteExistingAttachment = async () => {
         const attachment = attachmentToDelete;
-        if (!attachment || !existingDocumentId) {
-            toast.error("Dokumen tidak ditemukan");
+        if (!attachment) {
+            toast.error("Lampiran tidak ditemukan");
             return;
         }
 
         setDeletingAttachment(attachment.url);
         try {
-            // Use the original filename from metadata
             const fileName = attachment.name;
-            
             if (!fileName) throw new Error("Nama file tidak valid");
 
             console.log('[DELETE ATTACHMENT] Attachment:', attachment);
             console.log('[DELETE ATTACHMENT] Using fileName:', fileName);
-            console.log('[DELETE ATTACHMENT] Document ID:', existingDocumentId);
+            console.log('[DELETE ATTACHMENT] Letter ID:', resolvedParams.id);
 
-            // Call API using suratService
-            const response = await suratService.removeAttachmentByName(existingDocumentId, fileName);
+            // Check if this is a pengaju attachment (has ID in pengajuAttachments)
+            const pengajuAttachment = pengajuAttachments.find(pa => pa.fileUrl === attachment.url);
+            
+            let response;
+            if (pengajuAttachment) {
+                // This is a pengaju attachment - use department-approval API
+                console.log('[DELETE ATTACHMENT] Deleting PENGAJU attachment with ID:', pengajuAttachment.id);
+                response = await suratService.removePengajuAttachment(resolvedParams.id, pengajuAttachment.id);
+                
+                if (response.success) {
+                    // Also remove from pengajuAttachments state
+                    setPengajuAttachments(prev => prev.filter(pa => pa.id !== pengajuAttachment.id));
+                }
+            } else {
+                // This is a document attachment - use surat-hasil API
+                if (!existingDocumentId) {
+                    throw new Error("Dokumen tidak ditemukan");
+                }
+                console.log('[DELETE ATTACHMENT] Deleting DOCUMENT attachment, Document ID:', existingDocumentId);
+                response = await suratService.removeAttachmentByName(existingDocumentId, fileName);
+            }
             
             console.log('[DELETE ATTACHMENT] Response:', response);
             
@@ -1299,7 +1361,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 throw new Error(response.message || 'Gagal menghapus lampiran');
             }
 
-            // Remove from state
+            // Remove from existingAttachments state
             setExistingAttachments(prev => prev.filter(a => a.url !== attachment.url));
             toast.success("Lampiran berhasil dihapus");
             setDeleteConfirmOpen(false);
@@ -1480,12 +1542,25 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 }
             }
 
+            console.log('📝 Draft response:', response);
+
             if (response.success) {
                 // Upload attachments jika ada
-                const documentId = (response.data as any)?.documentId || (response.data as any)?.id || existingDocumentId;
+                // For department-approval (Surat Pengantar), response.data is the document directly
+                // For surat-hasil, response.data might have { documentId } or { id }
+                const responseData = response.data as any;
+                const documentId = responseData?.documentId || responseData?.id || existingDocumentId;
+                
+                console.log('📎 Attachment upload check:', {
+                    attachmentFilesCount: attachmentFiles.length,
+                    documentId,
+                    responseData
+                });
+                
                 if (attachmentFiles.length > 0 && documentId) {
                     try {
                         setIsUploadingAttachment(true);
+                        console.log('⬆️ Uploading attachments to documentId:', documentId);
                         await suratService.uploadAttachments(documentId, attachmentFiles);
                         toast.success(`${attachmentFiles.length} lampiran berhasil diupload`);
                     } catch (attachmentError) {
@@ -2708,37 +2783,49 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center gap-2">
                                 <Paperclip className="w-5 h-5" />
-                                Lampiran (Opsional)
+                                Lampiran
                             </CardTitle>
                             <CardDescription>
-                                Upload file lampiran dalam format PDF, JPG, atau PNG. Maksimal 10MB per file.
+                                Upload file lampiran dalam format PDF, JPG, atau PNG. Maksimal 5MB per file, total maksimal 5 file.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {/* FileUpload Component - konsisten dengan implementasi Pengaju */}
-                            <FileUpload
-                                files={attachmentFiles}
-                                onFilesChange={setAttachmentFiles}
-                                maxFiles={10}
-                                maxSizeKB={10240} // 10MB
-                                acceptedTypes={['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']}
-                            />
-
-                            {/* Existing Attachments (already uploaded - Edit Mode only) */}
+                            {/* Info lampiran pengaju jika ada */}
+                            {pengajuAttachments.length > 0 && (
+                                <Alert className="bg-blue-50 border-blue-200">
+                                    <Info className="h-4 w-4 text-blue-600" />
+                                    <AlertDescription className="text-blue-800 text-sm">
+                                        <strong>Lampiran dari Pengaju:</strong> Terdapat {pengajuAttachments.length} file lampiran yang diunggah oleh pengaju. 
+                                        Anda dapat menghapus atau menambahkan file baru.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                            
+                            {/* Existing Attachments (pengaju + document) */}
                             {existingAttachments.length > 0 && (
-                                <div className="space-y-2 mt-6">
-                                    <Label className="text-sm font-medium text-amber-700">
-                                        Lampiran Tersimpan ({existingAttachments.length})
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium flex items-center gap-2">
+                                        Lampiran Tersimpan 
+                                        <Badge variant="secondary" className="text-xs">
+                                            {existingAttachments.length} file
+                                        </Badge>
                                     </Label>
                                     <div className="space-y-2">
                                         {existingAttachments.map((attachment, index) => {
                                             const { url, name } = attachment;
-                                            const isPdf = url.toLowerCase().includes('.pdf');
+                                            const isPdf = url.toLowerCase().includes('.pdf') || name.toLowerCase().endsWith('.pdf');
+                                            // Check if this is a pengaju attachment
+                                            const isPengajuAttachment = pengajuAttachments.some(pa => pa.fileUrl === url);
                                             
                                             return (
                                                 <div
                                                     key={index}
-                                                    className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200"
+                                                    className={cn(
+                                                        "flex items-center gap-3 p-3 rounded-lg border",
+                                                        isPengajuAttachment 
+                                                            ? "bg-blue-50 border-blue-200" 
+                                                            : "bg-amber-50 border-amber-200"
+                                                    )}
                                                 >
                                                     <div className={cn(
                                                         "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
@@ -2752,8 +2839,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <p className="font-medium text-sm truncate" title={name}>{name}</p>
-                                                        <p className="text-xs text-amber-600">Sudah tersimpan di server</p>
+                                                        <p className={cn(
+                                                            "text-xs",
+                                                            isPengajuAttachment ? "text-blue-600" : "text-amber-600"
+                                                        )}>
+                                                            {isPengajuAttachment ? "Dari Pengaju" : "Tersimpan di server"}
+                                                        </p>
                                                     </div>
+                                                    {isPengajuAttachment && (
+                                                        <Badge variant="outline" className="text-xs border-blue-300 text-blue-700 shrink-0">
+                                                            Pengaju
+                                                        </Badge>
+                                                    )}
                                                     <div className="flex gap-1 shrink-0">
                                                         <Button
                                                             variant="ghost"
@@ -2787,11 +2884,56 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             );
                                         })}
                                     </div>
-                                    <p className="text-xs text-amber-600">
-                                        File di atas sudah tersimpan. Upload file baru untuk menambah lampiran.
-                                    </p>
                                 </div>
                             )}
+                            
+                            {/* Separator between existing and new uploads */}
+                            {existingAttachments.length > 0 && (
+                                <Separator className="my-4" />
+                            )}
+                            
+                            {/* FileUpload Component - dengan validasi ketat */}
+                            {/* Batasan: max 5 file total (termasuk existing), max 5MB per file */}
+                            {(() => {
+                                const totalFiles = existingAttachments.length + attachmentFiles.length;
+                                const remainingSlots = Math.max(0, 5 - existingAttachments.length);
+                                
+                                return (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-sm font-medium">
+                                                Upload Lampiran Baru
+                                            </Label>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant={totalFiles >= 5 ? "destructive" : "secondary"} className="text-xs">
+                                                    {totalFiles}/5 file
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                        
+                                        {remainingSlots > 0 ? (
+                                            <FileUpload
+                                                files={attachmentFiles}
+                                                onFilesChange={setAttachmentFiles}
+                                                maxFiles={remainingSlots}
+                                                maxSizeKB={5120} // 5MB per file
+                                                acceptedTypes={['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']}
+                                            />
+                                        ) : (
+                                            <Alert className="bg-amber-50 border-amber-200">
+                                                <AlertCircle className="h-4 w-4 text-amber-600" />
+                                                <AlertDescription className="text-amber-800 text-sm">
+                                                    Batas maksimal 5 file tercapai. Hapus file yang ada untuk menambah lampiran baru.
+                                                </AlertDescription>
+                                            </Alert>
+                                        )}
+                                        
+                                        <p className="text-xs text-muted-foreground">
+                                            Format: PDF, JPG, PNG • Maks. 5MB per file • Total maks. 5 file
+                                        </p>
+                                    </div>
+                                );
+                            })()}
 
                             {attachmentFiles.length === 0 && existingAttachments.length === 0 && (
                                 <Alert className="bg-blue-50 border-blue-200">
@@ -2905,14 +3047,20 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     </Label>
                                     {(existingAttachments.length > 0 || attachmentFiles.length > 0) ? (
                                         <div className="space-y-2">
-                                            {/* Existing attachments from server */}
+                                            {/* Existing attachments from server (including pengaju) */}
                                             {existingAttachments.map((attachment, index) => {
                                                 const { url, name } = attachment;
-                                                const isPdf = url.toLowerCase().includes('.pdf');
+                                                const isPdf = url.toLowerCase().includes('.pdf') || name.toLowerCase().endsWith('.pdf');
+                                                const isPengajuAttachment = pengajuAttachments.some(pa => pa.fileUrl === url);
                                                 return (
                                                     <div
                                                         key={`existing-${index}`}
-                                                        className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                                        className={cn(
+                                                            "flex items-center gap-3 p-3 rounded-lg border",
+                                                            isPengajuAttachment 
+                                                                ? "bg-blue-50 border-blue-200" 
+                                                                : "bg-amber-50 border-amber-200"
+                                                        )}
                                                     >
                                                         <div className={cn(
                                                             "w-8 h-8 rounded flex items-center justify-center shrink-0",
@@ -2926,7 +3074,15 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className="font-medium text-sm truncate" title={name}>{name}</p>
-                                                            <Badge variant="secondary" className="text-xs">Sudah Tersimpan</Badge>
+                                                            <Badge 
+                                                                variant={isPengajuAttachment ? "outline" : "secondary"} 
+                                                                className={cn(
+                                                                    "text-xs",
+                                                                    isPengajuAttachment && "border-blue-300 text-blue-700"
+                                                                )}
+                                                            >
+                                                                {isPengajuAttachment ? "Dari Pengaju" : "Tersimpan"}
+                                                            </Badge>
                                                         </div>
                                                     </div>
                                                 );

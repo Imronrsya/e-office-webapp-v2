@@ -1099,7 +1099,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     );
 
     // ========================================================================
-    // LAMPIRAN CARD (Lampiran Submission dari Pengaju)
+    // LAMPIRAN CARD (Lampiran Submission dari Pengaju + Lampiran Admin Prodi)
     // Aturan tampilan:
     // - UPA scope: SEMBUNYIKAN (UPA hanya perlu lihat Lampiran Surat final)
     // - Tab surat-hasil aktif DAN ada dokumen surat-hasil: SEMBUNYIKAN untuk SEMUA user
@@ -1107,8 +1107,27 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // - Selain itu: TAMPILKAN jika ada attachments
     // ========================================================================
     const LampiranCard = () => {
-        // Jika tidak ada attachments, jangan tampilkan
-        if (attachments.length === 0) {
+        // Get Admin Prodi attachments from SURAT_PENGANTAR document
+        const pengantarDoc = detail?.documents?.find(d => d.type === 'SURAT_PENGANTAR');
+        const rawPengantarAttachments = pengantarDoc?.attachmentUrls || [];
+        const adminProdiAttachments: Array<{ url: string; name: string }> = Array.isArray(rawPengantarAttachments) 
+            ? rawPengantarAttachments.map((item: any) => {
+                if (typeof item === 'string') {
+                    const urlWithoutParams = item.split('?')[0];
+                    const parts = urlWithoutParams.split('/');
+                    const fullName = parts[parts.length - 1] || 'Lampiran';
+                    const cleanName = fullName.replace(/^\d+-/, '');
+                    return { url: item, name: decodeURIComponent(cleanName) };
+                }
+                return { url: item.url || '', name: item.name || 'Lampiran' };
+            }).filter((item) => item.url && item.url.length > 0)
+            : [];
+        
+        // Total attachments count
+        const totalAttachments = attachments.length + adminProdiAttachments.length;
+        
+        // Jika tidak ada attachments sama sekali, jangan tampilkan
+        if (totalAttachments === 0) {
             return null;
         }
         
@@ -1137,6 +1156,32 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             return null;
         }
         
+        // Handler for admin prodi attachment preview
+        const handleAdminAttachmentPreview = (url: string, name: string) => {
+            const isPdf = url.toLowerCase().includes('.pdf');
+            setPreviewDocAttachment({ url, name, isPdf });
+            setDocAttachmentPreviewOpen(true);
+        };
+        
+        // Handler for admin prodi attachment download
+        const handleAdminAttachmentDownload = async (url: string, fileName: string) => {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(downloadUrl);
+                toast.success(`Berhasil mengunduh ${fileName}`);
+            } catch (error) {
+                console.error('Download failed:', error);
+                toast.error('Gagal mengunduh file');
+            }
+        };
 
         
         return (
@@ -1145,6 +1190,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     <h3 className="text-sm font-bold text-black mb-4">Lampiran Pengaju</h3>
                     
                     <div className="space-y-3">
+                        {/* Lampiran dari Pengaju (Mahasiswa/Dosen) */}
                         {attachments.map((att) => (
                             <div 
                                 key={att.id}
@@ -1179,6 +1225,55 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 </div>
                             </div>
                         ))}
+                        
+                        {/* Lampiran dari Admin Prodi (dari SURAT_PENGANTAR document) */}
+                        {adminProdiAttachments.map((att, index) => {
+                            const isPdf = att.url.toLowerCase().includes('.pdf');
+                            const isImage = /\.(jpg|jpeg|png|gif)/i.test(att.url);
+                            
+                            return (
+                                <div 
+                                    key={`admin-${index}`}
+                                    className="flex items-center justify-between p-3.5 bg-amber-50 rounded-lg border border-amber-300"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-lg flex items-center justify-center",
+                                            isPdf ? "bg-red-100" : isImage ? "bg-green-100" : "bg-blue-100"
+                                        )}>
+                                            <FileText className={cn(
+                                                "w-5 h-5",
+                                                isPdf ? "text-red-600" : isImage ? "text-green-600" : "text-blue-600"
+                                            )} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-black truncate max-w-[180px]" title={att.name}>
+                                                {att.name}
+                                            </p>
+                                            <p className="text-xs text-amber-600">Dari Admin Prodi</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleAdminAttachmentPreview(att.url, att.name)}
+                                            title="Preview"
+                                        >
+                                            <Eye className="w-5 h-5" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleAdminAttachmentDownload(att.url, att.name)}
+                                            title="Download"
+                                        >
+                                            <Download className="w-5 h-5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </CardContent>
             </Card>
@@ -1189,6 +1284,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // LAMPIRAN DOKUMEN CARD (Lampiran dari Staf/Supervisor - PDF/JPG/PNG)
     // Hanya tampil di surat keluar atau saat tab surat-hasil aktif
     // KHUSUS UPA: Selalu tampilkan (tidak ada filter)
+    // NOTE: SURAT_PENGANTAR attachments are shown in LampiranCard, not here
     // ========================================================================
     const LampiranDokumenCard = () => {
         // KHUSUS UPA: Selalu tampilkan lampiran surat, skip semua kondisi lain
@@ -1204,6 +1300,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         }
         
         // Ambil lampiran dari dokumen (attachmentUrls dari LetterDocument)
+        // NOTE: SURAT_PENGANTAR is NOT included here - it's shown in LampiranCard instead
         const suratHasilDoc = detail?.documents?.find(d => 
             d.type === 'SURAT_TUGAS' || 
             d.type === 'SURAT_TUGAS_TABEL' || 

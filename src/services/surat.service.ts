@@ -685,5 +685,19 @@ export const suratService = {
         );
         return response.data;
     },
+
+    /**
+     * Remove pengaju attachment (for Admin Prodi during drafting)
+     * This removes attachments from LetterAttachment table (uploaded by pengaju)
+     */
+    async removePengajuAttachment(
+        letterId: string,
+        attachmentId: string
+    ): Promise<ApiResponse<{ message: string; attachmentId: string }>> {
+        const response = await api.delete<ApiResponse<{ message: string; attachmentId: string }>>(
+            `/api/department-approval/${letterId}/attachments/${attachmentId}`
+        );
+        return response.data;
+    },
 };
 
