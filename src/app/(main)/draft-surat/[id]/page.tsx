@@ -1408,11 +1408,22 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         : "Draft surat berhasil dibuat";
                 toast.success(successMessage);
                 
-                // Redirect to Surat Keluar dashboard (surat hasil are always "keluar")
-                // Using role mapper to get correct path based on user role
-                const redirectPath = getPostDraftRedirectPath(user?.role || '');
-                router.push(redirectPath);
-                router.refresh();
+                // Decide post-save redirect:
+                // - For Surat Pengantar (department-approval) admin prodi flow, keep user on detail page
+                // - Additionally, if the actor is an Admin Prodi and the template is a Surat Keputusan,
+                //   keep the user on the detail page instead of redirecting to the dashboard
+                const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
+
+                if (suratType === "SURAT_PENGANTAR" || (isAdminProdi && suratType === "SURAT_KEPUTUSAN")) {
+                    // Stay on the letter detail page so admin can continue working or review
+                    router.push(`/detail/${resolvedParams.id}`);
+                    router.refresh();
+                } else {
+                    // Default behavior: redirect based on role mapping (usually to dashboard)
+                    const redirectPath = getPostDraftRedirectPath(user?.role || '');
+                    router.push(redirectPath);
+                    router.refresh();
+                }
             } else {
                 toast.error(response.message || "Gagal menyimpan draft surat");
             }

@@ -113,17 +113,20 @@ export function PengajuanForm() {
     // 2. Auto-fill data diri user jika sudah login
     useEffect(() => {
         if (user) {
-            // Extract NIM/NIP and Program Studi from user profile
+            // Extract NIM/NIP, Departemen, and Program Studi from user profile
             let nimNip = "";
+            let departemenId = "";
             let programStudiId = "";
 
-            // Get NIM/NIP and programStudiId from profile
+            // Get NIM/NIP, departemenId, and programStudiId from profile
             if (user.profile) {
                 if (isMahasiswaProfile(user.profile)) {
                     nimNip = user.profile.nim || "";
+                    departemenId = user.profile.departemenId || "";
                     programStudiId = user.profile.programStudiId || "";
                 } else if (isPegawaiProfile(user.profile)) {
                     nimNip = user.profile.nip || "";
+                    departemenId = user.profile.departemenId || "";
                     programStudiId = user.profile.programStudiId || "";
                 }
             }
@@ -132,6 +135,7 @@ export function PengajuanForm() {
                 ...prev,
                 namaLengkap: user.name || "",
                 nimNip: nimNip,
+                departemen: departemenId,
                 programStudi: programStudiId,
             }));
         }
@@ -399,9 +403,9 @@ export function PengajuanForm() {
                             <Select
                                 value={formState.departemen}
                                 onValueChange={(value) => handleInputChange("departemen", value)}
-                                disabled={isDeptLoading}
+                                disabled={true}
                             >
-                                <SelectTrigger className="bg-white">
+                                <SelectTrigger className="bg-gray-50 cursor-not-allowed">
                                     <SelectValue placeholder={isDeptLoading ? "Memuat..." : "Pilih Departemen"} />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -412,6 +416,9 @@ export function PengajuanForm() {
                                     ))}
                                 </SelectContent>
                             </Select>
+                            <p className="text-xs text-gray-500">
+                                Departemen diambil otomatis dari akun Anda dan tidak dapat diubah.
+                            </p>
                         </div>
 
                         <div className="space-y-2">
@@ -422,10 +429,13 @@ export function PengajuanForm() {
                                 value={formState.programStudi}
                                 onChange={(value) => handleInputChange("programStudi", value)}
                                 filterDepartemen={formState.departemen}
-                                disabled={!formState.departemen || isProdiLoading}
-                                placeholder={!formState.departemen ? "Pilih departemen terlebih dahulu" : "Pilih Program Studi"}
-                                className="bg-white"
+                                disabled={true}
+                                placeholder="Program Studi"
+                                className="bg-gray-50"
                             />
+                            <p className="text-xs text-gray-500">
+                                Program Studi diambil otomatis dari akun Anda dan tidak dapat diubah.
+                            </p>
                             {selectedProdiDetail && (
                                 <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm">
                                     <p className="font-medium text-blue-900 mb-1">
@@ -502,43 +512,6 @@ export function PengajuanForm() {
                                 className="bg-white"
                             />
                         </div>
-                    </div>
-
-                    <hr className="border-gray-200" />
-
-                    {/* --- LEVEL TTD --- */}
-                    <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
-                            Tanda Tangan Tambahan (Opsional)
-                        </Label>
-                        <div className="flex items-center gap-2">
-                            <Select
-                                value={formState.ttdLevel}
-                                onValueChange={(value) => handleInputChange("ttdLevel", value as TTDLevel)}
-                            >
-                                <SelectTrigger className="bg-white flex-1">
-                                    <SelectValue placeholder="Pilih jika perlu TTD Departemen" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="kaprodi">Hanya Kaprodi</SelectItem>
-                                    <SelectItem value="kadep">Sampai Ketua Departemen</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {formState.ttdLevel && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleInputChange("ttdLevel", "")}
-                                    className="h-10 w-10 text-gray-400 hover:text-red-500"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            )}
-                        </div>
-                        <p className="text-xs text-gray-500">
-                            Secara default surat akan ditandatangani oleh Ketua Departemen. Pilih opsi di atas jika surat memerlukan verifikasi berjenjang hingga Ketua Departemen.
-                        </p>
                     </div>
 
                     <hr className="border-gray-200" />
