@@ -141,12 +141,12 @@ export function DashboardToolbar({
                 }`}
             >
               Surat Masuk
-              {tabCounts && (
+              {/* {tabCounts && (
                 <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${filters.type === "masuk" ? "bg-white/20" : "bg-gray-100"
                   }`}>
                   {tabCounts.masuk}
                 </span>
-              )}
+              )} */}
             </Button>
             <Button
               variant={filters.type === "keluar" ? "default" : "ghost"}
@@ -157,12 +157,12 @@ export function DashboardToolbar({
                 }`}
             >
               Surat Keluar
-              {tabCounts && (
+              {/* {tabCounts && (
                 <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${filters.type === "keluar" ? "bg-white/20" : "bg-gray-100"
                   }`}>
                   {tabCounts.keluar}
                 </span>
-              )}
+              )} */}
             </Button>
           </nav>
         )}
