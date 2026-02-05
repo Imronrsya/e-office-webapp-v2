@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, Info, Loader2 } from "lucide-react";
+import { CheckCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 // ============================================================================
@@ -38,15 +38,19 @@ export function CompleteDialog({
     loading
 }: CompleteDialogProps) {
     const [notes, setNotes] = useState<string>("");
+    const [touched, setTouched] = useState(false);
 
     // Reset when dialog closes
     useEffect(() => {
         if (!open) {
             setNotes("");
+            setTouched(false);
         }
     }, [open]);
 
     const handleSubmit = async () => {
+        setTouched(true);
+        
         if (!notes.trim()) {
             toast.error("Catatan wajib diisi");
             return;
@@ -55,36 +59,52 @@ export function CompleteDialog({
         await onSubmit(notes.trim());
     };
 
+    const isError = touched && !notes.trim();
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Selesaikan Surat</DialogTitle>
-                    <DialogDescription>
+                    {/* Success Icon */}
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-success/10 mb-4">
+                        <CheckCircle className="h-6 w-6 text-success" />
+                    </div>
+                    <DialogTitle className="text-center">Selesaikan Surat</DialogTitle>
+                    <DialogDescription className="text-center">
                         Tandai surat sebagai selesai diproses di tingkat Anda.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
-                    <Alert variant="default" className="border-emerald-200 bg-emerald-50">
-                        <Info className="h-4 w-4 text-emerald-600" />
-                        <AlertDescription className="text-emerald-800">
+                    <Alert variant="default" className="border-success/50 bg-success/10">
+                        <CheckCircle className="h-4 w-4 text-success" />
+                        <AlertDescription className="text-success">
                             Surat akan dinyatakan selesai dan tidak dapat diproses lagi.
                         </AlertDescription>
                     </Alert>
                     
                     {/* Catatan */}
                     <div className="space-y-2">
-                        <Label htmlFor="notes">
+                        <Label htmlFor="notes" className="flex items-center gap-1">
                             Catatan <span className="text-destructive">*</span>
                         </Label>
                         <Textarea
                             id="notes"
                             value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
+                            onChange={(e) => {
+                                setNotes(e.target.value);
+                                if (!touched) setTouched(true);
+                            }}
+                            onBlur={() => setTouched(true)}
                             placeholder="Jelaskan mengapa surat cukup diproses sampai tahap ini..."
                             rows={4}
+                            className={isError ? "border-destructive focus-visible:ring-destructive" : ""}
                         />
+                        {isError && (
+                            <p className="text-sm text-destructive">
+                                Catatan wajib diisi
+                            </p>
+                        )}
                         <p className="text-xs text-muted-foreground">
                             Catatan ini akan tercatat dalam riwayat surat.
                         </p>
@@ -104,7 +124,7 @@ export function CompleteDialog({
                         type="submit"
                         onClick={handleSubmit}
                         disabled={loading || !notes.trim()}
-                        className="bg-emerald-600 hover:bg-emerald-700"
+                        className="bg-success text-success-foreground hover:bg-success/90"
                     >
                         {loading ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />

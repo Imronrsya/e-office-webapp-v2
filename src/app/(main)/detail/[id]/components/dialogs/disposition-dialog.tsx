@@ -20,7 +20,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Send, Loader2 } from "lucide-react";
+import { Send, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 // ============================================================================
@@ -340,7 +340,7 @@ export function DispositionDialog({
                                 value={category} 
                                 onValueChange={(val) => setCategory(val as LetterCategory)}
                             >
-                                <SelectTrigger id="category">
+                                <SelectTrigger id="category" className="w-full">
                                     <SelectValue placeholder="Pilih Jenis Surat" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -352,12 +352,10 @@ export function DispositionDialog({
                         </div>
                     ) : letterCategory ? (
                         // Disposition mode with existing category - show as read-only info
-                        <Alert>
-                            <Info className="h-4 w-4" />
-                            <AlertDescription>
-                                Kategori surat: <strong>{CATEGORY_LABELS[letterCategory]}</strong>
-                            </AlertDescription>
-                        </Alert>
+                        <div className="rounded-md border border-muted bg-muted/50 px-3 py-2">
+                            <span className="text-sm text-muted-foreground">Kategori surat: </span>
+                            <span className="text-sm font-medium">{CATEGORY_LABELS[letterCategory]}</span>
+                        </div>
                     ) : (
                         // Disposition mode without category - allow selection (fallback)
                         <div className="space-y-2">
@@ -368,7 +366,7 @@ export function DispositionDialog({
                                 value={category} 
                                 onValueChange={(val) => setCategory(val as LetterCategory)}
                             >
-                                <SelectTrigger id="category">
+                                <SelectTrigger id="category" className="w-full">
                                     <SelectValue placeholder="Pilih Jenis Surat" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -382,9 +380,9 @@ export function DispositionDialog({
 
                     {/* Info Box for disposition mode */}
                     {!isForwardMode && (
-                        <Alert variant="default" className="border-amber-200 bg-amber-50">
-                            <Info className="h-4 w-4 text-amber-600" />
-                            <AlertDescription className="text-amber-800">
+                        <Alert variant="default" className="border-warning/50 bg-warning/10">
+                            <AlertTriangle className="h-4 w-4 text-warning" />
+                            <AlertDescription className="text-foreground">
                                 Disposisi hanya dapat dilakukan ke pejabat dengan tingkatan lebih rendah.
                             </AlertDescription>
                         </Alert>
@@ -400,7 +398,7 @@ export function DispositionDialog({
                             onValueChange={setTargetRole}
                             disabled={!category}
                         >
-                            <SelectTrigger id="target-role">
+                            <SelectTrigger id="target-role" className="w-full">
                                 <SelectValue placeholder={category ? "Pilih Pejabat" : "Pilih jenis surat terlebih dahulu"} />
                             </SelectTrigger>
                             <SelectContent>
@@ -448,7 +446,8 @@ export function DispositionDialog({
                         type="submit"
                         onClick={handleSubmit}
                         disabled={loading || !category || !targetRole}
-                        className={isForwardMode ? "bg-blue-600 hover:bg-blue-700" : ""}
+                        variant="default"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90"
                     >
                         {loading ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />

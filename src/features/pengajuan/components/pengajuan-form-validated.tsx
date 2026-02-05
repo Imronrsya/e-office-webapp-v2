@@ -94,6 +94,7 @@ export function PengajuanFormValidated() {
   // Initialize React Hook Form with Zod validation
   const form = useForm<LetterFormData>({
     resolver: zodResolver(createLetterSchema(userRole)),
+    mode: "onChange", // Validasi real-time saat user mengetik
     defaultValues: {
       jenisSurat: undefined,
       judulSurat: "",
@@ -134,33 +135,48 @@ export function PengajuanFormValidated() {
   }, [toast]);
 
   // 2. Auto-fill data from user profile
+  // PENTING: Harus menunggu departemenList loaded agar Select bisa menampilkan value dengan benar
   useEffect(() => {
-    if (user) {
-      let nimNip = "";
-      let departemenId = "";
-      let programStudiId = "";
-
-      if (user.profile) {
-        if (isMahasiswaProfile(user.profile)) {
-          nimNip = user.profile.nim || "";
-          departemenId = user.profile.departemenId || "";
-          programStudiId = user.profile.programStudiId || "";
-        } else if (isPegawaiProfile(user.profile)) {
-          nimNip = user.profile.nip || "";
-          departemenId = user.profile.departemenId || "";
-          programStudiId = user.profile.programStudiId || "";
-        }
-      }
-
-      form.reset({
-        ...form.getValues(),
-        namaLengkap: user.name || "",
-        nimNip: nimNip,
-        departemen: departemenId,
-        programStudi: programStudiId,
-      });
+    // Hanya jalankan jika user ada DAN departemenList sudah loaded
+    if (!user || isDeptLoading || !departemenList || departemenList.length === 0) {
+      return;
     }
-  }, [user, form]);
+
+    let nimNip = "";
+    let departemenId = "";
+    let programStudiId = "";
+
+    if (user.profile) {
+      if (isMahasiswaProfile(user.profile)) {
+        nimNip = user.profile.nim || "";
+        departemenId = user.profile.departemenId || "";
+        programStudiId = user.profile.programStudiId || "";
+      } else if (isPegawaiProfile(user.profile)) {
+        nimNip = user.profile.nip || "";
+        departemenId = user.profile.departemenId || "";
+        programStudiId = user.profile.programStudiId || "";
+      }
+    }
+
+    // Verifikasi departemenId ada di list sebelum set
+    const deptExists = departemenList.some(dept => dept.id === departemenId);
+    
+    form.reset({
+      ...form.getValues(),
+      namaLengkap: user.name || "",
+      nimNip: nimNip,
+      departemen: deptExists ? departemenId : "",
+      programStudi: programStudiId,
+    });
+
+    console.log("[PengajuanForm] Auto-filled form data:", {
+      namaLengkap: user.name,
+      nimNip,
+      departemenId,
+      programStudiId,
+      deptExists,
+    });
+  }, [user, isDeptLoading, departemenList, form]);
 
   // 3. Fetch prodi details
   useEffect(() => {
@@ -184,14 +200,6 @@ export function PengajuanFormValidated() {
 
   // 5. Handle form submission
   const onSubmit = async (data: LetterFormData) => {
-    // Validasi tipe surat
-    if (!data.jenisSurat) {
-      toast.error("Error", {
-        description: "Mohon pilih tipe surat terlebih dahulu.",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -268,10 +276,17 @@ export function PengajuanFormValidated() {
     }
   };
 
+  // Handler untuk validasi error - tidak menampilkan toast
+  const onError = (errors: any) => {
+    // Error sudah ditampilkan inline melalui FormMessage
+    // Tidak perlu toast
+    console.log("Validation errors:", errors);
+  };
+
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={form.handleSubmit(onSubmit, onError)}
         className="min-h-screen flex flex-col"
       >
         <div className="flex-1 w-full pb-24">
@@ -448,11 +463,6 @@ export function PengajuanFormValidated() {
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription>
-                      {userRole === "MAHASISWA"
-                        ? "NIM harus terdiri dari 14 digit angka"
-                        : "NIP harus terdiri dari 18 digit angka"}
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

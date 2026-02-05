@@ -48,10 +48,12 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getRoleScope } from "@/lib/role-mapper";
-import { DispositionDialog, LetterCategory } from "./components/disposition-dialog";
-import { CompleteDialog } from "./components/complete-dialog";
-import { ReturnDialog } from "./components/return-dialog";
-import { DraftSuratDialog } from "./components/draft-surat-dialog";
+import { DispositionDialog, LetterCategory } from "./components/dialogs/disposition-dialog";
+import { CompleteDialog } from "./components/dialogs/complete-dialog";
+import { ReturnDialog } from "./components/dialogs/return-dialog";
+import { DraftSuratDialog } from "./components/dialogs/draft-surat-dialog";
+import { ApproveDialog } from "./components/dialogs/approve-dialog";
+import { RejectDialog } from "./components/dialogs/reject-dialog";
 // Universal Preview - Single Source of Truth
 import { 
     PDFPreview, 
@@ -168,8 +170,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     
     // Action states
     const [actionLoading, setActionLoading] = useState(false);
+    const [approveDialogOpen, setApproveDialogOpen] = useState(false);
     const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-    const [rejectReason, setRejectReason] = useState("");
     
     // Refresh key for PDF preview - increment to force refresh after actions
     const [pdfRefreshKey, setPdfRefreshKey] = useState(0);
@@ -302,6 +304,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             const response = await suratService.approve(detail.id);
             if (response.success) {
                 toast.success("Pengajuan berhasil disetujui");
+                setApproveDialogOpen(false);
                 // Refresh data
                 await fetchDetail();
             } else {
@@ -315,19 +318,15 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         }
     };
 
-    const handleReject = async () => {
-        if (!detail || !rejectReason.trim()) {
-            toast.error("Alasan penolakan harus diisi");
-            return;
-        }
+    const handleReject = async (reason: string) => {
+        if (!detail) return;
         
         setActionLoading(true);
         try {
-            const response = await suratService.reject(detail.id, rejectReason.trim());
+            const response = await suratService.reject(detail.id, reason);
             if (response.success) {
                 toast.success("Pengajuan berhasil ditolak");
                 setRejectDialogOpen(false);
-                setRejectReason("");
                 // Refresh data
                 await fetchDetail();
             } else {
@@ -1764,7 +1763,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={handleSign}
                                 disabled={actionLoading}
-                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
                             >
                                 {actionLoading ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1830,7 +1829,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={handleEditDraft}
                                 disabled={actionLoading}
-                                className="bg-amber-600 hover:bg-amber-700 gap-2"
+                                className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
                             >
                                 <FileText className="w-4 h-4" />
                                 Edit Draft
@@ -1842,7 +1841,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={handleSubmitForVerification}
                                 disabled={actionLoading}
-                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
                             >
                                 {actionLoading ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1858,7 +1857,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={handleSubmitForVerification}
                                 disabled={actionLoading}
-                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
                             >
                                 {actionLoading ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1888,7 +1887,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={() => setVerifyDialogOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
                             >
                                 <CheckCircle className="w-4 h-4" />
                                 Verifikasi
@@ -1900,7 +1899,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={() => setReturnSuratDialogOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-amber-600 hover:bg-amber-700 gap-2"
+                                className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
                             >
                                 <Undo2 className="w-4 h-4" />
                                 Kembalikan
@@ -1914,7 +1913,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={() => setNumberingModalOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
                             >
                                 <Hash className="w-4 h-4" />
                                 Beri Nomor Surat
@@ -1958,7 +1957,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={handleFinalize}
                                 disabled={actionLoading}
-                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
                             >
                                 {actionLoading ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1976,7 +1975,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={handleSignSuratHasil}
                                 disabled={actionLoading}
-                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
                             >
                                 {actionLoading ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1992,7 +1991,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={() => setVerifyDialogOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
                             >
                                 <CheckCircle className="w-4 h-4" />
                                 Verifikasi
@@ -2004,7 +2003,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={() => setReturnSuratDialogOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-amber-600 hover:bg-amber-700 gap-2"
+                                className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
                             >
                                 <Undo2 className="w-4 h-4" />
                                 Kembalikan
@@ -2018,7 +2017,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={() => setCompleteDialogOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
                             >
                                 <CheckCircle className="w-4 h-4" />
                                 Selesai
@@ -2042,7 +2041,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={() => setReturnDialogOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-amber-600 hover:bg-amber-700 gap-2"
+                                className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
                             >
                                 <Undo2 className="w-4 h-4" />
                                 Kembalikan
@@ -2052,15 +2051,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         {/* Setujui Button */}
                         {permissions.canApprove && (
                             <Button 
-                                onClick={handleApprove}
+                                onClick={() => setApproveDialogOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-green-600 hover:bg-green-700 gap-2"
+                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
                             >
-                                {actionLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <CheckCircle className="w-4 h-4" />
-                                )}
+                                <CheckCircle className="w-4 h-4" />
                                 Setujui
                             </Button>
                         )}
@@ -2082,46 +2077,21 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 }
             />
 
-            {/* Reject Dialog */}
-            <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Tolak Pengajuan</DialogTitle>
-                        <DialogDescription>
-                            Masukkan alasan penolakan pengajuan ini. Alasan akan dikirimkan ke pemohon.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="reason">Alasan Penolakan</Label>
-                            <Textarea
-                                id="reason"
-                                placeholder="Masukkan alasan penolakan..."
-                                value={rejectReason}
-                                onChange={(e) => setRejectReason(e.target.value)}
-                                rows={4}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button 
-                            variant="outline" 
-                            onClick={() => setRejectDialogOpen(false)}
-                            disabled={actionLoading}
-                        >
-                            Batal
-                        </Button>
-                        <Button 
-                            variant="destructive" 
-                            onClick={handleReject}
-                            disabled={actionLoading || !rejectReason.trim()}
-                        >
-                            {actionLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            Tolak Pengajuan
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Approve Dialog - Konfirmasi Setujui dengan Alert Dialog */}
+            <ApproveDialog
+                open={approveDialogOpen}
+                onOpenChange={setApproveDialogOpen}
+                onConfirm={handleApprove}
+                loading={actionLoading}
+            />
+
+            {/* Reject Dialog - Formulir Penolakan */}
+            <RejectDialog
+                open={rejectDialogOpen}
+                onOpenChange={setRejectDialogOpen}
+                onSubmit={handleReject}
+                loading={actionLoading}
+            />
 
             {/* Disposition Dialog - for Admin Fakultas (forward) and Pejabat (disposition) */}
             <DispositionDialog
@@ -2197,7 +2167,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         <Button 
                             onClick={handleVerifySuratHasil}
                             disabled={actionLoading}
-                            className="bg-emerald-600 hover:bg-emerald-700"
+                            className="bg-success text-success-foreground hover:bg-success/90"
                         >
                             {actionLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             Verifikasi
@@ -2265,7 +2235,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         <Button 
                             onClick={handleReturnSuratHasil}
                             disabled={actionLoading || !returnSuratReason.trim() || !returnSuratTargetStaff}
-                            className="bg-amber-600 hover:bg-amber-700"
+                            className="bg-warning text-warning-foreground hover:bg-warning/90"
                         >
                             {actionLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             Kembalikan

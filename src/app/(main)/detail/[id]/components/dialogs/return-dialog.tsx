@@ -20,7 +20,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Undo2, Info, Loader2 } from "lucide-react";
+import { Undo2, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 // ============================================================================
@@ -117,9 +117,9 @@ export function ReturnDialog({
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
-                    <Alert variant="default" className="border-amber-200 bg-amber-50">
-                        <Info className="h-4 w-4 text-amber-600" />
-                        <AlertDescription className="text-amber-800">
+                    <Alert variant="default" className="border-warning/50 bg-warning/10">
+                        <AlertTriangle className="h-4 w-4 text-warning" />
+                        <AlertDescription className="text-warning-foreground">
                             <strong>Catatan:</strong> Anda dapat mengembalikan surat ke role manapun yang ada di bawah posisi Anda. 
                             Pengembalian bersifat <strong>fleksibel</strong> dan tidak harus urut.
                         </AlertDescription>
@@ -131,7 +131,7 @@ export function ReturnDialog({
                             Kembalikan Ke <span className="text-destructive">*</span>
                         </Label>
                         <Select value={targetRole} onValueChange={setTargetRole}>
-                            <SelectTrigger id="target-role">
+                            <SelectTrigger id="target-role" className="w-full">
                                 <SelectValue placeholder="Pilih Tujuan Pengembalian" />
                             </SelectTrigger>
                             <SelectContent>
@@ -178,7 +178,7 @@ export function ReturnDialog({
                         type="submit"
                         onClick={handleSubmit}
                         disabled={loading || !targetRole || !reason.trim()}
-                        className="bg-amber-600 hover:bg-amber-700"
+                        className="bg-warning text-warning-foreground hover:bg-warning/90"
                     >
                         {loading ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />

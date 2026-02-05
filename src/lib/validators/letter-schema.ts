@@ -30,7 +30,7 @@ const MAX_FILES = 5;
 // ============================================================================
 
 export const LetterTypeEnum = z.enum(["SURAT_TUGAS", "SURAT_KEPUTUSAN"], {
-  errorMap: () => ({ message: "Tipe Surat wajib dipilih salah satu." }),
+  message: "Tipe Surat wajib dipilih salah satu.",
 });
 
 export const UserRoleEnum = z.enum(["MAHASISWA", "DOSEN"]);
@@ -82,11 +82,13 @@ const baseLetterSchema = z.object({
     .min(1, "Judul Kegiatan / Acara wajib diisi.")
     .trim(),
 
-  // 3. Keperluan
+  // 3. Keperluan (Bebas, tanpa batasan min/max karakter)
   keperluan: z
     .string()
-    .min(1, "Keperluan surat wajib diisi.")
-    .trim(),
+    .trim()
+    .refine((val) => val.length > 0, {
+      message: "Keperluan surat wajib diisi.",
+    }),
 
   // 4. Nama Lengkap
   namaLengkap: z
@@ -100,8 +102,7 @@ const baseLetterSchema = z.object({
 
   // 6. Tanggal Mulai
   tanggalAcara: z.date({
-    required_error: "Tanggal Mulai wajib diisi.",
-    invalid_type_error: "Tanggal Mulai tidak valid.",
+    message: "Tanggal Mulai wajib diisi.",
   }),
 
   // 7. Durasi

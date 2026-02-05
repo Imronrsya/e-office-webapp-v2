@@ -1,0 +1,7 @@
+/* Hide password reveal button in Edge/IE */
+@layer utilities {
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
+}
