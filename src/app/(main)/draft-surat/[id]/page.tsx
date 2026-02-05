@@ -1345,6 +1345,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         {
                             content,
                             tembusan: combinedTembusan,
+                            signatories, // Include signatories for supervisor edit
                         }
                     );
                 } else if (isEditMode && existingDocumentId) {
