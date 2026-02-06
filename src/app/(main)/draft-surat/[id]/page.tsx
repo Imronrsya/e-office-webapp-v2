@@ -3111,54 +3111,62 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Separator />
 
-                                <div>
-                                    <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Tembusan ({tembusanTexts.length + tembusanUsers.length + (includePengaju ? 1 : 0)} akses sistem)
-                                    </Label>
-                                    <div className="space-y-2">
-                                        {includePengaju && (
-                                            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                                <Users className="w-5 h-5 text-blue-600" />
-                                                <div className="flex-1">
-                                                    <span className="font-medium">Pengaju Surat</span>
-                                                    <p className="text-xs text-muted-foreground">Akses sistem saja</p>
+                                {/* Tembusan - Hanya tampil untuk Staff dan Supervisor (bukan Admin Prodi) */}
+                                {(() => {
+                                    const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
+                                    return !isAdminProdi ? (
+                                        <>
+                                            <div>
+                                                <Label className="text-sm text-muted-foreground mb-2 block">
+                                                    Tembusan ({tembusanTexts.length + tembusanUsers.length + (includePengaju ? 1 : 0)} akses sistem)
+                                                </Label>
+                                                <div className="space-y-2">
+                                                    {includePengaju && (
+                                                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                                            <Users className="w-5 h-5 text-blue-600" />
+                                                            <div className="flex-1">
+                                                                <span className="font-medium">Pengaju Surat</span>
+                                                                <p className="text-xs text-muted-foreground">Akses sistem saja</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {tembusanUsers.map((user) => (
+                                                        <div
+                                                            key={user.userId}
+                                                            className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                                        >
+                                                            <User className="w-5 h-5 text-blue-600" />
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-medium text-sm truncate">{user.name}</p>
+                                                                <p className="text-xs text-muted-foreground truncate">{user.description}</p>
+                                                            </div>
+                                                            <Badge variant="secondary" className="text-xs">Akses Sistem</Badge>
+                                                        </div>
+                                                    ))}
+                                                    {tembusanTexts.map((item, index) => (
+                                                        <div
+                                                            key={item.id}
+                                                            className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200"
+                                                        >
+                                                            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-700">
+                                                                {index + 1}
+                                                            </div>
+                                                            <span className="flex-1 text-sm">{item.text}</span>
+                                                            <Badge variant="outline" className="text-xs border-green-300 text-green-700">Tertulis di Surat</Badge>
+                                                        </div>
+                                                    ))}
+                                                    {!includePengaju && tembusanTexts.length === 0 && tembusanUsers.length === 0 && (
+                                                        <p className="text-sm text-muted-foreground italic">
+                                                            Tidak ada tembusan
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
-                                        )}
-                                        {tembusanUsers.map((user) => (
-                                            <div
-                                                key={user.userId}
-                                                className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
-                                            >
-                                                <User className="w-5 h-5 text-blue-600" />
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-sm truncate">{user.name}</p>
-                                                    <p className="text-xs text-muted-foreground truncate">{user.description}</p>
-                                                </div>
-                                                <Badge variant="secondary" className="text-xs">Akses Sistem</Badge>
-                                            </div>
-                                        ))}
-                                        {tembusanTexts.map((item, index) => (
-                                            <div
-                                                key={item.id}
-                                                className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200"
-                                            >
-                                                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-700">
-                                                    {index + 1}
-                                                </div>
-                                                <span className="flex-1 text-sm">{item.text}</span>
-                                                <Badge variant="outline" className="text-xs border-green-300 text-green-700">Tertulis di Surat</Badge>
-                                            </div>
-                                        ))}
-                                        {!includePengaju && tembusanTexts.length === 0 && tembusanUsers.length === 0 && (
-                                            <p className="text-sm text-muted-foreground italic">
-                                                Tidak ada tembusan
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
 
-                                <Separator />
+                                            <Separator />
+                                        </>
+                                    ) : null;
+                                })()}
 
                                 {/* Lampiran Review */}
                                 <div>
