@@ -51,6 +51,7 @@ import { getRoleScope } from "@/lib/role-mapper";
 import { DispositionDialog, LetterCategory } from "./components/dialogs/disposition-dialog";
 import { CompleteDialog } from "./components/dialogs/complete-dialog";
 import { ReturnDialog } from "./components/dialogs/return-dialog";
+import { RevisionDialog } from "./components/dialogs/revision-dialog";
 import { DraftSuratDialog } from "./components/dialogs/draft-surat-dialog";
 import { ApproveDialog } from "./components/dialogs/approve-dialog";
 import { RejectDialog } from "./components/dialogs/reject-dialog";
@@ -182,12 +183,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const [returnDialogOpen, setReturnDialogOpen] = useState(false);
     const [draftSuratDialogOpen, setDraftSuratDialogOpen] = useState(false);
     const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
-    const [returnSuratDialogOpen, setReturnSuratDialogOpen] = useState(false);
+    const [revisionDialogOpen, setRevisionDialogOpen] = useState(false);
     const [signatureModalOpen, setSignatureModalOpen] = useState(false);
     const [numberingModalOpen, setNumberingModalOpen] = useState(false);
     const [verifyNotes, setVerifyNotes] = useState("");
-    const [returnSuratReason, setReturnSuratReason] = useState("");
-    const [returnSuratTargetStaff, setReturnSuratTargetStaff] = useState<string>("");
     const [attachmentPreviewOpen, setAttachmentPreviewOpen] = useState(false);
     const [previewAttachment, setPreviewAttachment] = useState<{id: string, fileName: string, fileUrl: string, mimeType: string | null} | null>(null);
     
@@ -618,54 +617,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         } catch (err) {
             console.error("Verify failed:", err);
             toast.error("Terjadi kesalahan saat memverifikasi");
-        } finally {
-            setActionLoading(false);
-        }
-    };
-
-    // Supervisor/Manajer TU returns surat hasil for revision
-    const handleReturnSuratHasil = async () => {
-        if (!detail || actionLoading) return;
-        
-        if (!returnSuratReason.trim()) {
-            toast.error("Alasan pengembalian wajib diisi");
-            return;
-        }
-        
-        // Require target staff/supervisor selection for all categories
-        if (!returnSuratTargetStaff) {
-            toast.error("Pilih tujuan pengembalian");
-            return;
-        }
-        
-        // Just check if SK/ST document exists (including table version)
-        const hasSkst = detail.documents?.some(d => 
-            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
-        );
-        
-        if (!hasSkst) {
-            toast.error("Dokumen SK/ST tidak ditemukan");
-            return;
-        }
-        
-        setActionLoading(true);
-        try {
-            // Use letterId, not documentId
-            // Always include targetStaff for all categories
-            const response = await suratService.returnSuratHasil(detail.id, returnSuratReason.trim(), returnSuratTargetStaff);
-            
-            if (response.success) {
-                toast.success("Surat berhasil dikembalikan");
-                setReturnSuratDialogOpen(false);
-                setReturnSuratReason("");
-                setReturnSuratTargetStaff("");
-                await fetchDetail();
-            } else {
-                toast.error(response.message || "Gagal mengembalikan surat");
-            }
-        } catch (err) {
-            console.error("Return surat hasil failed:", err);
-            toast.error("Terjadi kesalahan");
         } finally {
             setActionLoading(false);
         }
@@ -1992,15 +1943,15 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
-                        {/* Kembalikan untuk Revisi Button (Supervisor/Manajer TU) */}
+                        {/* Kembalikan untuk Direvisi Button (Supervisor/Manajer TU) - untuk surat keluar */}
                         {permissions.canReturnForRevision && (isSupervisor || isManajerTU) && (
                             <Button 
-                                onClick={() => setReturnSuratDialogOpen(true)}
+                                onClick={() => setRevisionDialogOpen(true)}
                                 disabled={actionLoading}
                                 className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
                             >
                                 <Undo2 className="w-4 h-4" />
-                                Kembalikan
+                                Kembalikan untuk Direvisi
                             </Button>
                         )}
 
@@ -2096,15 +2047,15 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
-                        {/* Kembalikan Button (Dekan/Wadek) - baik yang signing maupun verifying */}
+                        {/* Kembalikan untuk Direvisi Button (Dekan/Wadek) - baik yang signing maupun verifying, untuk surat keluar */}
                         {permissions.canReturnForRevision && isDekanWadek && (
                             <Button 
-                                onClick={() => setReturnSuratDialogOpen(true)}
+                                onClick={() => setRevisionDialogOpen(true)}
                                 disabled={actionLoading}
                                 className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
                             >
                                 <Undo2 className="w-4 h-4" />
-                                Kembalikan
+                                Kembalikan untuk Direvisi
                             </Button>
                         )}
 
@@ -2274,73 +2225,35 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 </DialogContent>
             </Dialog>
 
-            {/* Return Surat Hasil Dialog - for Supervisor/Manajer TU/Pejabat to return for revision */}
-            <Dialog open={returnSuratDialogOpen} onOpenChange={setReturnSuratDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Kembalikan Surat</DialogTitle>
-                        <DialogDescription>
-                            Kembalikan surat ke role sebelumnya untuk perbaikan. 
-                            <br /><span className="text-amber-600 font-medium">Pengembalian bersifat fleksibel - Anda dapat memilih role manapun di bawah posisi Anda.</span>
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        {/* Pilihan tujuan kembalikan dari backend returnTargets */}
-                        <div className="space-y-2">
-                            <Label>Kembalikan Ke <span className="text-destructive">*</span></Label>
-                            
-                            {/* Gunakan Select dropdown untuk memilih target */}
-                            <Select value={returnSuratTargetStaff} onValueChange={setReturnSuratTargetStaff}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Pilih tujuan pengembalian" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {(detail?.returnTargets || []).map((role) => (
-                                        <SelectItem key={role} value={role}>
-                                            {ROLE_LABELS[role] || role}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground">
-                                Daftar target berdasarkan hierarki kategori surat.
-                            </p>
-                        </div>
+            {/* Revision Dialog - for Supervisor/Manajer TU/Dekan/Wadek to return surat keluar for revision */}
+            <RevisionDialog
+                open={revisionDialogOpen}
+                onOpenChange={setRevisionDialogOpen}
+                onSubmit={async (targetRole, reason) => {
+                    // Re-use handleReturnSuratHasil logic but with parameters
+                    if (!detail || actionLoading) return;
+                    
+                    setActionLoading(true);
+                    try {
+                        const response = await suratService.returnSuratHasil(detail.id, reason, targetRole);
                         
-                        <div className="space-y-2">
-                            <Label htmlFor="return-reason">Alasan Pengembalian <span className="text-destructive">*</span></Label>
-                            <Textarea
-                                id="return-reason"
-                                placeholder="Jelaskan apa yang perlu diperbaiki..."
-                                value={returnSuratReason}
-                                onChange={(e) => setReturnSuratReason(e.target.value)}
-                                rows={4}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button 
-                            variant="outline" 
-                            onClick={() => {
-                                setReturnSuratDialogOpen(false);
-                                setReturnSuratReason("");
-                                setReturnSuratTargetStaff("");
-                            }}
-                            disabled={actionLoading}
-                        >
-                            Batal
-                        </Button>
-                        <Button 
-                            onClick={handleReturnSuratHasil}
-                            disabled={actionLoading || !returnSuratReason.trim() || !returnSuratTargetStaff}
-                            className="bg-warning text-warning-foreground hover:bg-warning/90"
-                        >
-                            {actionLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            Kembalikan
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        if (response.success) {
+                            toast.success("Surat berhasil dikembalikan untuk revisi");
+                            setRevisionDialogOpen(false);
+                            await fetchDetail();
+                        } else {
+                            toast.error(response.message || "Gagal mengembalikan surat untuk revisi");
+                        }
+                    } catch (err) {
+                        console.error("Return surat hasil failed:", err);
+                        toast.error("Terjadi kesalahan");
+                    } finally {
+                        setActionLoading(false);
+                    }
+                }}
+                loading={actionLoading}
+                revisionTargets={detail?.returnTargets}
+            />
 
             {/* Signature Modal - for Dekan/Wadek to sign documents */}
             <SignatureModal

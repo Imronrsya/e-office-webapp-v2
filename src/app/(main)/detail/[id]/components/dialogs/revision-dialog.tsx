@@ -26,13 +26,13 @@ import { toast } from "sonner";
 // TYPES
 // ============================================================================
 
-interface ReturnDialogProps {
+interface RevisionDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit: (targetRole: string, reason: string) => Promise<void>;
     loading: boolean;
-    /** Available return targets based on disposition history */
-    returnTargets?: string[];
+    /** Available revision targets (staff/supervisors) */
+    revisionTargets?: string[];
 }
 
 // ============================================================================
@@ -55,68 +55,68 @@ const ROLE_LABELS: Record<string, string> = {
     STAF_SUMBER_DAYA: "Staf Sumber Daya"
 };
 
-/**
- * Default return target jika backend tidak memberikan
- * PENTING: Return FLEKSIBEL - bisa ke role manapun di bawah posisi user
- */
-const DEFAULT_RETURN_TARGETS = ["STAF_AKADEMIK", "STAF_SUMBER_DAYA"];
+// Default revision target is staff (for surat keluar)
+const DEFAULT_REVISION_TARGETS = ["STAF_AKADEMIK", "STAF_SUMBER_DAYA"];
 
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
-export function ReturnDialog({
+export function RevisionDialog({
     open,
     onOpenChange,
     onSubmit,
     loading,
-    returnTargets = DEFAULT_RETURN_TARGETS
-}: ReturnDialogProps) {
+    revisionTargets = DEFAULT_REVISION_TARGETS
+}: RevisionDialogProps) {
     const [targetRole, setTargetRole] = useState<string>("");
     const [reason, setReason] = useState<string>("");
 
-    // Reset when dialog closes, auto-select ADMIN_PRODI as default
+    // Reset when dialog closes, auto-select first target
     useEffect(() => {
         if (!open) {
             setTargetRole("");
             setReason("");
-        } else if (returnTargets.length > 0) {
-            // Auto-select first target (ADMIN_PRODI is always first from backend)
-            setTargetRole(returnTargets[0]);
+        } else if (revisionTargets.length > 0) {
+            // Auto-select first target from backend
+            setTargetRole(revisionTargets[0]);
         }
-    }, [open, returnTargets]);
+    }, [open, revisionTargets]);
 
     const handleSubmit = async () => {
         if (!targetRole) {
-            toast.error("Pilih tujuan pengembalian terlebih dahulu");
+            toast.error("Pilih tujuan revisi terlebih dahulu");
             return;
         }
         if (!reason.trim()) {
-            toast.error("Alasan pengembalian wajib diisi");
+            toast.error("Catatan revisi wajib diisi");
             return;
         }
 
         await onSubmit(targetRole, reason.trim());
     };
 
-    // Use returnTargets directly from backend (already includes ADMIN_PRODI as first)
+    // Use revisionTargets directly from backend
     // Fallback to default if empty
-    const availableTargets = returnTargets.length > 0 
-        ? returnTargets
-        : DEFAULT_RETURN_TARGETS;
+    const availableTargets = revisionTargets.length > 0 
+        ? revisionTargets
+        : DEFAULT_REVISION_TARGETS;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Kembalikan Surat</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Undo2 className="h-5 w-5 text-warning" />
+                        Kembalikan untuk Direvisi
+                    </DialogTitle>
                     <DialogDescription>
-                        Kembalikan surat ke role sebelumnya untuk revisi atau perbaikan.
+                        Kembalikan surat keluar untuk direvisi oleh staf atau supervisor.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
-                    {/* Pilih Tujuan */}
+                    {/* Pilih Tujuan Kembalikan untuk Revisi */}
                     <div className="space-y-2">
                         <Label htmlFor="target-role">
                             Kembalikan Ke <span className="text-destructive">*</span>
@@ -134,24 +134,24 @@ export function ReturnDialog({
                             </SelectContent>
                         </Select>
                         <p className="text-xs text-muted-foreground">
-                            Pilih role tujuan dari daftar yang tersedia.
+                            Pilih staf atau supervisor yang akan melakukan revisi.
                         </p>
                     </div>
                     
-                    {/* Alasan */}
+                    {/* Catatan Revisi */}
                     <div className="space-y-2">
                         <Label htmlFor="reason">
-                            Alasan Pengembalian <span className="text-destructive">*</span>
+                            Catatan Revisi <span className="text-destructive">*</span>
                         </Label>
                         <Textarea
                             id="reason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
-                            placeholder="Jelaskan alasan pengembalian surat..."
+                            placeholder="Jelaskan apa yang perlu diperbaiki/direvisi..."
                             rows={4}
                         />
                         <p className="text-xs text-muted-foreground">
-                            Alasan ini akan ditampilkan kepada penerima surat.
+                            Catatan ini akan ditampilkan kepada staf/supervisor yang melakukan revisi.
                         </p>
                     </div>
                 </div>
@@ -176,7 +176,7 @@ export function ReturnDialog({
                         ) : (
                             <Undo2 className="w-4 h-4 mr-2" />
                         )}
-                        Kembalikan
+                        Kembalikan untuk Direvisi
                     </Button>
                 </DialogFooter>
             </DialogContent>
