@@ -921,7 +921,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     <XCircle className="w-12 h-12 mx-auto text-destructive mb-4" />
                     <h2 className="text-lg font-semibold mb-2">Tidak Ditemukan</h2>
                     <p className="text-muted-foreground mb-4">{error || "Data pengajuan tidak ditemukan"}</p>
-                    <Button onClick={() => router.back()} variant="outline">
+                    <Button onClick={() => router.push('/dashboard')} variant="outline">
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Kembali
                     </Button>
@@ -1758,7 +1758,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 leftContent={
                     <Button 
                         variant="outline" 
-                        onClick={() => router.back()}
+                        onClick={() => router.push('/dashboard')}
                         className="border-zinc-800 text-zinc-800 gap-2"
                     >
                         <ArrowLeft className="w-4 h-4" />
