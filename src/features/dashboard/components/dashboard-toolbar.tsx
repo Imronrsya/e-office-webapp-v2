@@ -200,7 +200,7 @@ export function DashboardToolbar({
           )}
 
           {/* Status Filter */}
-          {hasToolbarAction(role, "filter_status") && (
+          {hasToolbarAction(role, "filter_status") && availableStatuses.length > 0 && (
             <Select
               value={filters.status || "all"}
               onValueChange={handleStatusChange}

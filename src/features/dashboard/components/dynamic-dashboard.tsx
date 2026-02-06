@@ -180,7 +180,7 @@ export default function DynamicDashboard() {
       setData({
         items: response.data.items,
         pagination: response.data.pagination,
-        availableStatuses: response.data.filters?.status || ["DIPROSES", "SELESAI", "DITOLAK", "DIKEMBALIKAN"],
+        availableStatuses: response.data.filters?.status || [],
         tabCounts,
       });
     } catch (err: any) {
