@@ -2863,8 +2863,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 <AlertDescription className="text-amber-800 text-sm">
                                     <strong>Perbedaan:</strong><br/>
                                     • <strong>Akun Sistem (Biru)</strong>: Dapat akses download surat, tidak tertulis di PDF<br/>
-                                    • <strong>Text Manual (Hijau)</strong>: Tertulis di PDF surat, tidak dapat akses sistem<br/>
-                                    • <strong>Pengaju</strong>: Otomatis dapat akses DAN tertulis di surat
+                                    • <strong>Text Manual (Hijau)</strong>: Tertulis di PDF surat, tidak dapat akses sistem
                                 </AlertDescription>
                             </Alert>
                         </CardContent>
