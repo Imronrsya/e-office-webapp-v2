@@ -111,7 +111,9 @@ export function SignatureSaved({ onSelect, selectedId }: SignatureSavedProps) {
     <>
       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
         {signatures.map((signature) => {
-          const isSelected = selectedId === signature.id;
+          // `selectedId` from parent may be either the signature `id` or the
+          // `fileUrl` (the modal stores the selected saved signature as a URL).
+          const isSelected = selectedId === signature.id || selectedId === signature.fileUrl;
           const isDeleting = deletingId === signature.id;
 
           return (
@@ -170,11 +172,6 @@ export function SignatureSaved({ onSelect, selectedId }: SignatureSavedProps) {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {isSelected && (
-                    <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                  )}
                   <Button
                     variant="ghost"
                     size="icon"
