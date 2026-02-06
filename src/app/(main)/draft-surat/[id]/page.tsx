@@ -2884,8 +2884,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {/* Info lampiran pengaju jika ada */}
-                            {pengajuAttachments.length > 0 && (
+                            {/* Info lampiran pengaju jika ada - HANYA untuk Admin Prodi */}
+                            {pengajuAttachments.length > 0 && (user?.role || '').toUpperCase() === 'ADMIN_PRODI' && (
                                 <Alert className="bg-blue-50 border-blue-200">
                                     <Info className="h-4 w-4 text-blue-600" />
                                     <AlertDescription className="text-blue-800 text-sm">
@@ -2896,20 +2896,27 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             )}
                             
                             {/* Existing Attachments (pengaju + document) */}
-                            {existingAttachments.length > 0 && (
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium flex items-center gap-2">
-                                        Lampiran Tersimpan 
-                                        <Badge variant="secondary" className="text-xs">
-                                            {existingAttachments.length} file
-                                        </Badge>
-                                    </Label>
+                            {existingAttachments.length > 0 && (() => {
+                                // Filter lampiran pengaju jika user bukan Admin Prodi
+                                const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
+                                const filteredAttachments = isAdminProdi 
+                                    ? existingAttachments 
+                                    : existingAttachments.filter(att => !pengajuAttachments.some(pa => pa.fileUrl === att.url));
+                                
+                                return filteredAttachments.length > 0 ? (
                                     <div className="space-y-2">
-                                        {existingAttachments.map((attachment, index) => {
-                                            const { url, name } = attachment;
-                                            const isPdf = url.toLowerCase().includes('.pdf') || name.toLowerCase().endsWith('.pdf');
-                                            // Check if this is a pengaju attachment
-                                            const isPengajuAttachment = pengajuAttachments.some(pa => pa.fileUrl === url);
+                                        <Label className="text-sm font-medium flex items-center gap-2">
+                                            Lampiran Tersimpan 
+                                            <Badge variant="secondary" className="text-xs">
+                                                {filteredAttachments.length} file
+                                            </Badge>
+                                        </Label>
+                                        <div className="space-y-2">
+                                            {filteredAttachments.map((attachment, index) => {
+                                                const { url, name } = attachment;
+                                                const isPdf = url.toLowerCase().includes('.pdf') || name.toLowerCase().endsWith('.pdf');
+                                                // Check if this is a pengaju attachment
+                                                const isPengajuAttachment = pengajuAttachments.some(pa => pa.fileUrl === url);
                                             
                                             return (
                                                 <div
@@ -2976,21 +2983,32 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     </div>
                                                 </div>
                                             );
-                                        })}
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                ) : null;
+                            })()}
                             
                             {/* Separator between existing and new uploads */}
-                            {existingAttachments.length > 0 && (
-                                <Separator className="my-4" />
-                            )}
+                            {existingAttachments.length > 0 && (() => {
+                                const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
+                                const filteredAttachments = isAdminProdi 
+                                    ? existingAttachments 
+                                    : existingAttachments.filter(att => !pengajuAttachments.some(pa => pa.fileUrl === att.url));
+                                return filteredAttachments.length > 0 ? <Separator className="my-4" /> : null;
+                            })()}
                             
                             {/* FileUpload Component - dengan validasi ketat */}
                             {/* Batasan: max 5 file total (termasuk existing), max 5MB per file */}
                             {(() => {
-                                const totalFiles = existingAttachments.length + attachmentFiles.length;
-                                const remainingSlots = Math.max(0, 5 - existingAttachments.length);
+                                // Filter lampiran pengaju dari perhitungan jika user bukan Admin Prodi
+                                const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
+                                const filteredExistingAttachments = isAdminProdi 
+                                    ? existingAttachments 
+                                    : existingAttachments.filter(att => !pengajuAttachments.some(pa => pa.fileUrl === att.url));
+                                
+                                const totalFiles = filteredExistingAttachments.length + attachmentFiles.length;
+                                const remainingSlots = Math.max(0, 5 - filteredExistingAttachments.length);
                                 
                                 return (
                                     <div className="space-y-3">
@@ -3029,14 +3047,22 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 );
                             })()}
 
-                            {attachmentFiles.length === 0 && existingAttachments.length === 0 && (
-                                <Alert className="bg-blue-50 border-blue-200">
-                                    <Info className="h-4 w-4 text-blue-600" />
-                                    <AlertDescription className="text-blue-800 text-sm">
-                                        Lampiran bersifat opsional. Anda dapat melanjutkan tanpa menambahkan lampiran.
-                                    </AlertDescription>
-                                </Alert>
-                            )}
+                            {(() => {
+                                // Filter lampiran pengaju untuk kondisi alert
+                                const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
+                                const filteredExistingAttachments = isAdminProdi 
+                                    ? existingAttachments 
+                                    : existingAttachments.filter(att => !pengajuAttachments.some(pa => pa.fileUrl === att.url));
+                                
+                                return attachmentFiles.length === 0 && filteredExistingAttachments.length === 0 ? (
+                                    <Alert className="bg-blue-50 border-blue-200">
+                                        <Info className="h-4 w-4 text-blue-600" />
+                                        <AlertDescription className="text-blue-800 text-sm">
+                                            Lampiran bersifat opsional. Anda dapat melanjutkan tanpa menambahkan lampiran.
+                                        </AlertDescription>
+                                    </Alert>
+                                ) : null;
+                            })()}
                         </CardContent>
                     </Card>
                 )}
@@ -3136,16 +3162,25 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 {/* Lampiran Review */}
                                 <div>
-                                    <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Lampiran ({existingAttachments.length + attachmentFiles.length})
-                                    </Label>
-                                    {(existingAttachments.length > 0 || attachmentFiles.length > 0) ? (
-                                        <div className="space-y-2">
-                                            {/* Existing attachments from server (including pengaju) */}
-                                            {existingAttachments.map((attachment, index) => {
-                                                const { url, name } = attachment;
-                                                const isPdf = url.toLowerCase().includes('.pdf') || name.toLowerCase().endsWith('.pdf');
-                                                const isPengajuAttachment = pengajuAttachments.some(pa => pa.fileUrl === url);
+                                    {(() => {
+                                        // Filter lampiran pengaju jika user bukan Admin Prodi
+                                        const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
+                                        const filteredExistingAttachments = isAdminProdi 
+                                            ? existingAttachments 
+                                            : existingAttachments.filter(att => !pengajuAttachments.some(pa => pa.fileUrl === att.url));
+                                        
+                                        return (
+                                            <>
+                                                <Label className="text-sm text-muted-foreground mb-2 block">
+                                                    Lampiran ({filteredExistingAttachments.length + attachmentFiles.length})
+                                                </Label>
+                                                {(filteredExistingAttachments.length > 0 || attachmentFiles.length > 0) ? (
+                                                    <div className="space-y-2">
+                                                        {/* Existing attachments from server (including pengaju for Admin Prodi only) */}
+                                                        {filteredExistingAttachments.map((attachment, index) => {
+                                                            const { url, name } = attachment;
+                                                            const isPdf = url.toLowerCase().includes('.pdf') || name.toLowerCase().endsWith('.pdf');
+                                                            const isPengajuAttachment = pengajuAttachments.some(pa => pa.fileUrl === url);
                                                 return (
                                                     <div
                                                         key={`existing-${index}`}
@@ -3206,14 +3241,17 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                             <Badge variant="outline" className="text-xs">Baru</Badge>
                                                         </div>
                                                     </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground italic">
-                                            Tidak ada lampiran
-                                        </p>
-                                    )}
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground italic">
+                                                    Tidak ada lampiran
+                                                </p>
+                                            )}
+                                        </>
+                                    );
+                                    })()}
                                 </div>
 
                                 <Separator />
