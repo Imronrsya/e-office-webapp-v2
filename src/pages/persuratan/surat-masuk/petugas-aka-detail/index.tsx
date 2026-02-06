@@ -251,26 +251,20 @@ const SuratKeluarCreate: React.FC = () => {
   const handleSubmit = async (values: any) => {
     try {
       setLoading(true);
-      const axios = new AxiosService(); // Kondisi untuk AK15 (Surat Pengantar PKL)      if (suratMasukDetail?.tipe_suratId === 'ak15') {
-      const result = await axios.post('/v1/pengajuan/surat-keluar', {
-        ...values,
-        id_surat_masuk: id ? parseInt(id) : 0,
-        tanggal_surat: values.tanggal_surat.format('YYYY-MM-DD'),
-        listLampiran: listLampiran.toString(),
-      });
-
-      if (result) {
-        // Navigate to detail action page with correct state
-        navigate(`/surat-masuk/petugas-akademik/action/${id}`, {
-          state: {
-            id: id,
-            status: 'DISETUJUI',
-            role: 'PETUGAS_AKADEMIK',
-            message: 'Surat Pengantar PKL berhasil dibuat',
-            data: result.data,
-          },
+      const axios = new AxiosService();
+      // Kondisi untuk AK15 (Surat Pengantar PKL)
+      if (suratMasukDetail?.tipe_suratId === 'ak15') {
+        const result = await axios.post('/v1/pengajuan/surat-keluar', {
+          ...values,
+          id_surat_masuk: id ? parseInt(id) : 0,
+          tanggal_surat: values.tanggal_surat.format('YYYY-MM-DD'),
+          listLampiran: listLampiran.toString(),
         });
-      }
+
+        if (result) {
+          // Redirect ke dashboard/fashboard dengan filter surat keluar
+          navigate('/fashboard?type=keluar');
+        }
       // Kondisi untuk AK8 (SKL)
       else if (suratMasukDetail?.tipe_suratId === 'ak8') {
         const result = await axios.patch(`/v1/pengajuan/${id}/changeStatus`, {

@@ -72,6 +72,7 @@ import { TemplatePreview } from "@/components/universal-preview";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { getPostDraftRedirectPath } from "@/lib/role-mapper";
 import { FileUpload } from "@/features/pengajuan/components/file-upload";
+import { departmentApprovalService } from "@/services/department-approval.service";
 
 // ============================================================================
 // TYPES
@@ -372,6 +373,17 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Date picker state for Surat Pengantar (separate from form string state)
     const [tanggalSuratDate, setTanggalSuratDate] = useState<Date | undefined>(undefined);
     const [tanggalMulaiDate, setTanggalMulaiDate] = useState<Date | undefined>(undefined);
+    
+    // Nomor surat validation state for Surat Pengantar
+    const [nomorSuratStatus, setNomorSuratStatus] = useState<{
+        isChecking: boolean;
+        isAvailable: boolean | null;
+        message: string;
+    }>({
+        isChecking: false,
+        isAvailable: null,
+        message: "",
+    });
     
     // Signature state - position data no longer needed with template-based positioning
     const [signers, setSigners] = useState<SignerItem[]>([
@@ -917,6 +929,60 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         setSuratPengantarForm(prev => ({ ...prev, [field]: value }));
     };
 
+    // Debounced check for nomor surat availability
+    useEffect(() => {
+        if (suratType !== "SURAT_PENGANTAR") return;
+        
+        const nomorSurat = suratPengantarForm.nomorSurat.trim();
+        
+        if (!nomorSurat) {
+            setNomorSuratStatus({
+                isChecking: false,
+                isAvailable: null,
+                message: "",
+            });
+            return;
+        }
+
+        setNomorSuratStatus({
+            isChecking: true,
+            isAvailable: null,
+            message: "Mengecek...",
+        });
+
+        const timeoutId = setTimeout(async () => {
+            try {
+                const result = await departmentApprovalService.checkNomorSurat(
+                    nomorSurat,
+                    resolvedParams.id
+                );
+
+                if (result.success && result.data) {
+                    setNomorSuratStatus({
+                        isChecking: false,
+                        isAvailable: result.data.isAvailable,
+                        message: result.data.message,
+                    });
+                } else {
+                    setNomorSuratStatus({
+                        isChecking: false,
+                        isAvailable: null,
+                        message: result.message || "Gagal mengecek nomor surat",
+                    });
+                }
+            } catch (error) {
+                console.error("Error checking nomor surat:", error);
+                setNomorSuratStatus({
+                    isChecking: false,
+                    isAvailable: null,
+                    message: "Gagal mengecek nomor surat",
+                });
+            }
+        }, 500); // Debounce 500ms
+
+        return () => clearTimeout(timeoutId);
+    }, [suratPengantarForm.nomorSurat, suratType, resolvedParams.id]);
+
     const updateSuratTugas = (field: keyof SuratTugasForm, value: string) => {
         setSuratTugasForm(prev => ({ ...prev, [field]: value }));
     };
@@ -1215,6 +1281,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             const missing = required.filter(field => !suratPengantarForm[field].trim());
             if (missing.length > 0) {
                 toast.error("Lengkapi semua field yang wajib diisi");
+                return false;
+            }
+            
+            // Check if nomor surat is available
+            if (nomorSuratStatus.isAvailable === false) {
+                toast.error("Nomor surat sudah digunakan, gunakan nomor surat lain");
                 return false;
             }
         } else if (suratType === "SURAT_TUGAS") {
@@ -1803,7 +1875,29 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     value={suratPengantarForm.nomorSurat}
                                                     onChange={(e) => updateSuratPengantar("nomorSurat", e.target.value)}
                                                     placeholder="963/UN7.F8.1/AK/2025"
+                                                    className={
+                                                        nomorSuratStatus.isAvailable === false 
+                                                            ? "border-red-500 focus-visible:ring-red-500" 
+                                                            : nomorSuratStatus.isAvailable === true 
+                                                            ? "border-green-500 focus-visible:ring-green-500" 
+                                                            : ""
+                                                    }
                                                 />
+                                                {nomorSuratStatus.message && (
+                                                    <p 
+                                                        className={`text-xs ${
+                                                            nomorSuratStatus.isChecking 
+                                                                ? "text-muted-foreground" 
+                                                                : nomorSuratStatus.isAvailable === false 
+                                                                ? "text-red-500 font-medium" 
+                                                                : nomorSuratStatus.isAvailable === true 
+                                                                ? "text-green-600 font-medium" 
+                                                                : "text-muted-foreground"
+                                                        }`}
+                                                    >
+                                                        {nomorSuratStatus.message}
+                                                    </p>
+                                                )}
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="tanggalSurat">Tanggal Surat <span className="text-red-500">*</span></Label>
