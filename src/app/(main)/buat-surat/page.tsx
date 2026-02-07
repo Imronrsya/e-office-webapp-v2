@@ -1713,7 +1713,7 @@ function BuatSuratContent() {
                                 Lampiran (Opsional)
                             </CardTitle>
                             <CardDescription>
-                                Upload file lampiran dalam format PDF, JPG, atau PNG. Maksimal 10MB per file.
+                                Upload file lampiran dalam format PDF, JPG, atau PNG. Maksimal 5MB per file, total maksimal 5 file.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -1721,8 +1721,8 @@ function BuatSuratContent() {
                             <FileUpload
                                 files={attachmentFiles}
                                 onFilesChange={setAttachmentFiles}
-                                maxFiles={10}
-                                maxSizeKB={10240} // 10MB
+                                maxFiles={5}
+                                maxSizeKB={5120} // 5MB
                                 acceptedTypes={['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']}
                             />
 
