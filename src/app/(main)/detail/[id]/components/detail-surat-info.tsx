@@ -7,6 +7,7 @@ interface DetailSuratInfoProps {
     jenisSurat: string;
     judulSurat: string;
     keperluan: string;
+    isStaffCreated?: boolean;
 }
 
 function InfoRow({ 
@@ -29,12 +30,14 @@ function InfoRow({
     );
 }
 
-export function DetailSuratInfo({ jenisSurat, judulSurat, keperluan }: DetailSuratInfoProps) {
+export function DetailSuratInfo({ jenisSurat, judulSurat, keperluan, isStaffCreated }: DetailSuratInfoProps) {
     const jenisSuratLabel = jenisSurat === 'SURAT_TUGAS' 
         ? 'Surat Tugas' 
         : jenisSurat === 'SURAT_KEPUTUSAN' 
             ? 'Surat Keputusan' 
-            : jenisSurat;
+            : jenisSurat === 'SURAT_TUGAS_TABEL'
+                ? 'Surat Tugas (Tabel)'
+                : jenisSurat;
 
     return (
         <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
@@ -48,12 +51,15 @@ export function DetailSuratInfo({ jenisSurat, judulSurat, keperluan }: DetailSur
                 <InfoRow 
                     label="Judul Surat" 
                     value={judulSurat} 
+                    showSeparator={!isStaffCreated}
                 />
-                <InfoRow 
-                    label="Keperluan" 
-                    value={keperluan} 
-                    showSeparator={false}
-                />
+                {!isStaffCreated && (
+                    <InfoRow 
+                        label="Keperluan" 
+                        value={keperluan} 
+                        showSeparator={false}
+                    />
+                )}
             </CardContent>
         </Card>
     );

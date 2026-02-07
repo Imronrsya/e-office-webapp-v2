@@ -932,6 +932,42 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     const { permissions, submissionValues, logs, attachments } = detail;
     
+    // Check if this is a staff-created letter (surat dibuat langsung oleh staf)
+    // Staff-created letters have letterType.code starting with "STAFF_DIRECT_"
+    const isStaffCreated = detail.letterType?.code?.startsWith('STAFF_DIRECT_') || false;
+
+    // For staff-created letters, derive jenisSurat and judulSurat from document data
+    // since submissionValues doesn't have standard form fields (nama, jenisSurat, etc.)
+    const staffDerivedValues = (() => {
+        if (!isStaffCreated) return null;
+        
+        const doc = detail.documents?.find(d => 
+            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
+        );
+        
+        // Derive jenisSurat from document type
+        const jenisSurat = doc?.type || '';
+        
+        // Derive judulSurat from document content fields
+        let judulSurat = '';
+        if (doc?.content) {
+            const content = doc.content as Record<string, any>;
+            if (doc.type === 'SURAT_TUGAS') {
+                judulSurat = content.judulKegiatan || content.judulAcara || '';
+            } else if (doc.type === 'SURAT_TUGAS_TABEL') {
+                judulSurat = content.keteranganTugas || '';
+            } else if (doc.type === 'SURAT_KEPUTUSAN') {
+                judulSurat = content.tentang || '';
+            }
+        }
+        
+        // Staff name and role from createdBy
+        const staffName = detail.createdBy?.name || '-';
+        const staffRole = detail.createdBy?.role || '-';
+        
+        return { jenisSurat, judulSurat, staffName, staffRole };
+    })();
+    
     // Check if status is waiting
     const isWaiting = !['COMPLETED', 'REJECTED', 'CANCELLED'].includes(detail.status);
 
@@ -1027,27 +1063,58 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // ========================================================================
     // IDENTITAS PEMOHON CARD
     // ========================================================================
-    const IdentitasPemohonCard = () => (
-        <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
-            <CardContent className="p-6">
-                <h3 className="text-sm font-bold text-black mb-4">Identitas Pemohon</h3>
-                
-                <InfoRow 
-                    label="Nama Lengkap" 
-                    value={submissionValues.nama} 
-                />
-                <InfoRow 
-                    label={submissionValues.nim ? "NIM" : "NIP"} 
-                    value={submissionValues.nim || submissionValues.nip || "-"} 
-                />
-                <InfoRow 
-                    label="Program Studi" 
-                    value={submissionValues.programStudi} 
-                    showSeparator={false}
-                />
-            </CardContent>
-        </Card>
-    );
+    const IdentitasPemohonCard = () => {
+        // Staff-created letters: show staff identity instead of pemohon
+        if (isStaffCreated && staffDerivedValues) {
+            const jabatanLabel = (() => {
+                const role = detail.createdBy?.role;
+                if (role === 'STAF_SUMBER_DAYA' || role === 'Staf Sumber Daya') return 'Staf Sumber Daya';
+                if (role === 'STAF_AKADEMIK' || role === 'Staf Akademik') return 'Staf Akademik';
+                return role || '-';
+            })();
+            
+            return (
+                <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
+                    <CardContent className="p-6">
+                        <h3 className="text-sm font-bold text-black mb-4">Dibuat Oleh</h3>
+                        
+                        <InfoRow 
+                            label="Nama Lengkap" 
+                            value={staffDerivedValues.staffName} 
+                        />
+                        <InfoRow 
+                            label="Jabatan" 
+                            value={jabatanLabel} 
+                            showSeparator={false}
+                        />
+                    </CardContent>
+                </Card>
+            );
+        }
+        
+        // Normal flow (surat masuk): show pemohon identity
+        return (
+            <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
+                <CardContent className="p-6">
+                    <h3 className="text-sm font-bold text-black mb-4">Identitas Pemohon</h3>
+                    
+                    <InfoRow 
+                        label="Nama Lengkap" 
+                        value={submissionValues.nama} 
+                    />
+                    <InfoRow 
+                        label={submissionValues.nim ? "NIM" : "NIP"} 
+                        value={submissionValues.nim || submissionValues.nip || "-"} 
+                    />
+                    <InfoRow 
+                        label="Program Studi" 
+                        value={submissionValues.programStudi} 
+                        showSeparator={false}
+                    />
+                </CardContent>
+            </Card>
+        );
+    };
 
     // ========================================================================
     // LAMPIRAN CARD (Lampiran Submission dari Pengaju + Lampiran Admin Prodi)
@@ -1389,9 +1456,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
             {/* Detail Surat */}
             <DetailSuratInfo 
-                jenisSurat={submissionValues.jenisSurat}
-                judulSurat={submissionValues.judulAcara}
+                jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
+                judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : submissionValues.judulAcara}
                 keperluan={submissionValues.keperluan}
+                isStaffCreated={isStaffCreated}
             />
 
             {/* Identitas Pemohon */}
@@ -1532,9 +1600,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 <h2 className="text-lg font-bold text-black mb-4">
                     {documentViewMode === 'hasil' || filterType === 'keluar'
                         ? `${suratHasilDoc?.type === 'SURAT_KEPUTUSAN' ? 'SK' : 'ST'} - `
-                        : `${submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'ST' : 'SK'} - `
+                        : isStaffCreated && staffDerivedValues
+                            ? `${staffDerivedValues.jenisSurat === 'SURAT_KEPUTUSAN' ? 'SK' : 'ST'} - `
+                            : `${submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'ST' : 'SK'} - `
                     }
-                    {(submissionValues.judulAcara || 'Surat').toUpperCase()}
+                    {(isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat || 'Surat' : submissionValues.judulAcara || 'Surat').toUpperCase()}
                 </h2>
                 
                 {/* Info label untuk lingkup fakultas */}
@@ -1572,9 +1642,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                             {/* Detail Surat */}
                             <DetailSuratInfo 
-                                jenisSurat={submissionValues.jenisSurat}
-                                judulSurat={submissionValues.judulAcara}
+                                jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
+                                judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : submissionValues.judulAcara}
                                 keperluan={submissionValues.keperluan}
+                                isStaffCreated={isStaffCreated}
                             />
                         </div>
 
@@ -1681,9 +1752,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                                 {/* Detail Surat */}
                                 <DetailSuratInfo 
-                                    jenisSurat={submissionValues.jenisSurat}
-                                    judulSurat={submissionValues.judulAcara}
+                                    jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
+                                    judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : submissionValues.judulAcara}
                                     keperluan={submissionValues.keperluan}
+                                    isStaffCreated={isStaffCreated}
                                 />
 
                                 {/* Identitas Pemohon */}
@@ -1720,9 +1792,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                             {/* Detail Surat */}
                             <DetailSuratInfo 
-                                jenisSurat={submissionValues.jenisSurat}
-                                judulSurat={submissionValues.judulAcara}
+                                jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
+                                judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : submissionValues.judulAcara}
                                 keperluan={submissionValues.keperluan}
+                                isStaffCreated={isStaffCreated}
                             />
 
                             {/* Identitas Pemohon */}

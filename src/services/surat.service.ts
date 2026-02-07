@@ -138,6 +138,7 @@ export interface SubmissionDetail {
         id: string;
         name: string;
         email: string;
+        role?: string | null;
     };
     documents: DocumentSummary[];
     attachments: AttachmentSummary[];
