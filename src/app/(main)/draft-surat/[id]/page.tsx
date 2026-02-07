@@ -806,58 +806,70 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 // Try to get from document.tembusan first (new format), fallback to content.tembusan (old format)
                 const existingTembusan = existingDoc?.tembusan || (existingDoc?.content as Record<string, unknown>)?.tembusan;
                 
-                if (Array.isArray(existingTembusan) && existingTembusan.length > 0) {
+                // Check if we're in edit mode (existing document found)
+                if (existingDoc) {
+                    // Edit mode - load saved tembusan data
                     const users: TembusanUser[] = [];
                     const texts: TembusanText[] = [];
                     let hasPengaju = false;
                     
-                    existingTembusan.forEach((item: any, index: number) => {
-                        if (typeof item === 'string') {
-                            // Old format: string[]
-                            const itemLower = item.toLowerCase();
-                            if (itemLower === 'pengaju' || itemLower === 'pengaju surat') {
-                                hasPengaju = true;
-                            } else {
-                                texts.push({
-                                    id: String(texts.length + 1),
-                                    text: item
-                                });
-                            }
-                        } else if (item && typeof item === 'object' && 'userId' in item) {
-                            // New format: TembusanRecipient[]
-                            // Check if this is the special "__PENGAJU__" marker
-                            if (item.userId === '__PENGAJU__') {
-                                hasPengaju = true;
-                                console.log('✅ Found __PENGAJU__ marker, setting includePengaju = true');
-                                // Don't add to users list - this is just a checkbox state flag
-                            } else if (item.userId) {
-                                // This is a regular user account
-                                users.push({
-                                    userId: item.userId,
-                                    name: item.name || '',
-                                    email: item.description || item.email || '',
-                                });
-                            } else {
-                                // This is a text-only tembusan
-                                const textValue = item.name || item.description || '';
-                                // Filter out any text entries that might be "Pengaju Surat"
-                                if (textValue.toLowerCase() !== 'pengaju surat' && textValue.toLowerCase() !== 'pengaju') {
+                    if (Array.isArray(existingTembusan) && existingTembusan.length > 0) {
+                        existingTembusan.forEach((item: any, index: number) => {
+                            if (typeof item === 'string') {
+                                // Old format: string[]
+                                const itemLower = item.toLowerCase();
+                                if (itemLower === 'pengaju' || itemLower === 'pengaju surat') {
+                                    hasPengaju = true;
+                                } else {
                                     texts.push({
                                         id: String(texts.length + 1),
-                                        text: textValue
+                                        text: item
                                     });
                                 }
+                            } else if (item && typeof item === 'object' && 'userId' in item) {
+                                // New format: TembusanRecipient[]
+                                // Check if this is the special "__PENGAJU__" marker
+                                if (item.userId === '__PENGAJU__') {
+                                    hasPengaju = true;
+                                    console.log('✅ Found __PENGAJU__ marker, setting includePengaju = true');
+                                    // Don't add to users list - this is just a checkbox state flag
+                                } else if (item.userId) {
+                                    // This is a regular user account
+                                    users.push({
+                                        userId: item.userId,
+                                        name: item.name || '',
+                                        email: item.description || item.email || '',
+                                    });
+                                } else {
+                                    // This is a text-only tembusan
+                                    const textValue = item.name || item.description || '';
+                                    // Filter out any text entries that might be "Pengaju Surat"
+                                    if (textValue.toLowerCase() !== 'pengaju surat' && textValue.toLowerCase() !== 'pengaju') {
+                                        texts.push({
+                                            id: String(texts.length + 1),
+                                            text: textValue
+                                        });
+                                    }
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                     
-                    console.log('📦 Loaded tembusan:', { users: users.length, texts: texts.length, hasPengaju });
+                    // In edit mode, if no __PENGAJU__ marker found, it means the checkbox was unchecked
+                    console.log('📦 Edit mode - Loaded tembusan:', { 
+                        users: users.length, 
+                        texts: texts.length, 
+                        hasPengaju,
+                        rawData: existingTembusan
+                    });
                     console.log('🔍 Setting includePengaju to:', hasPengaju);
                     setIncludePengaju(hasPengaju);
                     setTembusanUsers(users);
                     setTembusanTexts(texts);
                 } else {
-                    console.log('ℹ️ No existing tembusan found, setting includePengaju to TRUE (default checked)');
+                    // Create mode: No existing document, this is a new draft
+                    // Set includePengaju to TRUE by default (recommended)
+                    console.log('ℹ️ Create mode: No existing document, setting includePengaju to TRUE (default checked)');
                     setIncludePengaju(true);
                     setTembusanUsers([]);
                     setTembusanTexts([]);
