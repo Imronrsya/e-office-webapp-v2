@@ -311,10 +311,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const { user } = useAuth();
     
     // Get type from query params
-    const suratType = searchParams.get("type") as SuratType | null;
+    const suratType = searchParams?.get("type") as SuratType | null;
     
     // Get reset parameter for supervisor overwrite mode
-    const shouldResetDraft = searchParams.get("reset") === "true";
+    const shouldResetDraft = searchParams?.get("reset") === "true";
     
     // State
     const [submitting, setSubmitting] = useState(false);
@@ -760,7 +760,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 if (existingDoc?.signatures && existingDoc.signatures.length > 0) {
                     const existingSigners: SignerItem[] = existingDoc.signatures.map((sig, index) => ({
                         // Use signature ID if available, otherwise use timestamp + index for uniqueness
-                        id: sig.id || String(Date.now() + index),
+                        id: (sig as any).id || String(Date.now() + index),
                         role: sig.signerRole,
                         order: sig.order || index + 1,
                         isRequired: true,
@@ -857,6 +857,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         userId: item.userId,
                                         name: item.name || '',
                                         email: item.description || item.email || '',
+                                        type: (item.type || 'pegawai') as 'mahasiswa' | 'pegawai',
+                                        description: item.description || '',
                                     });
                                 } else {
                                     // This is a text-only tembusan
@@ -2135,17 +2137,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             onChange={(e) => setPerihalInput(e.target.value)}
                                             placeholder="Masukkan judul surat untuk ditampilkan di dashboard"
                                         />
-                                        <p className="text-xs text-muted-foreground">Judul ini akan ditampilkan di dashboard dan halaman detail</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="jenisSuratText">Heading Surat</Label>
-                                        <Input
-                                            id="jenisSuratText"
-                                            value={suratTugasForm.jenisSuratText}
-                                            readOnly
-                                            className="bg-gray-100 cursor-not-allowed"
-                                        />
-                                        <p className="text-xs text-muted-foreground">Heading dokumen (tidak dapat diubah)</p>
                                     </div>
                                     <Separator />
                                     <div className="grid grid-cols-2 gap-4">
@@ -2217,18 +2208,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 onChange={(e) => setPerihalInput(e.target.value)}
                                                 placeholder="Masukkan judul surat untuk ditampilkan di dashboard"
                                             />
-                                            <p className="text-xs text-muted-foreground">Judul ini akan ditampilkan di dashboard dan halaman detail</p>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="jenisSuratText">Heading Surat</Label>
-                                            <Input
-                                                id="jenisSuratText"
-                                                value={suratTugasTabelForm.jenisSuratText}
-                                                readOnly
-                                                className="bg-gray-100 cursor-not-allowed"
-                                            />
-                                            <p className="text-xs text-muted-foreground">Heading dokumen (tidak dapat diubah)</p>
-                                        </div>
+                                        <Separator />
                                         <div className="space-y-2">
                                             <Label htmlFor="keperluan">Keperluan <span className="text-red-500">*</span></Label>
                                             <Textarea
@@ -2414,7 +2395,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 onChange={(e) => setPerihalInput(e.target.value)}
                                                 placeholder="Masukkan judul surat untuk ditampilkan di dashboard"
                                             />
-                                            <p className="text-xs text-muted-foreground">Judul ini akan ditampilkan di dashboard dan halaman detail</p>
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="tentang">Tentang <span className="text-red-500">*</span></Label>
