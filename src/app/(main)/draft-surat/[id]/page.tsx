@@ -369,6 +369,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         keputusan: [{ key: "1", label: "KESATU", content: "" }],
         tanggalDitetapkan: "",
     });
+
+    // Perihal/Judul Surat input - separate from content fields
+    // This maps to LetterDocument.perihal for dashboard/detail display
+    const [perihalInput, setPerihalInput] = useState("");
     
     // Date picker state for Surat Pengantar (separate from form string state)
     const [tanggalSuratDate, setTanggalSuratDate] = useState<Date | undefined>(undefined);
@@ -557,8 +561,20 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     });
                     setIsEditMode(true);
                     setExistingDocumentId(existingDoc.id);
+                    
+                    // Load perihalInput from existing document's perihal field
+                    if (existingDoc.perihal) {
+                        setPerihalInput(existingDoc.perihal);
+                    }
                 } else {
                     console.log('📝 Create mode - no existing document found');
+                    
+                    // For new documents, auto-fill perihalInput from submission values
+                    if (detail.submissionValues?.judulAcara) {
+                        setPerihalInput(detail.submissionValues.judulAcara);
+                    } else if (detail.submissionValues?.keperluan) {
+                        setPerihalInput(detail.submissionValues.keperluan);
+                    }
                 }
 
                 // Check if in verification mode (supervisor/manajer editing during verification)
@@ -1577,6 +1593,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 );
             } else {
                 // Staff/Supervisor - use surat-hasil API
+                // Compute perihal for dashboard/detail display
+                let perihal = perihalInput.trim();
+                if (!perihal) {
+                    if (suratType === "SURAT_TUGAS") {
+                        perihal = suratTugasForm.keperluan || 'Surat Tugas';
+                    } else if (suratType === "SURAT_TUGAS_TABEL") {
+                        perihal = suratTugasTabelForm.keperluan || 'Surat Tugas';
+                    } else if (suratType === "SURAT_KEPUTUSAN") {
+                        perihal = suratKeputusanForm.tentang || 'Surat Keputusan';
+                    }
+                }
+
                 // Check if supervisor is editing during verification
                 if (isVerificationMode) {
                     // Supervisor/Manajer TU editing during verification
@@ -1592,6 +1620,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             content,
                             tembusan: combinedTembusan,
                             signatories, // Include signatories for supervisor edit
+                            perihal,
                         }
                     );
                 } else if (isEditMode && existingDocumentId) {
@@ -1609,6 +1638,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             tembusan: combinedTembusan,
                             mode: saveMode,
                             signatories, // Include signatories for update
+                            perihal,
                         }
                     );
                 } else {
@@ -1626,6 +1656,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             signatories,
                             tembusan: combinedTembusan,
                             content,
+                            perihal,
                         }
                     );
                 }
@@ -2097,13 +2128,24 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="jenisSuratText">Judul Surat</Label>
+                                        <Label htmlFor="perihalInput">Judul Surat <span className="text-red-500">*</span></Label>
+                                        <Input
+                                            id="perihalInput"
+                                            value={perihalInput}
+                                            onChange={(e) => setPerihalInput(e.target.value)}
+                                            placeholder="Masukkan judul surat untuk ditampilkan di dashboard"
+                                        />
+                                        <p className="text-xs text-muted-foreground">Judul ini akan ditampilkan di dashboard dan halaman detail</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="jenisSuratText">Heading Surat</Label>
                                         <Input
                                             id="jenisSuratText"
                                             value={suratTugasForm.jenisSuratText}
-                                            onChange={(e) => updateSuratTugas("jenisSuratText", e.target.value)}
-                                            placeholder="SURAT TUGAS"
+                                            readOnly
+                                            className="bg-gray-100 cursor-not-allowed"
                                         />
+                                        <p className="text-xs text-muted-foreground">Heading dokumen (tidak dapat diubah)</p>
                                     </div>
                                     <Separator />
                                     <div className="grid grid-cols-2 gap-4">
@@ -2168,13 +2210,24 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="jenisSuratText">Judul Surat</Label>
+                                            <Label htmlFor="perihalInput">Judul Surat <span className="text-red-500">*</span></Label>
+                                            <Input
+                                                id="perihalInput"
+                                                value={perihalInput}
+                                                onChange={(e) => setPerihalInput(e.target.value)}
+                                                placeholder="Masukkan judul surat untuk ditampilkan di dashboard"
+                                            />
+                                            <p className="text-xs text-muted-foreground">Judul ini akan ditampilkan di dashboard dan halaman detail</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="jenisSuratText">Heading Surat</Label>
                                             <Input
                                                 id="jenisSuratText"
                                                 value={suratTugasTabelForm.jenisSuratText}
-                                                onChange={(e) => updateSuratTugasTabel("jenisSuratText", e.target.value)}
-                                                placeholder="SURAT TUGAS"
+                                                readOnly
+                                                className="bg-gray-100 cursor-not-allowed"
                                             />
+                                            <p className="text-xs text-muted-foreground">Heading dokumen (tidak dapat diubah)</p>
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="keperluan">Keperluan <span className="text-red-500">*</span></Label>
@@ -2353,6 +2406,16 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         <CardTitle className="text-lg">Informasi Dasar</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="perihalInput">Judul Surat <span className="text-red-500">*</span></Label>
+                                            <Input
+                                                id="perihalInput"
+                                                value={perihalInput}
+                                                onChange={(e) => setPerihalInput(e.target.value)}
+                                                placeholder="Masukkan judul surat untuk ditampilkan di dashboard"
+                                            />
+                                            <p className="text-xs text-muted-foreground">Judul ini akan ditampilkan di dashboard dan halaman detail</p>
+                                        </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="tentang">Tentang <span className="text-red-500">*</span></Label>
                                             <Textarea

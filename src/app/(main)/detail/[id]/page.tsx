@@ -948,24 +948,22 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         // Derive jenisSurat from document type
         const jenisSurat = doc?.type || '';
         
-        // Derive judulSurat from document content fields
-        let judulSurat = '';
-        if (doc?.content) {
-            const content = doc.content as Record<string, any>;
-            if (doc.type === 'SURAT_TUGAS') {
-                judulSurat = content.judulKegiatan || content.judulAcara || '';
-            } else if (doc.type === 'SURAT_TUGAS_TABEL') {
-                judulSurat = content.keteranganTugas || '';
-            } else if (doc.type === 'SURAT_KEPUTUSAN') {
-                judulSurat = content.tentang || '';
-            }
+        // Use perihal from document as the primary source for judulSurat (dashboard/detail display)
+        const judulSurat = doc?.perihal || '';
+        
+        // Derive tipeSurat label from document type
+        let tipeSurat = '';
+        if (doc?.type === 'SURAT_KEPUTUSAN') {
+            tipeSurat = 'Surat Keputusan';
+        } else if (doc?.type === 'SURAT_TUGAS' || doc?.type === 'SURAT_TUGAS_TABEL') {
+            tipeSurat = 'Surat Tugas';
         }
         
         // Staff name and role from createdBy
         const staffName = detail.createdBy?.name || '-';
         const staffRole = detail.createdBy?.role || '-';
         
-        return { jenisSurat, judulSurat, staffName, staffRole };
+        return { jenisSurat, judulSurat, tipeSurat, staffName, staffRole };
     })();
     
     // Check if status is waiting

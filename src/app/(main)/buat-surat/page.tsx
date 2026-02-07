@@ -266,6 +266,10 @@ function BuatSuratContent() {
         namaPejabat: "",
         nipPejabat: "",
     });
+
+    // Perihal/Judul Surat input - separate from content fields
+    // This maps to LetterDocument.perihal for dashboard/detail display
+    const [perihalInput, setPerihalInput] = useState("");
     
     // Signature state
     const [signers, setSigners] = useState<SignerItem[]>([
@@ -785,14 +789,17 @@ function BuatSuratContent() {
                 });
             }
 
-            // Extract perihal/judul from form
-            let perihal = '';
-            if (suratType === "SURAT_TUGAS") {
-                perihal = suratTugasForm.judulSurat || suratTugasForm.keperluan || 'Surat Tugas';
-            } else if (suratType === "SURAT_TUGAS_TABEL") {
-                perihal = suratTugasTabelForm.judulSurat || suratTugasTabelForm.keperluan || 'Surat Tugas';
-            } else if (suratType === "SURAT_KEPUTUSAN") {
-                perihal = suratKeputusanForm.tentang || 'Surat Keputusan';
+            // Use perihalInput as single source for dashboard/detail "Judul Surat"
+            // Falls back to relevant content fields if perihalInput is empty
+            let perihal = perihalInput.trim();
+            if (!perihal) {
+                if (suratType === "SURAT_TUGAS") {
+                    perihal = suratTugasForm.keperluan || 'Surat Tugas';
+                } else if (suratType === "SURAT_TUGAS_TABEL") {
+                    perihal = suratTugasTabelForm.keperluan || 'Surat Tugas';
+                } else if (suratType === "SURAT_KEPUTUSAN") {
+                    perihal = suratKeputusanForm.tentang || 'Surat Keputusan';
+                }
             }
 
             // Create the surat using staff API - cast to ensure valid category
@@ -936,12 +943,12 @@ function BuatSuratContent() {
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="jenisSuratText">Judul Surat</Label>
+                                        <Label htmlFor="perihalInput">Judul Surat <span className="text-red-500">*</span></Label>
                                         <Input
-                                            id="jenisSuratText"
-                                            value={suratTugasForm.jenisSuratText}
-                                            onChange={(e) => updateSuratTugas("jenisSuratText", e.target.value)}
-                                            placeholder="SURAT TUGAS"
+                                            id="perihalInput"
+                                            value={perihalInput}
+                                            onChange={(e) => setPerihalInput(e.target.value)}
+                                            placeholder="Masukkan judul surat"
                                         />
                                     </div>
                                     <Separator />
@@ -1007,14 +1014,15 @@ function BuatSuratContent() {
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="jenisSuratText">Judul Surat</Label>
+                                            <Label htmlFor="perihalInput">Judul Surat <span className="text-red-500">*</span></Label>
                                             <Input
-                                                id="jenisSuratText"
-                                                value={suratTugasTabelForm.jenisSuratText}
-                                                onChange={(e) => updateSuratTugasTabel("jenisSuratText", e.target.value)}
-                                                placeholder="SURAT TUGAS"
+                                                id="perihalInput"
+                                                value={perihalInput}
+                                                onChange={(e) => setPerihalInput(e.target.value)}
+                                                placeholder="Masukkan judul surat"
                                             />
                                         </div>
+                                        <Separator />
                                         <div className="space-y-2">
                                             <Label htmlFor="keperluan">Keperluan <span className="text-red-500">*</span></Label>
                                             <Textarea
@@ -1189,6 +1197,15 @@ function BuatSuratContent() {
                                         <CardTitle className="text-lg">Informasi Dasar</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="perihalInput">Judul Surat <span className="text-red-500">*</span></Label>
+                                            <Input
+                                                id="perihalInput"
+                                                value={perihalInput}
+                                                onChange={(e) => setPerihalInput(e.target.value)}
+                                                placeholder="Masukkan judul surat"
+                                            />
+                                        </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="tentang">Tentang <span className="text-red-500">*</span></Label>
                                             <Textarea
