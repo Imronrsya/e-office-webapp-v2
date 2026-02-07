@@ -779,7 +779,7 @@ function BuatSuratContent() {
             // 3. __PENGAJU__ marker if checkbox checked (resolved to createdById in backend)
             const combinedTembusan: Array<{ userId: string; name: string; description?: string }> = [
                 ...tembusanUsersList.map(u => ({ userId: u.userId, name: u.name, description: u.email || '' })),
-                ...tembusanTextsList.map(text => ({ userId: '', name: text, description: text })),
+                ...tembusanTextsList.map(text => ({ userId: '', name: text, description: '' })),
             ];
             if (includePengaju) {
                 combinedTembusan.push({

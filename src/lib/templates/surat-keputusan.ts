@@ -92,6 +92,20 @@ const findStempelRecipientRole = (signatures: SignatureBlock[]): string | null =
 };
 
 /**
+ * Convert internal role code to display label
+ */
+const getRoleDisplayLabel = (role: string): string => {
+  const ROLE_LABELS: Record<string, string> = {
+    'DEKAN': 'Dekan',
+    'WADEK_1': 'Wakil Dekan I',
+    'WADEK_2': 'Wakil Dekan II',
+    'KADEP': 'Ketua Departemen',
+    'KAPRODI': 'Ketua Program Studi',
+  };
+  return ROLE_LABELS[role] || role;
+};
+
+/**
  * Helper untuk render blok tanda tangan dengan dukungan stempel
  */
 const renderSignatureBlock = (signature: SignatureBlock, stempelUrl?: string, shouldHaveStempel = false): string => {
@@ -110,7 +124,7 @@ const renderSignatureBlock = (signature: SignatureBlock, stempelUrl?: string, sh
   return `
     <div class="signature-block" style="text-align: center; min-width: 200px; position: relative;">
       ${signature.prefix ? `<p style="margin: 0 0 5px 0; font-style: italic;">${signature.prefix}</p>` : ''}
-      <p style="margin: 0 0 5px 0;">${signature.signerRole}</p>
+      <p style="margin: 0 0 5px 0;">${getRoleDisplayLabel(signature.signerRole)}</p>
       <div style="position: relative; display: inline-block;">
         ${stempelOverlay}
         ${signatureImage}

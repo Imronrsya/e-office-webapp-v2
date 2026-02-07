@@ -1613,7 +1613,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     // Combine text tembusan and user tembusan
                     const combinedTembusan = [
                         ...tembusanUsersList,
-                        ...tembusanList.map(text => ({ userId: '', name: text, description: text }))
+                        ...tembusanList.map(text => ({ userId: '', name: text, description: '' }))
                     ];
                     
                     response = await suratService.updateDraftAsSupervisor(
@@ -1630,7 +1630,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     // Combine text tembusan and user tembusan
                     const combinedTembusan = [
                         ...tembusanUsersList,
-                        ...tembusanList.map(text => ({ userId: '', name: text, description: text }))
+                        ...tembusanList.map(text => ({ userId: '', name: text, description: '' }))
                     ];
                     
                     response = await suratService.updateDraftSuratHasil(
@@ -1648,7 +1648,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     // Combine text tembusan and user tembusan
                     const combinedTembusan = [
                         ...tembusanUsersList,
-                        ...tembusanList.map(text => ({ userId: '', name: text, description: text }))
+                        ...tembusanList.map(text => ({ userId: '', name: text, description: '' }))
                     ];
                     
                     response = await suratService.createDraftSuratHasil(
