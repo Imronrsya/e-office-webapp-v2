@@ -769,6 +769,22 @@ function BuatSuratContent() {
                 email: u.email,
             }));
 
+            // Combine all tembusan into single array for API:
+            // 1. User accounts (akses sistem)
+            // 2. Text entries (tertulis di PDF, converted to object format)
+            // 3. __PENGAJU__ marker if checkbox checked (resolved to createdById in backend)
+            const combinedTembusan: Array<{ userId: string; name: string; description?: string }> = [
+                ...tembusanUsersList.map(u => ({ userId: u.userId, name: u.name, description: u.email || '' })),
+                ...tembusanTextsList.map(text => ({ userId: '', name: text, description: text })),
+            ];
+            if (includePengaju) {
+                combinedTembusan.push({
+                    userId: '__PENGAJU__',
+                    name: 'Pengaju Surat',
+                    description: '',
+                });
+            }
+
             // Extract perihal/judul from form
             let perihal = '';
             if (suratType === "SURAT_TUGAS") {
@@ -784,9 +800,7 @@ function BuatSuratContent() {
                 category: categoryParam as 'AKADEMIK' | 'SUMBER_DAYA' | 'UMUM',
                 documentType: suratType,
                 signatories,
-                tembusan: tembusanTextsList,
-                tembusanUsers: tembusanUsersList,
-                includePengaju,
+                tembusan: combinedTembusan,
                 content,
                 perihal,
             });

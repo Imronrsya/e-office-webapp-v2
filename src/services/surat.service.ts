@@ -422,7 +422,7 @@ export const suratService = {
             y?: number;
             page?: number;
         }>;
-        tembusan?: string[];
+        tembusan?: Array<{ userId: string; name: string; description?: string }> | string[];
         content?: Record<string, unknown>;
         perihal?: string;
         targetSupervisor?: 'SUPERVISOR_AKADEMIK' | 'SUPERVISOR_SUMBER_DAYA'; // Untuk kategori UMUM
