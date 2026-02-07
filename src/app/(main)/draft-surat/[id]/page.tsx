@@ -1474,7 +1474,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     // Add dataMahasiswa for template rendering
                     dataMahasiswa: dataMahasiswa,
                     // Map form fields to template fields
-                    nomorSurat: suratTugasTabelForm.judulSurat || '',
+                    nomorSurat: '',
                     keterangan: suratTugasTabelForm.keperluan || '',
                 };
             } else if (suratType === "SURAT_KEPUTUSAN") {

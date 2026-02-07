@@ -1487,8 +1487,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             const contentWithTembusan = suratHasilDoc.content 
                 ? { 
                     ...suratHasilDoc.content, 
-                    // Override nomor surat jika sudah ada dari database
-                    nomorSurat: suratHasilDoc.nomorSurat || (suratHasilDoc.content as any)?.nomorSurat,
+                    // Gunakan nomor surat dari database column saja, jangan dari content JSON
+                    nomorSurat: suratHasilDoc.nomorSurat || '',
                     tembusan: suratHasilDoc.tembusan || [],
                     stempelUrl: suratHasilDoc.sealImageUrl || undefined,
                     qrCodeDataUrl: suratHasilDoc.qrCodeUrl || undefined,

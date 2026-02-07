@@ -123,8 +123,19 @@ export function UniversalDocumentPreview({
                     return suratTugasTemplate(data);
                 }
                 case 'SURAT_TUGAS_TABEL': {
+                    const tableContent = content as Record<string, unknown>;
+                    // Convert pelaksana to dataMahasiswa if dataMahasiswa is not already present
+                    const pelaksana = (tableContent.pelaksana as Array<Record<string, string>>) || [];
+                    const dataMahasiswa = (tableContent.dataMahasiswa as Array<Record<string, string>>) || pelaksana.map(p => ({
+                        nama: p.nama || '',
+                        nim: p.nim || '',
+                        prodi: p.prodi || '',
+                        ...Object.fromEntries(Object.entries(p).filter(([k]) => !['key', 'nama', 'nim', 'prodi'].includes(k))),
+                    }));
                     const data = {
                         ...content as unknown as SuratTugasTableData,
+                        dataMahasiswa: dataMahasiswa as unknown as SuratTugasTableData['dataMahasiswa'],
+                        customColumns: (tableContent.customColumns as SuratTugasTableData['customColumns']) || [],
                         signatures: signatureBlocks,
                         tembusan: tembusanData || [],
                         stempelUrl,
