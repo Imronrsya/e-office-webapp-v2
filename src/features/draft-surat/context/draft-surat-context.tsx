@@ -33,6 +33,7 @@ export interface SuratPengantarFormData {
   tanggalMulai: string;
   lokasiAcara: string;
   durasiAcara?: string;
+  isPengajuMahasiswa?: boolean; // Flag untuk menentukan apakah pengaju mahasiswa (true) atau dosen (false)
 }
 
 export interface SuratTugasFormData {

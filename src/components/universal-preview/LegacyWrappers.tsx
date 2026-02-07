@@ -195,9 +195,12 @@ export function LegacySuratPreview({
             
             // Data pengaju - dari content jika ada (Admin Prodi bisa edit), atau dari submission
             namaMahasiswa: contentData.namaMahasiswa as string || submissionData.nama,
-            nimMahasiswa: contentData.nimMahasiswa as string || submissionData.nim || "",
+            nimMahasiswa: contentData.nimMahasiswa as string || submissionData.nim || submissionData.nip || "",
             programStudi: contentData.programStudi as string || submissionData.programStudi,
             departemen: contentData.departemen as string || submissionData.departemen || "Teknik Informatika",
+            
+            // Flag untuk menentukan apakah pengaju mahasiswa atau dosen
+            isPengajuMahasiswa: !!submissionData.nim, // true jika ada NIM, false jika NIP
             
             // Detail kegiatan - dari content jika ada, atau dari submission
             judulAcara: contentData.judulAcara as string || submissionData.judulAcara,

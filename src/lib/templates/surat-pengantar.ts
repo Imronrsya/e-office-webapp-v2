@@ -25,6 +25,7 @@ export interface SuratPengantarData {
     tanggalMulai: string;
     lokasiAcara: string;
     durasiAcara?: string;
+    isPengajuMahasiswa?: boolean; // Flag untuk menentukan apakah pengaju mahasiswa (true) atau dosen (false)
     // TTD Kaprodi
     namaKaprodi?: string;
     nipKaprodi?: string;
@@ -65,6 +66,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         tanggalMulai,
         lokasiAcara,
         durasiAcara,
+        isPengajuMahasiswa = true, // Default ke mahasiswa jika tidak ditentukan
         namaKaprodi,
         nipKaprodi,
         signatureKaprodi,
@@ -347,7 +349,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
     
     <div class="isi-surat">
         <p>
-            Sehubungan dengan kegiatan ${keperluan} mahasiswa Program Studi ${programStudi} 
+            Sehubungan dengan kegiatan ${keperluan} ${isPengajuMahasiswa ? 'mahasiswa' : 'dosen'} Program Studi ${programStudi} 
             Departemen ${departemen} Fakultas Sains dan Matematika Universitas Diponegoro 
             tersebut di bawah ini:
         </p>
@@ -359,7 +361,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
                 <td>${namaMahasiswa}</td>
             </tr>
             <tr>
-                <td class="label-col">NIM</td>
+                <td class="label-col">${isPengajuMahasiswa ? 'NIM' : 'NIP'}</td>
                 <td class="colon-col">:</td>
                 <td>${nimMahasiswa}</td>
             </tr>

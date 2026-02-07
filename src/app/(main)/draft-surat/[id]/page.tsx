@@ -615,7 +615,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         jabatanTujuan: (content.jabatanTujuan as string) || "",
                         alamatTujuan: (content.alamatTujuan as string) || "",
                         namaMahasiswa: (content.namaMahasiswa as string) || detail.submissionValues.nama || "",
-                        nimMahasiswa: (content.nimMahasiswa as string) || detail.submissionValues.nim || "",
+                        nimMahasiswa: (content.nimMahasiswa as string) || detail.submissionValues.nim || detail.submissionValues.nip || "",
                         programStudi: (content.programStudi as string) || detail.submissionValues.programStudi || "",
                         departemen: (content.departemen as string) || detail.submissionValues.departemen || "",
                         keperluan: (content.keperluan as string) || detail.submissionValues.keperluan || "",
@@ -623,6 +623,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         tanggalMulai: parsedTanggalMulai ? formatTanggalIndonesia(parsedTanggalMulai) : tanggalMulaiValue,
                         lokasiAcara: (content.lokasiAcara as string) || detail.submissionValues.lokasiAcara || "",
                         durasiAcara: (content.durasiAcara as string) || detail.submissionValues.durasiAcara || "",
+                        isPengajuMahasiswa: (content.isPengajuMahasiswa as boolean) !== undefined ? (content.isPengajuMahasiswa as boolean) : pengajuIsMahasiswa,
                     }));
                 } else if (suratType === "SURAT_PENGANTAR" && detail.submissionValues) {
                     // No existing document, populate from submission values
@@ -638,7 +639,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         ...prev,
                         perihal: detail.submissionValues.keperluan || "",
                         namaMahasiswa: detail.submissionValues.nama || "",
-                        nimMahasiswa: detail.submissionValues.nim || "",
+                        nimMahasiswa: detail.submissionValues.nim || detail.submissionValues.nip || "",
                         programStudi: detail.submissionValues.programStudi || "",
                         departemen: detail.submissionValues.departemen || "",
                         keperluan: detail.submissionValues.keperluan || "",
@@ -646,6 +647,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         tanggalMulai: parsedTanggalMulai ? formatTanggalIndonesia(parsedTanggalMulai) : tanggalMulaiValue,
                         lokasiAcara: detail.submissionValues.lokasiAcara || "",
                         durasiAcara: detail.submissionValues.durasiAcara || "",
+                        isPengajuMahasiswa: pengajuIsMahasiswa,
                     }));
                 }
 
@@ -1473,7 +1475,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             let content: Record<string, unknown> = {};
             
             if (suratType === "SURAT_PENGANTAR") {
-                content = { ...suratPengantarForm };
+                content = { 
+                    ...suratPengantarForm, 
+                    isPengajuMahasiswa 
+                };
             } else if (suratType === "SURAT_TUGAS") {
                 content = { ...suratTugasForm };
             } else if (suratType === "SURAT_TUGAS_TABEL") {

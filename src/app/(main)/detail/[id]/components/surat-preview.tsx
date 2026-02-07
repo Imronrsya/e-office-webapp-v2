@@ -149,6 +149,8 @@ export function SuratPreview({
             tanggalMulai: formatTanggalIndonesia(submissionData.tanggalAcara),
             lokasiAcara: submissionData.lokasiAcara,
             durasiAcara: submissionData.durasiAcara,
+            // Flag untuk menentukan apakah pengaju mahasiswa atau dosen
+            isPengajuMahasiswa: !!submissionData.nim, // true jika ada NIM, false jika NIP
             // Pass signature data directly to template - signatures will be rendered in template's ttd-container
             namaKaprodi: kaprodiSig?.signerName,
             nipKaprodi: kaprodiSig?.signerNip,

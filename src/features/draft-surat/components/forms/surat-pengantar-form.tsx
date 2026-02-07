@@ -12,9 +12,10 @@ import { generateSuratPengantarHTML as suratPengantarTemplate } from '@/lib/temp
 
 interface SuratPengantarFormProps {
   initialData?: Partial<SuratPengantarFormData>;
+  isPengajuMahasiswa?: boolean;
 }
 
-export function SuratPengantarForm({ initialData }: SuratPengantarFormProps) {
+export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: SuratPengantarFormProps) {
   const { state, setFormData, nextStep, prevStep } = useDraftSurat();
   const [showPreview, setShowPreview] = useState(false);
 
@@ -49,7 +50,7 @@ export function SuratPengantarForm({ initialData }: SuratPengantarFormProps) {
     nextStep();
   };
 
-  const previewHtml = suratPengantarTemplate(formValues);
+  const previewHtml = suratPengantarTemplate({ ...formValues, isPengajuMahasiswa });
 
   return (
     <div className="space-y-6">
@@ -149,7 +150,7 @@ export function SuratPengantarForm({ initialData }: SuratPengantarFormProps) {
               </div>
 
               <div className="border-t pt-4 mt-4">
-                <h4 className="font-medium mb-3">Data Mahasiswa</h4>
+                <h4 className="font-medium mb-3">{isPengajuMahasiswa ? "Data Mahasiswa" : "Data Dosen"}</h4>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="keperluan">Jenis Kegiatan</Label>
@@ -163,22 +164,22 @@ export function SuratPengantarForm({ initialData }: SuratPengantarFormProps) {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="namaMahasiswa">Nama Mahasiswa</Label>
+                      <Label htmlFor="namaMahasiswa">{isPengajuMahasiswa ? "Nama Mahasiswa" : "Nama Dosen"}</Label>
                       <Input
                         id="namaMahasiswa"
                         value={formValues.namaMahasiswa}
                         onChange={(e) => handleChange('namaMahasiswa', e.target.value)}
-                        placeholder="Nama lengkap mahasiswa"
+                        placeholder={isPengajuMahasiswa ? "Nama lengkap mahasiswa" : "Nama lengkap dosen"}
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="nimMahasiswa">NIM</Label>
+                      <Label htmlFor="nimMahasiswa">{isPengajuMahasiswa ? "NIM" : "NIP"}</Label>
                       <Input
                         id="nimMahasiswa"
                         value={formValues.nimMahasiswa}
                         onChange={(e) => handleChange('nimMahasiswa', e.target.value)}
-                        placeholder="24060122xxxxxx"
+                        placeholder={isPengajuMahasiswa ? "24060122xxxxxx" : "198501152010121001"}
                         required
                       />
                     </div>
