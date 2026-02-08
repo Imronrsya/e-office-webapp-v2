@@ -259,25 +259,25 @@ const getFilteredRolesByCategory = (category: "AKADEMIK" | "SUMBER_DAYA" | "UMUM
         // Backward compatibility - tampilkan semua
         return SURAT_FAKULTAS_ROLES;
     }
-    
+
     if (category === "AKADEMIK") {
         return [
             { value: "WADEK_1", label: "Wakil Dekan I" },
             { value: "DEKAN", label: "Dekan" },
         ];
     }
-    
+
     if (category === "SUMBER_DAYA") {
         return [
             { value: "WADEK_2", label: "Wakil Dekan II" },
             { value: "DEKAN", label: "Dekan" },
         ];
     }
-    
+
     if (category === "UMUM") {
         return SURAT_FAKULTAS_ROLES; // Semua pejabat
     }
-    
+
     return SURAT_FAKULTAS_ROLES;
 };
 
@@ -310,17 +310,17 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useAuth();
-    
+
     // Get type from query params
     const suratType = searchParams?.get("type") as SuratType | null;
-    
+
     // Get reset parameter for supervisor overwrite mode
     const shouldResetDraft = searchParams?.get("reset") === "true";
-    
+
     // State
     const [submitting, setSubmitting] = useState(false);
     const [currentStep, setCurrentStep] = useState<Step>("form");
-    
+
     // Form states for each surat type
     const [suratPengantarForm, setSuratPengantarForm] = useState<SuratPengantarForm>({
         nomorSurat: "",
@@ -374,11 +374,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Perihal/Judul Surat input - separate from content fields
     // This maps to LetterDocument.perihal for dashboard/detail display
     const [perihalInput, setPerihalInput] = useState("");
-    
+
     // Date picker state for Surat Pengantar (separate from form string state)
     const [tanggalSuratDate, setTanggalSuratDate] = useState<Date | undefined>(undefined);
     const [tanggalMulaiDate, setTanggalMulaiDate] = useState<Date | undefined>(undefined);
-    
+
     // Nomor surat validation state for Surat Pengantar
     const [nomorSuratStatus, setNomorSuratStatus] = useState<{
         isChecking: boolean;
@@ -389,97 +389,97 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         isAvailable: null,
         message: "",
     });
-    
+
     // Signature state - position data no longer needed with template-based positioning
     const [signers, setSigners] = useState<SignerItem[]>([
-        { 
-            id: String(Date.now()), 
+        {
+            id: String(Date.now()),
             role: "", // Empty - user MUST select manually
-            order: 1, 
+            order: 1,
             isRequired: true,
             name: "",
             nip: "",
         }
     ]);
-    
+
     // Tembusan state - DIPISAH menjadi 2:
     // 1. Akun user (untuk akses sistem, TIDAK tertulis di surat)
     const [tembusanUsers, setTembusanUsers] = useState<TembusanUser[]>([]);
-    
+
     // 2. Text manual (untuk tertulis di surat, TIDAK terkait akun)
     const [tembusanTexts, setTembusanTexts] = useState<TembusanText[]>([]);
     const [newTembusanTextInput, setNewTembusanTextInput] = useState("");
-    
+
     // Checkbox pengaju - default TRUE (tercentang otomatis untuk semua alur pembuatan surat)
     const [includePengaju, setIncludePengaju] = useState(true);
-    
+
     // User search for tembusan akun
     const [userSearchQuery, setUserSearchQuery] = useState("");
     const [userSearchResults, setUserSearchResults] = useState<import('@/services/user.service').TembusanUser[]>([]);
     const [isSearchingUsers, setIsSearchingUsers] = useState(false);
     const [showUserResults, setShowUserResults] = useState(false);
-    
+
     // Attachment state - using FileUpload component from pengajuan (clean implementation)
     const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
-    
+
     // Existing attachments from server (for edit mode only) - new format with metadata
     // This includes both document attachments AND pengaju attachments (merged)
     const [existingAttachments, setExistingAttachments] = useState<Array<{ url: string; name: string }>>([]);
-    
+
     // Pengaju attachments (from submission) - lampiran yang di-upload pengaju saat mengajukan
     // Stored separately for tracking purposes, but displayed together with existingAttachments
-    const [pengajuAttachments, setPengajuAttachments] = useState<Array<{ 
+    const [pengajuAttachments, setPengajuAttachments] = useState<Array<{
         id: string;
-        fileName: string; 
+        fileName: string;
         fileUrl: string;
         fileSize: number | null;
         mimeType: string | null;
     }>>([]);
-    
+
     // Delete confirmation for existing attachments
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [attachmentToDelete, setAttachmentToDelete] = useState<{ url: string; name: string } | null>(null);
     const [deletingAttachment, setDeletingAttachment] = useState<string | null>(null);
-    
+
     // Preview modal state for existing attachments
     const [previewModalOpen, setPreviewModalOpen] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string>("");
     const [previewFileName, setPreviewFileName] = useState<string>("");
-    
+
     // Loading state for fetching existing data
     const [loading, setLoading] = useState(true);
-    
+
     // State untuk menentukan apakah pengaju adalah Mahasiswa atau Dosen
     // True = Mahasiswa (punya NIM), False = Dosen (punya NIP)
     const [isPengajuMahasiswa, setIsPengajuMahasiswa] = useState(true);
-    
+
     // Edit mode tracking - true if draft already exists and we're editing
     const [isEditMode, setIsEditMode] = useState(false);
     const [existingDocumentId, setExistingDocumentId] = useState<string | null>(null);
-    
+
     // Track if this is surat masuk (from submission) or surat keluar (staff-created)
     const [isSuratMasuk, setIsSuratMasuk] = useState(false);
-    
+
     // Verification mode - true if supervisor/manajer TU is editing during verification
     const [isVerificationMode, setIsVerificationMode] = useState(false);
-    
+
     // Kategori surat - untuk filter pejabat penandatangan
     const [suratCategory, setSuratCategory] = useState<"AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null>(null);
-    
+
     // Flag hasKaprodi from Program Studi - determines available signature roles for surat pengantar
     // If true: program has KAPRODI, show both KAPRODI and KADEP options
     // If false: program has only KADEP, show only KADEP option
     const [hasKaprodi, setHasKaprodi] = useState<boolean>(false);
-    
+
     // Save mode - "patch" for normal edit, "overwrite" for full reset
     // Default to 'overwrite' if reset parameter is set (supervisor creating new draft)
     const [saveMode, setSaveMode] = useState<'patch' | 'overwrite'>(shouldResetDraft ? 'overwrite' : 'patch');
 
     // Pejabat list for autofill nama dan NIP - now includes departemen/prodi info
-    const [pejabatList, setPejabatList] = useState<Array<{ 
-        role: string; 
-        name: string; 
+    const [pejabatList, setPejabatList] = useState<Array<{
+        role: string;
+        name: string;
         nip?: string;
         departemenId?: string | null;
         departemenName?: string | null;
@@ -513,7 +513,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 setLoading(false);
                 return;
             }
-            
+
             // If reset mode, skip loading existing data - supervisor wants clean form
             if (shouldResetDraft) {
                 setLoading(false);
@@ -530,7 +530,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     hasDetail: !!detail,
                     documentsCount: detail?.documents?.length
                 });
-                
+
                 if (!detail) {
                     setLoading(false);
                     return;
@@ -562,14 +562,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     });
                     setIsEditMode(true);
                     setExistingDocumentId(existingDoc.id);
-                    
+
                     // Load perihalInput from existing document's perihal field
                     if (existingDoc.perihal) {
                         setPerihalInput(existingDoc.perihal);
                     }
                 } else {
                     console.log('📝 Create mode - no existing document found');
-                    
+
                     // For new documents, auto-fill perihalInput from submission values
                     if (detail.submissionValues?.judulAcara) {
                         setPerihalInput(detail.submissionValues.judulAcara);
@@ -582,20 +582,20 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 if (detail.status === 'FAKULTAS_VERIFICATION' && existingDoc) {
                     setIsVerificationMode(true);
                 }
-                
+
                 // Set surat category for filtering pejabat penandatangan
                 // HANYA untuk surat fakultas (bukan surat pengantar)
                 if (suratType !== "SURAT_PENGANTAR" && detail.category) {
                     setSuratCategory(detail.category);
                     console.log('📋 Surat category:', detail.category);
                 }
-                
+
                 // Set hasKaprodi flag from submission detail - determines signature roles for surat pengantar
                 if (suratType === "SURAT_PENGANTAR") {
                     setHasKaprodi(detail.hasKaprodi ?? false);
                     console.log('🎓 Program hasKaprodi:', detail.hasKaprodi, '- Signature roles:', detail.hasKaprodi ? 'KAPRODI + KADEP' : 'KADEP only');
                 }
-                
+
                 // Determine if this is surat masuk (from submission) or surat keluar (staff-created)
                 const hasSuratMasukSubmission = detail.submissionValues !== null && detail.submissionValues !== undefined;
                 setIsSuratMasuk(hasSuratMasukSubmission);
@@ -608,21 +608,21 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 // Populate surat pengantar form from existing content
                 if (suratType === "SURAT_PENGANTAR" && existingDoc?.content) {
                     const content = existingDoc.content as Record<string, unknown>;
-                    
+
                     // Parse tanggalSurat - could be formatted string or ISO date
                     const tanggalSuratValue = (content.tanggalSurat as string) || "";
                     const parsedTanggalSurat = parseToDate(tanggalSuratValue);
                     if (parsedTanggalSurat) {
                         setTanggalSuratDate(parsedTanggalSurat);
                     }
-                    
+
                     // Parse tanggalMulai from content or submission values
                     const tanggalMulaiValue = (content.tanggalMulai as string) || detail.submissionValues?.tanggalAcara || "";
                     const parsedTanggalMulai = parseToDate(tanggalMulaiValue);
                     if (parsedTanggalMulai) {
                         setTanggalMulaiDate(parsedTanggalMulai);
                     }
-                    
+
                     setSuratPengantarForm(prev => ({
                         ...prev,
                         nomorSurat: (content.nomorSurat as string) || "",
@@ -644,14 +644,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     }));
                 } else if (suratType === "SURAT_PENGANTAR" && detail.submissionValues) {
                     // No existing document, populate from submission values
-                    
+
                     // Parse tanggalMulai from submission values
                     const tanggalMulaiValue = detail.submissionValues?.tanggalAcara || "";
                     const parsedTanggalMulai = parseToDate(tanggalMulaiValue);
                     if (parsedTanggalMulai) {
                         setTanggalMulaiDate(parsedTanggalMulai);
                     }
-                    
+
                     setSuratPengantarForm(prev => ({
                         ...prev,
                         perihal: detail.submissionValues.keperluan || "",
@@ -742,7 +742,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         menimbang: (content.menimbang as string[]) || [""],
                         mengingat: (content.mengingat as string[]) || [""],
                         menetapkan: (content.menetapkan as string) || "",
-                        keputusan: existingKeputusan.length > 0 
+                        keputusan: existingKeputusan.length > 0
                             ? existingKeputusan.map((k, index) => ({ key: String(index + 1), label: k.label, content: k.content }))
                             : [{ key: "1", label: "KESATU", content: "" }],
                         tanggalDitetapkan: (content.tanggalDitetapkan as string) || "",
@@ -824,14 +824,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 // Load tembusan from existing document
                 // Try to get from document.tembusan first (new format), fallback to content.tembusan (old format)
                 const existingTembusan = existingDoc?.tembusan || (existingDoc?.content as Record<string, unknown>)?.tembusan;
-                
+
                 // Check if we're in edit mode (existing document found)
                 if (existingDoc) {
                     // Edit mode - load saved tembusan data
                     const users: TembusanUser[] = [];
                     const texts: TembusanText[] = [];
                     let hasPengaju = false;
-                    
+
                     if (Array.isArray(existingTembusan) && existingTembusan.length > 0) {
                         existingTembusan.forEach((item: any, index: number) => {
                             if (typeof item === 'string') {
@@ -875,11 +875,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             }
                         });
                     }
-                    
+
                     // In edit mode, if no __PENGAJU__ marker found, it means the checkbox was unchecked
-                    console.log('📦 Edit mode - Loaded tembusan:', { 
-                        users: users.length, 
-                        texts: texts.length, 
+                    console.log('📦 Edit mode - Loaded tembusan:', {
+                        users: users.length,
+                        texts: texts.length,
                         hasPengaju,
                         rawData: existingTembusan
                     });
@@ -899,20 +899,20 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 // Load existing attachments from document (new format { url, name })
                 // Also load pengaju attachments from detail.attachments
                 let allExistingAttachments: Array<{ url: string; name: string }> = [];
-                
+
                 // 1. Load document attachments (from existingDoc.attachmentUrls)
                 if (existingDoc?.attachmentUrls && Array.isArray(existingDoc.attachmentUrls)) {
                     const validAttachments = existingDoc.attachmentUrls.filter(
-                        (item): item is { url: string; name: string } => 
-                            typeof item === 'object' && 
-                            item !== null && 
-                            typeof item.url === 'string' && 
+                        (item): item is { url: string; name: string } =>
+                            typeof item === 'object' &&
+                            item !== null &&
+                            typeof item.url === 'string' &&
                             item.url.length > 0
                     );
                     console.log('📎 Loaded document attachments:', validAttachments.length, 'files');
                     allExistingAttachments = [...validAttachments];
                 }
-                
+
                 // 2. Load pengaju attachments (from detail.attachments) - lampiran dari pengaju saat submit
                 if (detail?.attachments && Array.isArray(detail.attachments) && detail.attachments.length > 0) {
                     console.log('📎 Found pengaju attachments:', detail.attachments.length, 'files');
@@ -924,7 +924,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         fileSize: att.fileSize,
                         mimeType: att.mimeType
                     })));
-                    
+
                     // Add pengaju attachments to display list (avoiding duplicates by URL)
                     const existingUrls = new Set(allExistingAttachments.map(a => a.url));
                     const pengajuForDisplay = detail.attachments
@@ -936,7 +936,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     allExistingAttachments = [...allExistingAttachments, ...pengajuForDisplay];
                     console.log('📎 Added pengaju attachments to display:', pengajuForDisplay.length, 'files');
                 }
-                
+
                 if (allExistingAttachments.length > 0) {
                     console.log('📎 Total existing attachments:', allExistingAttachments.length, 'files');
                     setExistingAttachments(allExistingAttachments);
@@ -965,9 +965,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Debounced check for nomor surat availability
     useEffect(() => {
         if (suratType !== "SURAT_PENGANTAR") return;
-        
+
         const nomorSurat = suratPengantarForm.nomorSurat.trim();
-        
+
         if (!nomorSurat) {
             setNomorSuratStatus({
                 isChecking: false,
@@ -1032,10 +1032,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const addPelaksana = () => {
         const newKey = String(Date.now());
         // Create new pelaksana with default columns + custom columns
-        const newPelaksana: PelaksanaItem = { 
-            key: newKey, 
-            nama: "", 
-            nim: "", 
+        const newPelaksana: PelaksanaItem = {
+            key: newKey,
+            nama: "",
+            nim: "",
             prodi: "",
         };
         // Add empty values for custom columns
@@ -1161,10 +1161,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         // Use Date.now() for unique ID to prevent duplication
         const newId = String(Date.now());
         const newOrder = signers.length + 1;
-        setSigners([...signers, { 
-            id: newId, 
-            role: "", 
-            order: newOrder, 
+        setSigners([...signers, {
+            id: newId,
+            role: "",
+            order: newOrder,
             isRequired: true,
             name: "",
             nip: "",
@@ -1187,16 +1187,16 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
     const updateSignerRole = (id: string, role: string) => {
         const roleLabel = ALL_SIGNER_ROLES.find(r => r.value === role)?.label || role;
-        
+
         // Autofill nama dan NIP dari database
         // Untuk KADEP/KAPRODI: filter berdasarkan departemen/prodi pengaju dari submissionValues
         let pejabat;
-        
+
         if (role === 'KADEP') {
             // Cari KADEP yang departemennya sesuai dengan pengaju
             const pengajuDepartemen = suratPengantarForm.departemen;
-            pejabat = pejabatList.find(p => 
-                p.role === role && 
+            pejabat = pejabatList.find(p =>
+                p.role === role &&
                 p.departemenName?.toLowerCase() === pengajuDepartemen?.toLowerCase()
             );
             // Fallback ke pejabat pertama dengan role tersebut jika tidak ditemukan
@@ -1206,8 +1206,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         } else if (role === 'KAPRODI') {
             // Cari KAPRODI yang program studinya sesuai dengan pengaju
             const pengajuProdi = suratPengantarForm.programStudi;
-            pejabat = pejabatList.find(p => 
-                p.role === role && 
+            pejabat = pejabatList.find(p =>
+                p.role === role &&
                 p.programStudiName?.toLowerCase() === pengajuProdi?.toLowerCase()
             );
             // Fallback ke pejabat pertama dengan role tersebut jika tidak ditemukan
@@ -1218,10 +1218,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             // Untuk role lain (DEKAN, WADEK_1, WADEK_2), ambil pejabat pertama
             pejabat = pejabatList.find(p => p.role === role);
         }
-        
-        setSigners(signers.map(s => s.id === id ? { 
-            ...s, 
-            role, 
+
+        setSigners(signers.map(s => s.id === id ? {
+            ...s,
+            role,
             name: pejabat?.name || roleLabel,
             nip: pejabat?.nip || ""
         } : s));
@@ -1245,7 +1245,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
     const addTembusanText = () => {
         if (!newTembusanTextInput.trim()) return;
-        
+
         const newItem: TembusanText = {
             id: String(Date.now()),
             text: newTembusanTextInput.trim()
@@ -1265,7 +1265,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // ========================================================================
     // USER SEARCH FOR TEMBUSAN
     // ========================================================================
-    
+
     // Debounced user search
     useEffect(() => {
         if (userSearchQuery.length < 2) {
@@ -1294,7 +1294,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             name: user.name,
             email: user.email,
             type: user.type,
-            description: user.type === 'mahasiswa' 
+            description: user.type === 'mahasiswa'
                 ? `${user.identifier} • ${user.programStudi || 'Mahasiswa'}`
                 : `${user.jabatan || 'Pegawai'} • NIP: ${user.identifier}`
         };
@@ -1316,7 +1316,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 toast.error("Lengkapi semua field yang wajib diisi");
                 return false;
             }
-            
+
             // Check if nomor surat is available
             if (nomorSuratStatus.isAvailable === false) {
                 toast.error("Nomor surat sudah digunakan, gunakan nomor surat lain");
@@ -1440,13 +1440,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
             // Check if this is a pengaju attachment (has ID in pengajuAttachments)
             const pengajuAttachment = pengajuAttachments.find(pa => pa.fileUrl === attachment.url);
-            
+
             let response;
             if (pengajuAttachment) {
                 // This is a pengaju attachment - use department-approval API
                 console.log('[DELETE ATTACHMENT] Deleting PENGAJU attachment with ID:', pengajuAttachment.id);
                 response = await suratService.removePengajuAttachment(resolvedParams.id, pengajuAttachment.id);
-                
+
                 if (response.success) {
                     // Also remove from pengajuAttachments state
                     setPengajuAttachments(prev => prev.filter(pa => pa.id !== pengajuAttachment.id));
@@ -1459,9 +1459,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 console.log('[DELETE ATTACHMENT] Deleting DOCUMENT attachment, Document ID:', existingDocumentId);
                 response = await suratService.removeAttachmentByName(existingDocumentId, fileName);
             }
-            
+
             console.log('[DELETE ATTACHMENT] Response:', response);
-            
+
             if (!response.success) {
                 throw new Error(response.message || 'Gagal menghapus lampiran');
             }
@@ -1487,23 +1487,23 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
     const handleSubmit = async () => {
         if (!suratType) return;
-        
+
         setSubmitting(true);
         try {
             // Build form content based on surat type
             let content: Record<string, unknown> = {};
-            
+
             if (suratType === "SURAT_PENGANTAR") {
-                content = { 
-                    ...suratPengantarForm, 
-                    isPengajuMahasiswa 
+                content = {
+                    ...suratPengantarForm,
+                    isPengajuMahasiswa
                 };
             } else if (suratType === "SURAT_TUGAS") {
                 content = { ...suratTugasForm };
             } else if (suratType === "SURAT_TUGAS_TABEL") {
                 // Convert pelaksana to dataMahasiswa for template compatibility
                 const dataMahasiswa = suratTugasTabelForm.pelaksana.map(({ key, ...rest }) => rest);
-                content = { 
+                content = {
                     ...suratTugasTabelForm,
                     // Keep pelaksana for backward compatibility
                     pelaksana: dataMahasiswa,
@@ -1562,14 +1562,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             tembusanTexts.forEach(item => {
                 tembusanList.push(item.text);
             });
-            
+
             // Build tembusan users - untuk akses sistem
             const tembusanUsersList = tembusanUsers.map(u => ({
                 userId: u.userId,
                 name: u.name,
                 email: u.email,
             }));
-            
+
             // Add special "__PENGAJU__" marker if checkbox is checked
             // This marker will be detected when loading to restore checkbox state
             if (includePengaju) {
@@ -1579,11 +1579,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     email: '',
                 });
             }
-            
+
             console.log('💾 Saving tembusan with includePengaju:', includePengaju, 'usersList:', tembusanUsersList.length);
 
             let response;
-            
+
             if (suratType === "SURAT_PENGANTAR") {
                 // Admin Prodi - use department-approval API
                 response = await suratService.savePengantarDraft(
@@ -1616,7 +1616,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         ...tembusanUsersList,
                         ...tembusanList.map(text => ({ userId: '', name: text, description: '' }))
                     ];
-                    
+
                     response = await suratService.updateDraftAsSupervisor(
                         resolvedParams.id,
                         {
@@ -1633,7 +1633,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         ...tembusanUsersList,
                         ...tembusanList.map(text => ({ userId: '', name: text, description: '' }))
                     ];
-                    
+
                     response = await suratService.updateDraftSuratHasil(
                         existingDocumentId,
                         {
@@ -1651,7 +1651,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         ...tembusanUsersList,
                         ...tembusanList.map(text => ({ userId: '', name: text, description: '' }))
                     ];
-                    
+
                     response = await suratService.createDraftSuratHasil(
                         resolvedParams.id,
                         {
@@ -1673,13 +1673,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 // For surat-hasil, response.data might have { documentId } or { id }
                 const responseData = response.data as any;
                 const documentId = responseData?.documentId || responseData?.id || existingDocumentId;
-                
+
                 console.log('📎 Attachment upload check:', {
                     attachmentFilesCount: attachmentFiles.length,
                     documentId,
                     responseData
                 });
-                
+
                 if (attachmentFiles.length > 0 && documentId) {
                     try {
                         setIsUploadingAttachment(true);
@@ -1693,15 +1693,15 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         setIsUploadingAttachment(false);
                     }
                 }
-                
+
                 // Show success toast
-                const successMessage = saveMode === 'overwrite' 
+                const successMessage = saveMode === 'overwrite'
                     ? "Draft surat berhasil dibuat ulang"
-                    : isEditMode 
-                        ? "Draft surat berhasil diperbarui" 
+                    : isEditMode
+                        ? "Draft surat berhasil diperbarui"
                         : "Draft surat berhasil dibuat";
                 toast.success(successMessage);
-                
+
                 // Decide post-save redirect:
                 // - For Surat Pengantar (department-approval) admin prodi flow, keep user on detail page
                 // - Additionally, if the actor is an Admin Prodi and the template is a Surat Keputusan,
@@ -1739,7 +1739,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
     // Surat Pengantar tidak memiliki tembusan, skip step tembusan
     const isSuratPengantar = suratType === "SURAT_PENGANTAR";
-    
+
     const steps = [
         { key: "form", label: "Formulir", icon: ClipboardList, disabled: false },
         { key: "signature", label: "Tanda Tangan", icon: PenTool, disabled: false },
@@ -1756,7 +1756,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     if (loading) {
         // Calculate steps to show in skeleton (3 for Surat Pengantar, 4 for others)
         const skeletonStepCount = isSuratPengantar ? 3 : 4;
-        
+
         return (
             <>
                 <div className="flex items-center gap-2 mb-6">
@@ -1765,12 +1765,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         Draft {SURAT_TYPE_LABELS[suratType]}
                     </h1>
                 </div>
-                
+
                 {/* Skeleton Stepper */}
                 <div className="mb-8">
                     <StepperSkeleton stepCount={skeletonStepCount} />
                 </div>
-                
+
                 {/* Skeleton Content */}
                 <div className="space-y-6 pb-24">
                     <Card className="bg-neutral-50 border-zinc-400">
@@ -1794,7 +1794,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             </div>
                         </CardContent>
                     </Card>
-                    
+
                     <Card className="bg-neutral-50 border-zinc-400">
                         <CardHeader>
                             <Skeleton className="h-6 w-32" />
@@ -1811,7 +1811,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         </CardContent>
                     </Card>
                 </div>
-                
+
                 <BottomNav />
             </>
         );
@@ -1857,24 +1857,23 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     onChange={(e) => updateSuratPengantar("nomorSurat", e.target.value)}
                                                     placeholder="963/UN7.F8.1/AK/2025"
                                                     className={
-                                                        nomorSuratStatus.isAvailable === false 
-                                                            ? "border-red-500 focus-visible:ring-red-500" 
-                                                            : nomorSuratStatus.isAvailable === true 
-                                                            ? "border-green-500 focus-visible:ring-green-500" 
-                                                            : ""
+                                                        nomorSuratStatus.isAvailable === false
+                                                            ? "border-red-500 focus-visible:ring-red-500"
+                                                            : nomorSuratStatus.isAvailable === true
+                                                                ? "border-green-500 focus-visible:ring-green-500"
+                                                                : ""
                                                     }
                                                 />
                                                 {nomorSuratStatus.message && (
-                                                    <p 
-                                                        className={`text-xs ${
-                                                            nomorSuratStatus.isChecking 
-                                                                ? "text-muted-foreground" 
-                                                                : nomorSuratStatus.isAvailable === false 
-                                                                ? "text-red-500 font-medium" 
-                                                                : nomorSuratStatus.isAvailable === true 
-                                                                ? "text-green-600 font-medium" 
-                                                                : "text-muted-foreground"
-                                                        }`}
+                                                    <p
+                                                        className={`text-xs ${nomorSuratStatus.isChecking
+                                                            ? "text-muted-foreground"
+                                                            : nomorSuratStatus.isAvailable === false
+                                                                ? "text-red-500 font-medium"
+                                                                : nomorSuratStatus.isAvailable === true
+                                                                    ? "text-green-600 font-medium"
+                                                                    : "text-muted-foreground"
+                                                            }`}
                                                     >
                                                         {nomorSuratStatus.message}
                                                     </p>
@@ -2216,11 +2215,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 </div>
                                             </div>
                                         )}
-                                        
-                                        <Button 
-                                            variant="outline" 
+
+                                        <Button
+                                            variant="outline"
                                             size="sm"
-                                            onClick={addCustomColumn} 
+                                            onClick={addCustomColumn}
                                             className="border-dashed"
                                         >
                                             <Plus className="w-4 h-4 mr-2" />
@@ -2230,8 +2229,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         {/* Table Header */}
                                         <div className="border rounded-lg overflow-hidden">
                                             <div className="bg-muted/50 p-3 border-b">
-                                                <div className="grid gap-2" style={{ 
-                                                    gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px` 
+                                                <div className="grid gap-2" style={{
+                                                    gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px`
                                                 }}>
                                                     <div className="text-xs font-medium text-center">No</div>
                                                     <div className="text-xs font-medium">Nama <span className="text-red-500">*</span></div>
@@ -2243,13 +2242,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     <div></div>
                                                 </div>
                                             </div>
-                                            
+
                                             {/* Table Body */}
                                             <div className="divide-y">
                                                 {suratTugasTabelForm.pelaksana.map((p, index) => (
                                                     <div key={p.key} className="p-3 bg-white hover:bg-muted/30">
-                                                        <div className="grid gap-2 items-center" style={{ 
-                                                            gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px` 
+                                                        <div className="grid gap-2 items-center" style={{
+                                                            gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px`
                                                         }}>
                                                             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium text-sm">
                                                                 {index + 1}
@@ -2292,7 +2291,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                         </div>
                                                     </div>
                                                 ))}
-                                                
+
                                                 {suratTugasTabelForm.pelaksana.length === 0 && (
                                                     <div className="p-8 text-center text-muted-foreground">
                                                         <p className="text-sm">Belum ada data pelaksana</p>
@@ -2300,7 +2299,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 )}
                                             </div>
                                         </div>
-                                        
+
                                         <Button variant="outline" onClick={addPelaksana} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah Pelaksana
@@ -2500,11 +2499,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         </AlertDescription>
                                     </Alert>
                                 )}
-                                
+
                                 <Alert>
                                     <Info className="h-4 w-4" />
                                     <AlertDescription>
-                                        {suratType === "SURAT_PENGANTAR" 
+                                        {suratType === "SURAT_PENGANTAR"
                                             ? "Penanda tangan default berdasarkan pilihan pengaju. Anda dapat mengubah konfigurasi jika diperlukan."
                                             : "Surat akan diverifikasi secara berurutan sebelum ditandatangani."}
                                     </AlertDescription>
@@ -2526,12 +2525,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 <SelectContent>
                                                     {/* Surat Pengantar: hanya pejabat prodi (Kaprodi, Kadep) - filtered by hasKaprodi */}
                                                     {/* Surat Tugas/Keputusan: filter pejabat fakultas berdasarkan kategori */}
-                                                    {(suratType === "SURAT_PENGANTAR" 
+                                                    {(suratType === "SURAT_PENGANTAR"
                                                         ? getSuratPengantarRoles(hasKaprodi)
                                                         : getFilteredRolesByCategory(suratCategory)
                                                     ).map((role) => (
-                                                        <SelectItem 
-                                                            key={role.value} 
+                                                        <SelectItem
+                                                            key={role.value}
                                                             value={role.value}
                                                             disabled={signers.some(s => s.role === role.value && s.id !== signer.id)}
                                                         >
@@ -2625,9 +2624,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     }))}
                                     formData={
                                         suratType === "SURAT_PENGANTAR" ? suratPengantarForm :
-                                        suratType === "SURAT_TUGAS" ? suratTugasForm :
-                                        suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
-                                        suratKeputusanForm
+                                            suratType === "SURAT_TUGAS" ? suratTugasForm :
+                                                suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
+                                                    suratKeputusanForm
                                     }
                                     tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                 />
@@ -2671,11 +2670,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             {/* Section 1: Akun Pengguna untuk Akses Sistem */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-blue-700">
+                                    <Label className="text-sm font-medium text-base-black">
                                         1. Pilih Akun Pengguna (Akses Sistem)
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Akun yang dipilih akan dapat <strong>mengakses dan mendownload</strong> surat setelah selesai.<br/>
+                                        Akun yang dipilih akan dapat <strong>mengakses dan mendownload</strong> surat setelah selesai.<br />
                                         <span className="text-amber-600 font-medium">Tidak akan tertulis di PDF surat.</span>
                                     </p>
                                     <div className="relative">
@@ -2724,7 +2723,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="font-medium text-sm truncate">{user.name}</p>
                                                                 <p className="text-xs text-muted-foreground truncate">
-                                                                    {user.type === 'mahasiswa' 
+                                                                    {user.type === 'mahasiswa'
                                                                         ? `${user.identifier} • ${user.programStudi || 'Mahasiswa'}`
                                                                         : `${user.jabatan || 'Pegawai'} • NIP: ${user.identifier}`
                                                                     }
@@ -2793,24 +2792,23 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             {/* Section 2: Text Manual untuk Tertulis di Surat */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="new-tembusan-text" className="text-sm font-medium text-green-700">
+                                    <Label htmlFor="new-tembusan-text" className="text-sm font-medium text-base-black">
                                         2. Tambah Text Tembusan (Tertulis di Surat)
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Text yang diketik akan <strong>tertulis di bagian "Tembusan:"</strong> di PDF surat.<br/>
-                                        <span className="text-amber-600 font-medium">Tidak terkait dengan akun sistem.</span><br/>
-                                        Contoh: "Arsip", "Pertinggal", "Kepala Laboratorium"
+                                        Text yang diketik akan <strong>tertulis di bagian "Tembusan:"</strong> di PDF surat.<br />
+                                        <span className="text-amber-600 font-medium">Tidak terkait dengan akun sistem.</span>
                                     </p>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 items-center">
                                         <Textarea
                                             id="new-tembusan-text"
                                             placeholder="Contoh: Arsip, Kepala Lab Fisika, Yth. Bapak/Ibu..."
                                             value={newTembusanTextInput}
                                             onChange={(e) => setNewTembusanTextInput(e.target.value)}
-                                            rows={2}
-                                            className="flex-1"
+                                            rows={1}
+                                            className="flex-1 min-h-[40px] py-2 resize-none"
                                         />
-                                        <Button onClick={addTembusanText} className="self-end" disabled={!newTembusanTextInput.trim()}>
+                                        <Button onClick={addTembusanText} disabled={!newTembusanTextInput.trim()}>
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah
                                         </Button>
@@ -2852,8 +2850,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             <Alert className="mt-4 bg-amber-50 border-amber-200">
                                 <Info className="h-4 w-4 text-amber-600" />
                                 <AlertDescription className="text-amber-800 text-sm">
-                                    <strong>Perbedaan:</strong><br/>
-                                    • <strong>Akun Sistem (Biru)</strong>: Dapat akses download surat, tidak tertulis di PDF<br/>
+                                    <strong>Perbedaan:</strong><br />
+                                    • <strong>Akun Sistem (Biru)</strong>: Dapat akses download surat, tidak tertulis di PDF<br />
                                     • <strong>Text Manual (Hijau)</strong>: Tertulis di PDF surat, tidak dapat akses sistem
                                 </AlertDescription>
                             </Alert>
@@ -2879,24 +2877,24 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 <Alert className="bg-blue-50 border-blue-200">
                                     <Info className="h-4 w-4 text-blue-600" />
                                     <AlertDescription className="text-blue-800 text-sm">
-                                        <strong>Lampiran dari Pengaju:</strong> Terdapat {pengajuAttachments.length} file lampiran yang diunggah oleh pengaju. 
+                                        <strong>Lampiran dari Pengaju:</strong> Terdapat {pengajuAttachments.length} file lampiran yang diunggah oleh pengaju.
                                         Anda dapat menghapus atau menambahkan file baru.
                                     </AlertDescription>
                                 </Alert>
                             )}
-                            
+
                             {/* Existing Attachments (pengaju + document) */}
                             {existingAttachments.length > 0 && (() => {
                                 // Filter lampiran pengaju jika user bukan Admin Prodi
                                 const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
-                                const filteredAttachments = isAdminProdi 
-                                    ? existingAttachments 
+                                const filteredAttachments = isAdminProdi
+                                    ? existingAttachments
                                     : existingAttachments.filter(att => !pengajuAttachments.some(pa => pa.fileUrl === att.url));
-                                
+
                                 return filteredAttachments.length > 0 ? (
                                     <div className="space-y-2">
                                         <Label className="text-sm font-medium flex items-center gap-2">
-                                            Lampiran Tersimpan 
+                                            Lampiran Tersimpan
                                             <Badge variant="secondary" className="text-xs">
                                                 {filteredAttachments.length} file
                                             </Badge>
@@ -2907,99 +2905,99 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 const isPdf = url.toLowerCase().includes('.pdf') || name.toLowerCase().endsWith('.pdf');
                                                 // Check if this is a pengaju attachment
                                                 const isPengajuAttachment = pengajuAttachments.some(pa => pa.fileUrl === url);
-                                            
-                                            return (
-                                                <div
-                                                    key={index}
-                                                    className={cn(
-                                                        "flex items-center gap-3 p-3 rounded-lg border",
-                                                        isPengajuAttachment 
-                                                            ? "bg-blue-50 border-blue-200" 
-                                                            : "bg-amber-50 border-amber-200"
-                                                    )}
-                                                >
-                                                    <div className={cn(
-                                                        "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-                                                        isPdf ? "bg-red-100" : "bg-green-100"
-                                                    )}>
-                                                        {isPdf ? (
-                                                            <File className="w-5 h-5 text-red-600" />
-                                                        ) : (
-                                                            <Image className="w-5 h-5 text-green-600" />
+
+                                                return (
+                                                    <div
+                                                        key={index}
+                                                        className={cn(
+                                                            "flex items-center gap-3 p-3 rounded-lg border",
+                                                            isPengajuAttachment
+                                                                ? "bg-blue-50 border-blue-200"
+                                                                : "bg-amber-50 border-amber-200"
                                                         )}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-sm truncate" title={name}>{name}</p>
-                                                        <p className={cn(
-                                                            "text-xs",
-                                                            isPengajuAttachment ? "text-blue-600" : "text-amber-600"
+                                                    >
+                                                        <div className={cn(
+                                                            "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                                                            isPdf ? "bg-red-100" : "bg-green-100"
                                                         )}>
-                                                            {isPengajuAttachment ? "Dari Pengaju" : "Tersimpan di server"}
-                                                        </p>
-                                                    </div>
-                                                    {isPengajuAttachment && (
-                                                        <Badge variant="outline" className="text-xs border-blue-300 text-blue-700 shrink-0">
-                                                            Pengaju
-                                                        </Badge>
-                                                    )}
-                                                    <div className="flex gap-1 shrink-0">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => {
-                                                                setPreviewUrl(url);
-                                                                setPreviewFileName(name);
-                                                                setPreviewModalOpen(true);
-                                                            }}
-                                                            className="text-blue-600 hover:text-blue-800 h-8 w-8"
-                                                            title="Preview"
-                                                        >
-                                                            <FileText className="w-4 h-4" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => confirmDeleteAttachment(attachment)}
-                                                            disabled={deletingAttachment === url}
-                                                            className="text-destructive hover:text-destructive h-8 w-8"
-                                                            title="Hapus"
-                                                        >
-                                                            {deletingAttachment === url ? (
-                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            {isPdf ? (
+                                                                <File className="w-5 h-5 text-red-600" />
                                                             ) : (
-                                                                <Trash2 className="w-4 h-4" />
+                                                                <Image className="w-5 h-5 text-green-600" />
                                                             )}
-                                                        </Button>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-medium text-sm truncate" title={name}>{name}</p>
+                                                            <p className={cn(
+                                                                "text-xs",
+                                                                isPengajuAttachment ? "text-blue-600" : "text-amber-600"
+                                                            )}>
+                                                                {isPengajuAttachment ? "Dari Pengaju" : "Tersimpan di server"}
+                                                            </p>
+                                                        </div>
+                                                        {isPengajuAttachment && (
+                                                            <Badge variant="outline" className="text-xs border-blue-300 text-blue-700 shrink-0">
+                                                                Pengaju
+                                                            </Badge>
+                                                        )}
+                                                        <div className="flex gap-1 shrink-0">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => {
+                                                                    setPreviewUrl(url);
+                                                                    setPreviewFileName(name);
+                                                                    setPreviewModalOpen(true);
+                                                                }}
+                                                                className="text-blue-600 hover:text-blue-800 h-8 w-8"
+                                                                title="Preview"
+                                                            >
+                                                                <FileText className="w-4 h-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => confirmDeleteAttachment(attachment)}
+                                                                disabled={deletingAttachment === url}
+                                                                className="text-destructive hover:text-destructive h-8 w-8"
+                                                                title="Hapus"
+                                                            >
+                                                                {deletingAttachment === url ? (
+                                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                                ) : (
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                )}
+                                                            </Button>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
+                                                );
                                             })}
                                         </div>
                                     </div>
                                 ) : null;
                             })()}
-                            
+
                             {/* Separator between existing and new uploads */}
                             {existingAttachments.length > 0 && (() => {
                                 const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
-                                const filteredAttachments = isAdminProdi 
-                                    ? existingAttachments 
+                                const filteredAttachments = isAdminProdi
+                                    ? existingAttachments
                                     : existingAttachments.filter(att => !pengajuAttachments.some(pa => pa.fileUrl === att.url));
                                 return filteredAttachments.length > 0 ? <Separator className="my-4" /> : null;
                             })()}
-                            
+
                             {/* FileUpload Component - dengan validasi ketat */}
                             {/* Batasan: max 5 file total (termasuk existing), max 5MB per file */}
                             {(() => {
                                 // Filter lampiran pengaju dari perhitungan jika user bukan Admin Prodi
                                 const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
-                                const filteredExistingAttachments = isAdminProdi 
-                                    ? existingAttachments 
+                                const filteredExistingAttachments = isAdminProdi
+                                    ? existingAttachments
                                     : existingAttachments.filter(att => !pengajuAttachments.some(pa => pa.fileUrl === att.url));
-                                
+
                                 const totalFiles = filteredExistingAttachments.length + attachmentFiles.length;
                                 const remainingSlots = Math.max(0, 5 - filteredExistingAttachments.length);
-                                
+
                                 return (
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
@@ -3012,7 +3010,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 </Badge>
                                             </div>
                                         </div>
-                                        
+
                                         {remainingSlots > 0 ? (
                                             <FileUpload
                                                 files={attachmentFiles}
@@ -3029,7 +3027,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 </AlertDescription>
                                             </Alert>
                                         )}
-                                        
+
                                         <p className="text-xs text-muted-foreground">
                                             Format: PDF, JPG, PNG • Maks. 5MB per file • Total maks. 5 file
                                         </p>
@@ -3040,10 +3038,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             {(() => {
                                 // Filter lampiran pengaju untuk kondisi alert
                                 const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
-                                const filteredExistingAttachments = isAdminProdi 
-                                    ? existingAttachments 
+                                const filteredExistingAttachments = isAdminProdi
+                                    ? existingAttachments
                                     : existingAttachments.filter(att => !pengajuAttachments.some(pa => pa.fileUrl === att.url));
-                                
+
                                 return attachmentFiles.length === 0 && filteredExistingAttachments.length === 0 ? (
                                     <Alert className="bg-blue-50 border-blue-200">
                                         <Info className="h-4 w-4 text-blue-600" />
@@ -3163,10 +3161,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     {(() => {
                                         // Filter lampiran pengaju jika user bukan Admin Prodi
                                         const isAdminProdi = (user?.role || '').toUpperCase() === 'ADMIN_PRODI';
-                                        const filteredExistingAttachments = isAdminProdi 
-                                            ? existingAttachments 
+                                        const filteredExistingAttachments = isAdminProdi
+                                            ? existingAttachments
                                             : existingAttachments.filter(att => !pengajuAttachments.some(pa => pa.fileUrl === att.url));
-                                        
+
                                         return (
                                             <>
                                                 <Label className="text-sm text-muted-foreground mb-2 block">
@@ -3179,76 +3177,76 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                             const { url, name } = attachment;
                                                             const isPdf = url.toLowerCase().includes('.pdf') || name.toLowerCase().endsWith('.pdf');
                                                             const isPengajuAttachment = pengajuAttachments.some(pa => pa.fileUrl === url);
-                                                return (
-                                                    <div
-                                                        key={`existing-${index}`}
-                                                        className={cn(
-                                                            "flex items-center gap-3 p-3 rounded-lg border",
-                                                            isPengajuAttachment 
-                                                                ? "bg-blue-50 border-blue-200" 
-                                                                : "bg-amber-50 border-amber-200"
-                                                        )}
-                                                    >
-                                                        <div className={cn(
-                                                            "w-8 h-8 rounded flex items-center justify-center shrink-0",
-                                                            isPdf ? "bg-red-100" : "bg-green-100"
-                                                        )}>
-                                                            {isPdf ? (
-                                                                <File className="w-4 h-4 text-red-600" />
-                                                            ) : (
-                                                                <Image className="w-4 h-4 text-green-600" />
-                                                            )}
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="font-medium text-sm truncate" title={name}>{name}</p>
-                                                            <Badge 
-                                                                variant={isPengajuAttachment ? "outline" : "secondary"} 
-                                                                className={cn(
-                                                                    "text-xs",
-                                                                    isPengajuAttachment && "border-blue-300 text-blue-700"
-                                                                )}
+                                                            return (
+                                                                <div
+                                                                    key={`existing-${index}`}
+                                                                    className={cn(
+                                                                        "flex items-center gap-3 p-3 rounded-lg border",
+                                                                        isPengajuAttachment
+                                                                            ? "bg-blue-50 border-blue-200"
+                                                                            : "bg-amber-50 border-amber-200"
+                                                                    )}
+                                                                >
+                                                                    <div className={cn(
+                                                                        "w-8 h-8 rounded flex items-center justify-center shrink-0",
+                                                                        isPdf ? "bg-red-100" : "bg-green-100"
+                                                                    )}>
+                                                                        {isPdf ? (
+                                                                            <File className="w-4 h-4 text-red-600" />
+                                                                        ) : (
+                                                                            <Image className="w-4 h-4 text-green-600" />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="font-medium text-sm truncate" title={name}>{name}</p>
+                                                                        <Badge
+                                                                            variant={isPengajuAttachment ? "outline" : "secondary"}
+                                                                            className={cn(
+                                                                                "text-xs",
+                                                                                isPengajuAttachment && "border-blue-300 text-blue-700"
+                                                                            )}
+                                                                        >
+                                                                            {isPengajuAttachment ? "Dari Pengaju" : "Tersimpan"}
+                                                                        </Badge>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                        {/* New attachments to be uploaded */}
+                                                        {attachmentFiles.map((file, index) => (
+                                                            <div
+                                                                key={`new-${index}`}
+                                                                className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200"
                                                             >
-                                                                {isPengajuAttachment ? "Dari Pengaju" : "Tersimpan"}
-                                                            </Badge>
-                                                        </div>
+                                                                <div className={cn(
+                                                                    "w-8 h-8 rounded flex items-center justify-center shrink-0",
+                                                                    file.type === 'application/pdf'
+                                                                        ? "bg-red-100"
+                                                                        : "bg-green-100"
+                                                                )}>
+                                                                    {file.type === 'application/pdf' ? (
+                                                                        <File className="w-4 h-4 text-red-600" />
+                                                                    ) : (
+                                                                        <Image className="w-4 h-4 text-green-600" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-medium text-sm truncate">{file.name}</p>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(1)} MB</p>
+                                                                        <Badge variant="outline" className="text-xs">Baru</Badge>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                );
-                                            })}
-                                            {/* New attachments to be uploaded */}
-                                            {attachmentFiles.map((file, index) => (
-                                                <div
-                                                    key={`new-${index}`}
-                                                    className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200"
-                                                >
-                                                    <div className={cn(
-                                                        "w-8 h-8 rounded flex items-center justify-center shrink-0",
-                                                        file.type === 'application/pdf' 
-                                                            ? "bg-red-100" 
-                                                            : "bg-green-100"
-                                                    )}>
-                                                        {file.type === 'application/pdf' ? (
-                                                            <File className="w-4 h-4 text-red-600" />
-                                                        ) : (
-                                                            <Image className="w-4 h-4 text-green-600" />
-                                                        )}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-sm truncate">{file.name}</p>
-                                                        <div className="flex items-center gap-2">
-                                                            <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(1)} MB</p>
-                                                            <Badge variant="outline" className="text-xs">Baru</Badge>
-                                                        </div>
-                                                    </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <p className="text-sm text-muted-foreground italic">
-                                                    Tidak ada lampiran
-                                                </p>
-                                            )}
-                                        </>
-                                    );
+                                                ) : (
+                                                    <p className="text-sm text-muted-foreground italic">
+                                                        Tidak ada lampiran
+                                                    </p>
+                                                )}
+                                            </>
+                                        );
                                     })()}
                                 </div>
 
@@ -3270,9 +3268,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         }))}
                                         formData={
                                             suratType === "SURAT_PENGANTAR" ? suratPengantarForm :
-                                            suratType === "SURAT_TUGAS" ? suratTugasForm :
-                                            suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
-                                            suratKeputusanForm
+                                                suratType === "SURAT_TUGAS" ? suratTugasForm :
+                                                    suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
+                                                        suratKeputusanForm
                                         }
                                         tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                     />
@@ -3283,7 +3281,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         <Alert className="border-blue-200 bg-blue-50">
                             <Info className="h-4 w-4 text-blue-600" />
                             <AlertDescription className="text-blue-800">
-                                {isEditMode 
+                                {isEditMode
                                     ? "Setelah menyimpan perubahan, Anda bisa tetap di halaman ini untuk review atau kembali ke dashboard."
                                     : "Setelah draft dibuat, surat akan melalui alur verifikasi sebelum ditandatangani."}
                             </AlertDescription>

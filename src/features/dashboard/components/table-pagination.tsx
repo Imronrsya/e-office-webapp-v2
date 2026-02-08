@@ -67,8 +67,8 @@ export function TablePagination({ pagination, onPageChange }: TablePaginationPro
   };
 
   return (
-    <nav 
-      aria-label="Navigasi halaman" 
+    <nav
+      aria-label="Navigasi halaman"
       className="flex items-center justify-center gap-1 py-4"
     >
       {/* Previous Button */}
@@ -103,11 +103,10 @@ export function TablePagination({ pagination, onPageChange }: TablePaginationPro
               onClick={() => onPageChange(pageNum)}
               aria-label={`Halaman ${pageNum}`}
               aria-current={page === pageNum ? "page" : undefined}
-              className={`h-9 w-9 p-0 ${
-                page === pageNum 
-                  ? "bg-slate-800 hover:bg-slate-700 text-white" 
+              className={`h-9 w-9 p-0 ${page === pageNum
+                  ? "bg-base-black hover:bg-base-black/90 text-white"
                   : "text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               {pageNum}
             </Button>

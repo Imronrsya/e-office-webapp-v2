@@ -177,25 +177,25 @@ const getFilteredRolesByCategory = (category: Category | null) => {
         // Backward compatibility - tampilkan semua
         return SURAT_FAKULTAS_ROLES;
     }
-    
+
     if (category === "AKADEMIK") {
         return [
             { value: "WADEK_1", label: "Wakil Dekan I" },
             { value: "DEKAN", label: "Dekan" },
         ];
     }
-    
+
     if (category === "SUMBER_DAYA") {
         return [
             { value: "WADEK_2", label: "Wakil Dekan II" },
             { value: "DEKAN", label: "Dekan" },
         ];
     }
-    
+
     if (category === "UMUM") {
         return SURAT_FAKULTAS_ROLES; // Semua pejabat
     }
-    
+
     return SURAT_FAKULTAS_ROLES;
 };
 
@@ -226,16 +226,16 @@ function BuatSuratContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useAuth();
-    
+
     // Get params from URL
-    const categoryParam = searchParams.get("category") as Category | null;
-    const typeParam = searchParams.get("type");
+    const categoryParam = searchParams?.get("category") as Category | null;
+    const typeParam = searchParams?.get("type");
     const suratType = typeParam ? TYPE_MAP[typeParam] : null;
-    
+
     // State
     const [submitting, setSubmitting] = useState(false);
     const [currentStep, setCurrentStep] = useState<Step>("form");
-    
+
     // Form states
     const [suratTugasForm, setSuratTugasForm] = useState<SuratTugasForm>({
         jenisSuratText: "SURAT TUGAS",
@@ -271,31 +271,31 @@ function BuatSuratContent() {
     // Perihal/Judul Surat input - separate from content fields
     // This maps to LetterDocument.perihal for dashboard/detail display
     const [perihalInput, setPerihalInput] = useState("");
-    
+
     // Signature state
     const [signers, setSigners] = useState<SignerItem[]>([
-        { 
-            id: String(Date.now()), 
+        {
+            id: String(Date.now()),
             role: "", // Empty - user MUST select manually
-            order: 1, 
+            order: 1,
             isRequired: true,
             name: "",
             nip: "",
         }
     ]);
-    
+
     // Tembusan state - Separated system
     const [tembusanUsers, setTembusanUsers] = useState<TembusanUser[]>([]);
     const [tembusanTexts, setTembusanTexts] = useState<TembusanText[]>([]);
     const [includePengaju, setIncludePengaju] = useState(true);
     const [newTembusanTextInput, setNewTembusanTextInput] = useState("");
-    
+
     // User search for tembusan
     const [userSearchQuery, setUserSearchQuery] = useState("");
     const [userSearchResults, setUserSearchResults] = useState<import('@/services/user.service').TembusanUser[]>([]);
     const [showUserResults, setShowUserResults] = useState(false);
     const [isSearchingUsers, setIsSearchingUsers] = useState(false);
-    
+
     // Attachment state - using FileUpload component from pengajuan (clean implementation)
     const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
@@ -352,10 +352,10 @@ function BuatSuratContent() {
     const addPelaksana = () => {
         const newKey = String(Date.now());
         // Create new pelaksana with default columns + custom columns
-        const newPelaksana: PelaksanaItem = { 
-            key: newKey, 
-            nama: "", 
-            nim: "", 
+        const newPelaksana: PelaksanaItem = {
+            key: newKey,
+            nama: "",
+            nim: "",
             prodi: "",
         };
         // Add empty values for custom columns
@@ -481,10 +481,10 @@ function BuatSuratContent() {
         // Use Date.now() for unique ID to prevent duplication
         const newId = String(Date.now());
         const newOrder = signers.length + 1;
-        setSigners([...signers, { 
-            id: newId, 
-            role: "", 
-            order: newOrder, 
+        setSigners([...signers, {
+            id: newId,
+            role: "",
+            order: newOrder,
             isRequired: true,
             name: "",
             nip: "",
@@ -509,7 +509,7 @@ function BuatSuratContent() {
         const roleLabel = ALL_SIGNER_ROLES.find(r => r.value === role)?.label || role;
         // Autofill nama dan NIP dari database
         const pejabat = pejabatList.find(p => p.role === role);
-        
+
         console.log('🔍 Autofill Debug:', {
             selectedRole: role,
             pejabatList: pejabatList,
@@ -517,10 +517,10 @@ function BuatSuratContent() {
             willFillName: pejabat?.name || roleLabel,
             willFillNip: pejabat?.nip || ""
         });
-        
-        setSigners(signers.map(s => s.id === id ? { 
-            ...s, 
-            role, 
+
+        setSigners(signers.map(s => s.id === id ? {
+            ...s,
+            role,
             name: pejabat?.name || roleLabel,
             nip: pejabat?.nip || ""
         } : s));
@@ -549,9 +549,9 @@ function BuatSuratContent() {
             return;
         }
         const newId = String(Date.now());
-        setTembusanTexts([...tembusanTexts, { 
-            id: newId, 
-            text: newTembusanTextInput.trim() 
+        setTembusanTexts([...tembusanTexts, {
+            id: newId,
+            text: newTembusanTextInput.trim()
         }]);
         setNewTembusanTextInput("");
     };
@@ -572,7 +572,7 @@ function BuatSuratContent() {
                 setUserSearchResults([]);
                 return;
             }
-            
+
             setIsSearchingUsers(true);
             try {
                 const { userService } = await import('@/services/user.service');
@@ -587,7 +587,7 @@ function BuatSuratContent() {
                 setIsSearchingUsers(false);
             }
         };
-        
+
         const debounce = setTimeout(searchUsers, 300);
         return () => clearTimeout(debounce);
     }, [userSearchQuery, tembusanUsers]);
@@ -598,7 +598,7 @@ function BuatSuratContent() {
             name: user.name,
             email: user.email,
             type: user.type,
-            description: user.type === 'mahasiswa' 
+            description: user.type === 'mahasiswa'
                 ? `${user.identifier} • ${user.programStudi || 'Mahasiswa'}`
                 : `NIP: ${user.identifier} • ${user.jabatan || 'Pegawai'}`
         };
@@ -703,25 +703,25 @@ function BuatSuratContent() {
             toast.error("Kategori tidak valid");
             return;
         }
-        
+
         // Langsung submit untuk semua kategori (termasuk UMUM)
         await doSubmit();
     };
-    
+
     // Fungsi submit yang sebenarnya
     const doSubmit = async () => {
         if (!suratType || !categoryParam) return;
-        
+
         setSubmitting(true);
         try {
             let content: Record<string, unknown> = {};
-            
+
             if (suratType === "SURAT_TUGAS") {
                 content = { ...suratTugasForm };
             } else if (suratType === "SURAT_TUGAS_TABEL") {
                 // Convert pelaksana to dataMahasiswa for template compatibility
                 const dataMahasiswa = suratTugasTabelForm.pelaksana.map(({ key, ...rest }) => rest);
-                content = { 
+                content = {
                     ...suratTugasTabelForm,
                     // Keep pelaksana for backward compatibility
                     pelaksana: dataMahasiswa,
@@ -828,7 +828,7 @@ function BuatSuratContent() {
                         setIsUploadingAttachment(false);
                     }
                 }
-                
+
                 toast.success("Surat berhasil dibuat");
                 // Redirect berdasarkan role: Admin Prodi -> Dashboard, Staff -> Surat Keluar
                 const redirectPath = user?.role ? getPostDraftRedirectPath(user.role) : '/dashboard';
@@ -1057,11 +1057,11 @@ function BuatSuratContent() {
                                                 </div>
                                             </div>
                                         )}
-                                        
-                                        <Button 
-                                            variant="outline" 
+
+                                        <Button
+                                            variant="outline"
                                             size="sm"
-                                            onClick={addCustomColumn} 
+                                            onClick={addCustomColumn}
                                             className="border-dashed"
                                         >
                                             <Plus className="w-4 h-4 mr-2" />
@@ -1071,8 +1071,8 @@ function BuatSuratContent() {
                                         {/* Table Header */}
                                         <div className="border rounded-lg overflow-hidden">
                                             <div className="bg-muted/50 p-3 border-b">
-                                                <div className="grid gap-2" style={{ 
-                                                    gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px` 
+                                                <div className="grid gap-2" style={{
+                                                    gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px`
                                                 }}>
                                                     <div className="text-xs font-medium text-center">No</div>
                                                     <div className="text-xs font-medium">Nama <span className="text-red-500">*</span></div>
@@ -1084,13 +1084,13 @@ function BuatSuratContent() {
                                                     <div></div>
                                                 </div>
                                             </div>
-                                            
+
                                             {/* Table Body */}
                                             <div className="divide-y">
                                                 {suratTugasTabelForm.pelaksana.map((p, index) => (
                                                     <div key={p.key} className="p-3 bg-white hover:bg-muted/30">
-                                                        <div className="grid gap-2 items-center" style={{ 
-                                                            gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px` 
+                                                        <div className="grid gap-2 items-center" style={{
+                                                            gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px`
                                                         }}>
                                                             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium text-sm">
                                                                 {index + 1}
@@ -1138,7 +1138,7 @@ function BuatSuratContent() {
                                                 ))}
                                             </div>
                                         </div>
-                                        
+
                                         <Button variant="outline" onClick={addPelaksana} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah Pelaksana
@@ -1338,7 +1338,7 @@ function BuatSuratContent() {
                                         </AlertDescription>
                                     </Alert>
                                 )}
-                                
+
                                 <Alert>
                                     <Info className="h-4 w-4" />
                                     <AlertDescription>
@@ -1362,8 +1362,8 @@ function BuatSuratContent() {
                                                 <SelectContent>
                                                     {/* Filter pejabat berdasarkan kategori surat */}
                                                     {getFilteredRolesByCategory(categoryParam).map((role) => (
-                                                        <SelectItem 
-                                                            key={role.value} 
+                                                        <SelectItem
+                                                            key={role.value}
                                                             value={role.value}
                                                             disabled={signers.some(s => s.role === role.value && s.id !== signer.id)}
                                                         >
@@ -1457,8 +1457,8 @@ function BuatSuratContent() {
                                     }))}
                                     formData={
                                         suratType === "SURAT_TUGAS" ? suratTugasForm :
-                                        suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
-                                        suratKeputusanForm
+                                            suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
+                                                suratKeputusanForm
                                     }
                                     tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                 />
@@ -1503,11 +1503,11 @@ function BuatSuratContent() {
                             {/* Section 1: Akun Pengguna untuk Akses Sistem */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-blue-700">
+                                    <Label className="text-sm font-medium text-base-black">
                                         1. Pilih Akun Pengguna (Akses Sistem)
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Akun yang dipilih akan dapat <strong>mengakses dan mendownload</strong> surat setelah selesai.<br/>
+                                        Akun yang dipilih akan dapat <strong>mengakses dan mendownload</strong> surat setelah selesai.<br />
                                         <span className="text-amber-600 font-medium">Tidak akan tertulis di PDF surat.</span>
                                     </p>
                                     <div className="relative">
@@ -1556,7 +1556,7 @@ function BuatSuratContent() {
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="font-medium text-sm truncate">{user.name}</p>
                                                                 <p className="text-xs text-muted-foreground truncate">
-                                                                    {user.type === 'mahasiswa' 
+                                                                    {user.type === 'mahasiswa'
                                                                         ? `${user.identifier} • ${user.programStudi || 'Mahasiswa'}`
                                                                         : `${user.jabatan || 'Pegawai'} • NIP: ${user.identifier}`
                                                                     }
@@ -1625,24 +1625,23 @@ function BuatSuratContent() {
                             {/* Section 2: Text Manual untuk Tertulis di Surat */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="new-tembusan-text" className="text-sm font-medium text-green-700">
+                                    <Label htmlFor="new-tembusan-text" className="text-sm font-medium text-base-black">
                                         2. Tambah Text Tembusan (Tertulis di Surat)
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Text yang diketik akan <strong>tertulis di bagian "Tembusan:"</strong> di PDF surat.<br/>
-                                        <span className="text-amber-600 font-medium">Tidak terkait dengan akun sistem.</span><br/>
-                                        Contoh: "Arsip", "Pertinggal", "Kepala Laboratorium"
+                                        Text yang diketik akan <strong>tertulis di bagian "Tembusan:"</strong> di PDF surat.<br />
+                                        <span className="text-amber-600 font-medium">Tidak terkait dengan akun sistem.</span>
                                     </p>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 items-center">
                                         <Textarea
                                             id="new-tembusan-text"
                                             placeholder="Contoh: Arsip, Kepala Lab Fisika, Yth. Bapak/Ibu..."
                                             value={newTembusanTextInput}
                                             onChange={(e) => setNewTembusanTextInput(e.target.value)}
-                                            rows={2}
-                                            className="flex-1"
+                                            rows={1}
+                                            className="flex-1 min-h-[40px] py-2 resize-none"
                                         />
-                                        <Button onClick={addTembusanText} className="self-end" disabled={!newTembusanTextInput.trim()}>
+                                        <Button onClick={addTembusanText} disabled={!newTembusanTextInput.trim()}>
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah
                                         </Button>
@@ -1684,9 +1683,9 @@ function BuatSuratContent() {
                             <Alert className="mt-4 bg-amber-50 border-amber-200">
                                 <Info className="h-4 w-4 text-amber-600" />
                                 <AlertDescription className="text-amber-800 text-sm">
-                                    <strong>Perbedaan:</strong><br/>
-                                    • <strong>Pengaju</strong>: Dapat akses download surat, tidak tertulis di PDF<br/>
-                                    • <strong>Akun Sistem (Biru)</strong>: Dapat akses download surat, tidak tertulis di PDF<br/>
+                                    <strong>Perbedaan:</strong><br />
+                                    • <strong>Pengaju</strong>: Dapat akses download surat, tidak tertulis di PDF<br />
+                                    • <strong>Akun Sistem (Biru)</strong>: Dapat akses download surat, tidak tertulis di PDF<br />
                                     • <strong>Text Tertulis (Hijau)</strong>: Tertulis di surat, tidak dapat akses sistem
                                 </AlertDescription>
                             </Alert>
@@ -1834,8 +1833,8 @@ function BuatSuratContent() {
                                                 >
                                                     <div className={cn(
                                                         "w-8 h-8 rounded flex items-center justify-center shrink-0",
-                                                        file.type === 'application/pdf' 
-                                                            ? "bg-red-100" 
+                                                        file.type === 'application/pdf'
+                                                            ? "bg-red-100"
                                                             : "bg-green-100"
                                                     )}>
                                                         {file.type === 'application/pdf' ? (
@@ -1878,8 +1877,8 @@ function BuatSuratContent() {
                                         }))}
                                         formData={
                                             suratType === "SURAT_TUGAS" ? suratTugasForm :
-                                            suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
-                                            suratKeputusanForm
+                                                suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
+                                                    suratKeputusanForm
                                         }
                                         tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                     />

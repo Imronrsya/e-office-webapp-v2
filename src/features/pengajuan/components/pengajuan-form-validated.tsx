@@ -160,7 +160,7 @@ export function PengajuanFormValidated() {
 
     // Verifikasi departemenId ada di list sebelum set
     const deptExists = departemenList.some(dept => dept.id === departemenId);
-    
+
     form.reset({
       ...form.getValues(),
       namaLengkap: user.name || "",
@@ -648,7 +648,7 @@ export function PengajuanFormValidated() {
               )}
             />
 
-            <div className="h-24" />
+            <div className="h-6" />
           </div>
         </div>
 
