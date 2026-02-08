@@ -140,8 +140,54 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Prevent layout shift when scrollbar appears/disappears */
+  html {
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+  }
+
   body {
     @apply bg-background text-foreground;
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    width: 100%;
+    /* Prevent padding-right injection by libraries */
+    padding-right: 0 !important;
+  }
+
+  /* Prevent any element from injecting padding when modals/dropdowns open */
+  body[style*="overflow"],
+  body[style*="padding-right"] {
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    padding-right: 0 !important;
+  }
+
+
+
+  /* Custom scrollbar styling - always visible */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted) / 0.3);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.4);
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.6);
+  }
+
+  /* For Firefox */
+  html, body {
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) hsl(var(--muted) / 0.3);
   }
 }
 
