@@ -169,7 +169,7 @@ export function RevisionDialog({
                         type="submit"
                         onClick={handleSubmit}
                         disabled={loading || !targetRole || !reason.trim()}
-                        className="bg-warning text-warning-foreground hover:bg-warning/90"
+                        className="bg-base-black text-white hover:bg-base-black/90"
                     >
                         {loading ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />

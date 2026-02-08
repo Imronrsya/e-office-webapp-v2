@@ -7,7 +7,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-primary-base">
+    <div className="min-h-screen bg-base-white">
       {/* Navigasi Tetap di Atas */}
       <TopNav />
 

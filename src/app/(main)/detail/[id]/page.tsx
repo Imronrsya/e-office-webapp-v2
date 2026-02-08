@@ -1625,77 +1625,71 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 {/* Content based on documentViewMode */}
                 {documentViewMode === 'form-only' ? (
                     /* Mode form-only: Verification mode atau Pre-draft mode - fokus ke data form, bukan dokumen */
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Left Column - Info Cards (prioritas utama) */}
-                        <div className="space-y-6">
-                            {/* Riwayat Proses */}
-                            <ProcessHistory 
-                                logs={logs}
-                                isWaiting={isWaiting}
-                                currentActiveRole={detail.currentActiveRole}
-                                currentStatus={detail.status}
-                                userScope={userScope}
-                                filterType={filterType}
-                            />
+                    <div className="space-y-6">
+                        {/* Riwayat Proses */}
+                        <ProcessHistory 
+                            logs={logs}
+                            isWaiting={isWaiting}
+                            currentActiveRole={detail.currentActiveRole}
+                            currentStatus={detail.status}
+                            userScope={userScope}
+                            filterType={filterType}
+                        />
 
-                            {/* Detail Surat */}
-                            <DetailSuratInfo 
-                                jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                                judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : submissionValues.judulAcara}
-                                keperluan={submissionValues.keperluan}
-                                isStaffCreated={isStaffCreated}
-                            />
-                        </div>
+                        {/* Detail Surat */}
+                        <DetailSuratInfo 
+                            jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
+                            judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : submissionValues.judulAcara}
+                            keperluan={submissionValues.keperluan}
+                            isStaffCreated={isStaffCreated}
+                        />
 
-                        {/* Right Column - Identitas dan Lampiran */}
-                        <div className="space-y-6">
-                            {/* Identitas Pemohon */}
-                            <IdentitasPemohonCard />
+                        {/* Identitas Pemohon */}
+                        <IdentitasPemohonCard />
 
-                            {/* Lampiran */}
-                            <LampiranCard />
-                            
-                            {/* Lampiran Dokumen dari Staf/Supervisor */}
-                            <LampiranDokumenCard />
-                            
-                            {/* Info untuk user tentang mode ini */}
-                            {isVerificationMode && (
-                                <Card className="bg-blue-50 border-blue-200 rounded-xl">
-                                    <CardContent className="p-4">
-                                        <div className="flex items-start gap-3">
-                                            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                                            <div>
-                                                <p className="text-sm font-medium text-blue-800">
-                                                    Mode Verifikasi
-                                                </p>
-                                                <p className="text-xs text-blue-600 mt-1">
-                                                    Fokus pada data formulir dan lampiran untuk proses verifikasi.
-                                                    Preview surat akan tersedia setelah proses drafting selesai.
-                                                </p>
-                                            </div>
+                        {/* Lampiran */}
+                        <LampiranCard />
+                        
+                        {/* Lampiran Dokumen dari Staf/Supervisor */}
+                        <LampiranDokumenCard />
+                        
+                        {/* Info untuk user tentang mode ini */}
+                        {isVerificationMode && (
+                            <Card className="bg-blue-50 border-blue-200 rounded-xl">
+                                <CardContent className="p-4">
+                                    <div className="flex items-start gap-3">
+                                        <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-blue-800">
+                                                Mode Verifikasi
+                                            </p>
+                                            <p className="text-xs text-blue-600 mt-1">
+                                                Fokus pada data formulir dan lampiran untuk proses verifikasi.
+                                                Preview surat akan tersedia setelah proses drafting selesai.
+                                            </p>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            )}
-                            {isPreDraftMode && !isVerificationMode && (
-                                <Card className="bg-amber-50 border-amber-200 rounded-xl">
-                                    <CardContent className="p-4">
-                                        <div className="flex items-start gap-3">
-                                            <Clock className="w-5 h-5 text-amber-600 mt-0.5" />
-                                            <div>
-                                                <p className="text-sm font-medium text-amber-800">
-                                                    Menunggu Proses
-                                                </p>
-                                                <p className="text-xs text-amber-600 mt-1">
-                                                    Surat pengantar belum digenerate. 
-                                                    Dokumen akan tersedia setelah proses drafting oleh Admin Prodi.
-                                                </p>
-                                            </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                        {isPreDraftMode && !isVerificationMode && (
+                            <Card className="bg-amber-50 border-amber-200 rounded-xl">
+                                <CardContent className="p-4">
+                                    <div className="flex items-start gap-3">
+                                        <Clock className="w-5 h-5 text-amber-600 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-amber-800">
+                                                Menunggu Proses
+                                            </p>
+                                            <p className="text-xs text-amber-600 mt-1">
+                                                Surat pengantar belum digenerate. 
+                                                Dokumen akan tersedia setelah proses drafting oleh Admin Prodi.
+                                            </p>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 ) : documentViewMode === 'both' ? (
                     /* Lingkup Departemen dengan tabs (jika UPA sudah selesai) */
@@ -1851,7 +1845,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={handleCreateDraft}
                                 disabled={actionLoading}
-                                className="bg-zinc-800 hover:bg-zinc-900 gap-2"
+                                className="bg-base-black hover:bg-base-black/90 text-white gap-2"
                             >
                                 {actionLoading ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1867,7 +1861,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={handleSubmitDraft}
                                 disabled={actionLoading}
-                                className="bg-blue-600 hover:bg-blue-700 gap-2"
+                                className="bg-base-black hover:bg-base-black/90 text-white gap-2"
                             >
                                 {actionLoading ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1878,28 +1872,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
-                        {/* Tanda Tangan Button - Kaprodi/Kadep */}
-                        {permissions.canSign && (
-                            <Button 
-                                onClick={handleSign}
-                                disabled={actionLoading}
-                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
-                            >
-                                {actionLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <PenTool className="w-4 h-4" />
-                                )}
-                                Tanda Tangan
-                            </Button>
-                        )}
-
                         {/* Meneruskan Button (Admin Fakultas) - shows when canReceive or canForward */}
                         {(permissions.canReceive || permissions.canForward) && isAdminFakultas && (
                             <Button 
                                 onClick={() => setDispositionDialogOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-blue-600 hover:bg-blue-700 gap-2"
+                                className="bg-base-black hover:bg-base-black/90 text-white gap-2"
                             >
                                 <Send className="w-4 h-4" />
                                 Meneruskan
@@ -1913,7 +1891,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={() => setDraftSuratDialogOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-purple-600 hover:bg-purple-700 gap-2"
+                                className="bg-base-black hover:bg-base-black/90 text-white gap-2"
                             >
                                 <FilePlus className="w-4 h-4" />
                                 Draft Surat
@@ -1925,7 +1903,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={() => setDraftSuratDialogOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-blue-600 hover:bg-blue-700 gap-2"
+                                className="bg-base-black hover:bg-base-black/90 text-white gap-2"
                             >
                                 <FilePlus className="w-4 h-4" />
                                 Draft Surat
@@ -1937,7 +1915,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={() => setDraftSuratDialogOpen(true)}
                                 disabled={actionLoading}
-                                className="bg-blue-600 hover:bg-blue-700 gap-2"
+                                className="bg-base-black hover:bg-base-black/90 text-white gap-2"
                             >
                                 <FilePlus className="w-4 h-4" />
                                 Draft Surat
@@ -1949,12 +1927,125 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <Button 
                                 onClick={handleEditDraft}
                                 disabled={actionLoading}
-                                className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
+                                className="bg-base-black text-white hover:bg-base-black/90 gap-2"
                             >
                                 <FileText className="w-4 h-4" />
                                 Edit Draft
                             </Button>
                         )}
+
+                        {/* Edit Draft Button (Supervisor/Manajer TU) - during verification */}
+                        {permissions.canEditDraftInVerification && (isSupervisor || isManajerTU) && (
+                            <Button 
+                                onClick={handleEditDraft}
+                                disabled={actionLoading}
+                                className="bg-base-black hover:bg-base-black/90 text-white gap-2"
+                            >
+                                <FileText className="w-4 h-4" />
+                                Edit Draft
+                            </Button>
+                        )}
+
+                        {/* === UPA LEGALISASI BUTTONS === */}
+                        
+                        {/* Bubuhkan Stempel Button (UPA) - when status is UPA_STAMPING */}
+                        {permissions.canStamp && isUPA && detail.status === 'UPA_STAMPING' && (
+                            <Button 
+                                onClick={handleStamp}
+                                disabled={actionLoading}
+                                className="bg-base-black hover:bg-base-black/90 text-white gap-2"
+                            >
+                                {actionLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Stamp className="w-4 h-4" />
+                                )}
+                                Bubuhkan Stempel
+                            </Button>
+                        )}
+
+                        {/* Generate QR Code Button (UPA) - when status is UPA_FINALIZING */}
+                        {isUPA && detail.status === 'UPA_FINALIZING' && (
+                            <Button 
+                                onClick={handleGenerateQR}
+                                disabled={actionLoading}
+                                className="bg-base-black hover:bg-base-black/90 text-white gap-2"
+                            >
+                                {actionLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <QrCode className="w-4 h-4" />
+                                )}
+                                Generate QR Code
+                            </Button>
+                        )}
+
+                        {/* === PEJABAT FAKULTAS BUTTONS === */}
+
+                        {/* Disposisi Button (Pejabat) - forward to lower hierarchy */}
+                        {permissions.canDispose && isPejabat && (
+                            <Button 
+                                onClick={() => setDispositionDialogOpen(true)}
+                                disabled={actionLoading}
+                                className="bg-base-black hover:bg-base-black/90 text-white gap-2"
+                            >
+                                <Send className="w-4 h-4" />
+                                Disposisi
+                            </Button>
+                        )}
+
+                        {/* === KEMBALIKAN BUTTONS (before green buttons) === */}
+
+                        {/* Kembalikan untuk Direvisi Button (Supervisor/Manajer TU) - untuk surat keluar */}
+                        {permissions.canReturnForRevision && (isSupervisor || isManajerTU) && (
+                            <Button 
+                                onClick={() => setRevisionDialogOpen(true)}
+                                disabled={actionLoading}
+                                className="bg-base-black text-white hover:bg-base-black/90 gap-2"
+                            >
+                                <Undo2 className="w-4 h-4" />
+                                Kembalikan untuk Direvisi
+                            </Button>
+                        )}
+
+                        {/* Kembalikan untuk Direvisi Button (Dekan/Wadek) - baik yang signing maupun verifying, untuk surat keluar */}
+                        {permissions.canReturnForRevision && isDekanWadek && (
+                            <Button 
+                                onClick={() => setRevisionDialogOpen(true)}
+                                disabled={actionLoading}
+                                className="bg-base-black text-white hover:bg-base-black/90 gap-2"
+                            >
+                                <Undo2 className="w-4 h-4" />
+                                Kembalikan untuk Direvisi
+                            </Button>
+                        )}
+
+                        {/* Kembalikan Button (Pejabat) - return to previous handler */}
+                        {permissions.canReturn && isPejabat && (
+                            <Button 
+                                onClick={() => setReturnDialogOpen(true)}
+                                disabled={actionLoading}
+                                className="bg-base-black text-white hover:bg-base-black/90 gap-2"
+                            >
+                                <Undo2 className="w-4 h-4" />
+                                Kembalikan
+                            </Button>
+                        )}
+
+                        {/* Tolak Button */}
+                        {permissions.canReject && (
+                            <Button 
+                                onClick={() => setRejectDialogOpen(true)}
+                                disabled={actionLoading}
+                                variant="destructive"
+                                className="gap-2"
+                            >
+                                <XCircle className="w-4 h-4" />
+                                Tolak
+                            </Button>
+                        )}
+
+                        {/* === GREEN/SUCCESS BUTTONS — ALWAYS RIGHTMOST === */}
 
                         {/* Submit for Verification Button (Staf) - after draft created */}
                         {permissions.canSubmitVerification && isStaf && (
@@ -1988,20 +2079,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
-                        {/* === SUPERVISOR/MANAJER TU VERIFICATION BUTTONS === */}
-                        
-                        {/* Edit Draft Button (Supervisor/Manajer TU) - during verification */}
-                        {permissions.canEditDraftInVerification && (isSupervisor || isManajerTU) && (
-                            <Button 
-                                onClick={handleEditDraft}
-                                disabled={actionLoading}
-                                className="bg-blue-600 hover:bg-blue-700 gap-2"
-                            >
-                                <FileText className="w-4 h-4" />
-                                Edit Draft
-                            </Button>
-                        )}
-
                         {/* Verifikasi Button (Supervisor/Manajer TU) */}
                         {permissions.canVerifySuratHasil && (isSupervisor || isManajerTU) && (
                             <Button 
@@ -2014,20 +2091,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
-                        {/* Kembalikan untuk Direvisi Button (Supervisor/Manajer TU) - untuk surat keluar */}
-                        {permissions.canReturnForRevision && (isSupervisor || isManajerTU) && (
-                            <Button 
-                                onClick={() => setRevisionDialogOpen(true)}
-                                disabled={actionLoading}
-                                className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
-                            >
-                                <Undo2 className="w-4 h-4" />
-                                Kembalikan untuk Direvisi
-                            </Button>
-                        )}
-
-                        {/* === UPA LEGALISASI BUTTONS === */}
-                        
                         {/* Beri Nomor Surat Button (UPA) - when status is UPA_NUMBERING */}
                         {permissions.canAssignNumber && isUPA && detail.status === 'UPA_NUMBERING' && (
                             <Button 
@@ -2037,38 +2100,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             >
                                 <Hash className="w-4 h-4" />
                                 Beri Nomor Surat
-                            </Button>
-                        )}
-
-                        {/* Bubuhkan Stempel Button (UPA) - when status is UPA_STAMPING */}
-                        {permissions.canStamp && isUPA && detail.status === 'UPA_STAMPING' && (
-                            <Button 
-                                onClick={handleStamp}
-                                disabled={actionLoading}
-                                className="bg-blue-600 hover:bg-blue-700 gap-2"
-                            >
-                                {actionLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Stamp className="w-4 h-4" />
-                                )}
-                                Bubuhkan Stempel
-                            </Button>
-                        )}
-
-                        {/* Generate QR Code Button (UPA) - when status is UPA_FINALIZING */}
-                        {isUPA && detail.status === 'UPA_FINALIZING' && (
-                            <Button 
-                                onClick={handleGenerateQR}
-                                disabled={actionLoading}
-                                className="bg-purple-600 hover:bg-purple-700 gap-2"
-                            >
-                                {actionLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <QrCode className="w-4 h-4" />
-                                )}
-                                Generate QR Code
                             </Button>
                         )}
 
@@ -2088,8 +2119,22 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
-                        {/* === DEKAN/WADEK SIGNING BUTTONS === */}
-                        
+                        {/* Tanda Tangan Button - Kaprodi/Kadep */}
+                        {permissions.canSign && (
+                            <Button 
+                                onClick={handleSign}
+                                disabled={actionLoading}
+                                className="bg-success text-success-foreground hover:bg-success/90 gap-2"
+                            >
+                                {actionLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <PenTool className="w-4 h-4" />
+                                )}
+                                Tanda Tangan
+                            </Button>
+                        )}
+
                         {/* Tanda Tangan SK/ST Button (Dekan/Wadek) - HANYA jika user di daftar penandatangan */}
                         {permissions.canSignSuratHasil && isDekanWadek && (
                             <Button 
@@ -2118,20 +2163,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
-                        {/* Kembalikan untuk Direvisi Button (Dekan/Wadek) - baik yang signing maupun verifying, untuk surat keluar */}
-                        {permissions.canReturnForRevision && isDekanWadek && (
-                            <Button 
-                                onClick={() => setRevisionDialogOpen(true)}
-                                disabled={actionLoading}
-                                className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
-                            >
-                                <Undo2 className="w-4 h-4" />
-                                Kembalikan untuk Direvisi
-                            </Button>
-                        )}
-
-                        {/* === PEJABAT FAKULTAS BUTTONS === */}
-                        
                         {/* Selesai Button (Pejabat) - finish processing at their level */}
                         {permissions.canComplete && isPejabat && (
                             <Button 
@@ -2144,30 +2175,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </Button>
                         )}
 
-                        {/* Disposisi Button (Pejabat) - forward to lower hierarchy */}
-                        {permissions.canDispose && isPejabat && (
-                            <Button 
-                                onClick={() => setDispositionDialogOpen(true)}
-                                disabled={actionLoading}
-                                className="bg-blue-600 hover:bg-blue-700 gap-2"
-                            >
-                                <Send className="w-4 h-4" />
-                                Disposisi
-                            </Button>
-                        )}
-
-                        {/* Kembalikan Button (Pejabat) - return to previous handler */}
-                        {permissions.canReturn && isPejabat && (
-                            <Button 
-                                onClick={() => setReturnDialogOpen(true)}
-                                disabled={actionLoading}
-                                className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
-                            >
-                                <Undo2 className="w-4 h-4" />
-                                Kembalikan
-                            </Button>
-                        )}
-
                         {/* Setujui Button */}
                         {permissions.canApprove && (
                             <Button 
@@ -2177,19 +2184,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             >
                                 <CheckCircle className="w-4 h-4" />
                                 Setujui
-                            </Button>
-                        )}
-                        
-                        {/* Tolak Button */}
-                        {permissions.canReject && (
-                            <Button 
-                                onClick={() => setRejectDialogOpen(true)}
-                                disabled={actionLoading}
-                                variant="destructive"
-                                className="gap-2"
-                            >
-                                <XCircle className="w-4 h-4" />
-                                Tolak
                             </Button>
                         )}
                     </div>
@@ -2395,7 +2389,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         </p>
                                         <Button
                                             onClick={() => handleDownloadAttachment(previewAttachment.fileName, previewAttachment.fileUrl)}
-                                            className="bg-zinc-800 hover:bg-zinc-900"
+                                            className="bg-base-black hover:bg-base-black/90 text-white"
                                         >
                                             <Download className="w-4 h-4 mr-2" />
                                             Download File
@@ -2419,7 +2413,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         handleDownloadAttachment(previewAttachment.fileName, previewAttachment.fileUrl);
                                     }
                                 }}
-                                className="bg-zinc-800 hover:bg-zinc-900"
+                                className="bg-base-black hover:bg-base-black/90 text-white"
                             >
                                 <Download className="w-4 h-4 mr-2" />
                                 Download

@@ -65,10 +65,10 @@ export default function LoginForm() {
         </div>
 
         <div className="flex flex-col justify-center">
-          <span className="text-sm font-bold leading-tight text-primary-base">
+          <span className="text-sm font-bold leading-tight text-base-black">
             Fakultas Sains dan Matematika
           </span>
-          <span className="text-sm font-normal leading-tight text-primary-base">
+          <span className="text-sm font-normal leading-tight text-base-black">
             Universitas Diponegoro
           </span>
         </div>
@@ -123,7 +123,7 @@ export default function LoginForm() {
 
               <Button
                 type="submit"
-                className="w-full mt-4 bg-[#2B2B2B] hover:bg-[#2B2B2B]/90 text-white"
+                className="w-full mt-4 bg-base-black hover:bg-base-black/90 text-white"
                 disabled={isLoading}
               >
                 {isLoading ? (

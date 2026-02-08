@@ -57,6 +57,7 @@ import { Suspense } from "react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { getPostDraftRedirectPath } from "@/lib/role-mapper";
 import { FileUpload } from "@/features/pengajuan/components/file-upload";
+import { Stepper } from "@/components/ui/stepper";
 
 // ============================================================================
 // TYPES
@@ -882,52 +883,10 @@ function BuatSuratContent() {
 
             {/* Step Indicator */}
             <div className="mb-8">
-                <div className="flex items-center justify-between">
-                    {steps.map((step, index) => {
-                        const Icon = step.icon;
-                        const isActive = step.key === currentStep;
-                        const isCompleted = index < currentStepIndex;
-                        
-                        return (
-                            <div key={step.key} className="flex items-center flex-1">
-                                <div className="flex flex-col items-center flex-1">
-                                    <div
-                                        className={cn(
-                                            "w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-colors",
-                                            isActive
-                                                ? "bg-blue-600 text-white"
-                                                : isCompleted
-                                                    ? "bg-emerald-600 text-white"
-                                                    : "bg-zinc-200 text-zinc-500"
-                                        )}
-                                    >
-                                        {isCompleted ? (
-                                            <CheckCircle className="w-5 h-5" />
-                                        ) : (
-                                            <Icon className="w-5 h-5" />
-                                        )}
-                                    </div>
-                                    <span
-                                        className={cn(
-                                            "text-sm font-medium",
-                                            isActive ? "text-blue-600" : isCompleted ? "text-emerald-600" : "text-zinc-500"
-                                        )}
-                                    >
-                                        {step.label}
-                                    </span>
-                                </div>
-                                {index < steps.length - 1 && (
-                                    <div
-                                        className={cn(
-                                            "h-0.5 flex-1 mx-2 mb-6",
-                                            index < currentStepIndex ? "bg-emerald-600" : "bg-zinc-200"
-                                        )}
-                                    />
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
+                <Stepper
+                    steps={steps}
+                    activeStep={currentStepIndex}
+                />
             </div>
 
             {/* Content */}
@@ -1970,7 +1929,7 @@ function BuatSuratContent() {
                     ) : (
                         <Button
                             onClick={goToNextStep}
-                            className="bg-blue-600 hover:bg-blue-700 gap-2"
+                            className="bg-base-black hover:bg-base-black/90 text-white gap-2"
                         >
                             Lanjutkan
                             <ArrowRight className="w-4 h-4" />

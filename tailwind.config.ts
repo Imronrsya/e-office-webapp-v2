@@ -65,10 +65,8 @@ const config: Config = {
           "5": "hsl(var(--chart-5))",
         },
 
-        // --- WARNA CUSTOM
-        "primary-base": "#2B2B2B",
-        "secondary-400": "#6D6D6D",
-        "grey-100": "#E1DFE0",
+        // --- WARNA CUSTOM (didefinisikan di @theme inline di globals.css)
+        // base-white, base-black, base-gray, base-gray-light → lihat globals.css
       },
       borderRadius: {
         lg: "var(--radius)",

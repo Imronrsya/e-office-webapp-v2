@@ -55,10 +55,10 @@ export default function TopNav() {
             </div>
 
             <div className="flex flex-col justify-center">
-              <span className="text-sm font-bold leading-tight text-primary-base">
+              <span className="text-sm font-bold leading-tight text-base-black">
                 Fakultas Sains dan Matematika
               </span>
-              <span className="text-sm font-normal leading-tight text-primary-base">
+              <span className="text-sm font-normal leading-tight text-base-black">
                 Universitas Diponegoro
               </span>
             </div>
@@ -85,7 +85,7 @@ export default function TopNav() {
                     <>
                       <Avatar className="h-10 w-10 bg-zinc-300">
                         <AvatarImage src={user?.image || "https://placehold.co/48x48"} />
-                        <AvatarFallback className="bg-primary-base text-white">
+                        <AvatarFallback className="bg-base-black text-base-white">
                           {user?.name?.charAt(0) || "U"}
                         </AvatarFallback>
                       </Avatar>

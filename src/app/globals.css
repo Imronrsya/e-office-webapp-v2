@@ -48,6 +48,12 @@
   --color-logout-foreground: hsl(var(--logout-foreground));
   --color-logout-hover: hsl(var(--logout-hover));
 
+  /* Custom design-token colors (hex) */
+  --color-base-white: #FFFFFF;
+  --color-base-black: #2B2B2B;
+  --color-base-gray: #6D6D6D;
+  --color-base-gray-light: #E1DFE0;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

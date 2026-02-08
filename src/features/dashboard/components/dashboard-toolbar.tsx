@@ -104,7 +104,7 @@ export function DashboardToolbar({
             <>
               <Button 
                 onClick={() => setBuatSuratDialogOpen(true)}
-                className="w-[320px] bg-[#2B2B2B] hover:bg-[#2B2B2B]/90 text-white"
+                className="w-[320px] bg-base-black hover:bg-base-black/90 text-white"
               >
                 <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
                 Buat Surat
@@ -117,7 +117,7 @@ export function DashboardToolbar({
             </>
           ) : (
             // Other roles: Direct link to pengajuan form
-            <Button asChild className="w-[320px] bg-[#2B2B2B] hover:bg-[#2B2B2B]/90 text-white">
+            <Button asChild className="w-[320px] bg-base-black hover:bg-base-black/90 text-white">
               <Link href="/pengajuan/buat">
                 <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
                 Buat Surat
@@ -136,7 +136,7 @@ export function DashboardToolbar({
               variant={filters.type === "masuk" ? "default" : "ghost"}
               onClick={() => handleTypeChange("masuk")}
               className={`w-[160px] rounded-r-none border ${filters.type === "masuk"
-                ? "bg-[#2B2B2B] hover:bg-[#2B2B2B]/90 text-white border-[#2B2B2B]"
+                ? "bg-base-black hover:bg-base-black/90 text-white border-base-black"
                 : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
                 }`}
             >
@@ -152,7 +152,7 @@ export function DashboardToolbar({
               variant={filters.type === "keluar" ? "default" : "ghost"}
               onClick={() => handleTypeChange("keluar")}
               className={`w-[160px] rounded-l-none border-l-0 border ${filters.type === "keluar"
-                ? "bg-[#2B2B2B] hover:bg-[#2B2B2B]/90 text-white border-[#2B2B2B]"
+                ? "bg-base-black hover:bg-base-black/90 text-white border-base-black"
                 : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
                 }`}
             >
@@ -170,7 +170,7 @@ export function DashboardToolbar({
         {/* Ajukan Surat Button - untuk role Pengaju (Mahasiswa/Dosen) */}
         {hasToolbarAction(role, "ajukan_surat") && (
           <Link href="/pengajuan/buat">
-            <Button className="bg-[#2B2B2B] hover:bg-[#2B2B2B]/90 text-white">
+            <Button className="bg-base-black hover:bg-base-black/90 text-white">
               <Plus className="h-4 w-4" aria-hidden="true" />
               Ajukan Surat
             </Button>

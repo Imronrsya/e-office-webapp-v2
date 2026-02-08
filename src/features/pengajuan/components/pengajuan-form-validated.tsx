@@ -301,7 +301,7 @@ export function PengajuanFormValidated() {
         <div className="flex-1 w-full pb-24">
           {/* Header */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-2 h-8 bg-[#2B2B2B] rounded-full" />
+            <div className="w-2 h-8 bg-base-black rounded-full" />
             <h1 className="text-2xl font-bold text-gray-900">Pengajuan</h1>
           </div>
 
@@ -324,7 +324,7 @@ export function PengajuanFormValidated() {
                       className={cn(
                         "h-auto p-3 rounded-xl border transition-all justify-start min-w-[200px]",
                         field.value === "SURAT_KEPUTUSAN"
-                          ? "bg-[#2B2B2B] border-[#2B2B2B] text-white hover:bg-[#2B2B2B]/90 hover:text-white"
+                          ? "bg-base-black border-base-black text-white hover:bg-base-black/90 hover:text-white"
                           : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300"
                       )}
                     >
@@ -334,7 +334,7 @@ export function PengajuanFormValidated() {
                             "flex items-center justify-center w-9 h-9 rounded-full font-medium text-xs shrink-0 transition-colors",
                             field.value === "SURAT_KEPUTUSAN"
                               ? "bg-white text-[#2B2B2B]"
-                              : "bg-[#2B2B2B] text-white"
+                              : "bg-base-black text-white"
                           )}
                         >
                           SK
@@ -353,7 +353,7 @@ export function PengajuanFormValidated() {
                       className={cn(
                         "h-auto p-3 rounded-xl border transition-all justify-start min-w-[200px]",
                         field.value === "SURAT_TUGAS"
-                          ? "bg-[#2B2B2B] border-[#2B2B2B] text-white hover:bg-[#2B2B2B]/90 hover:text-white"
+                          ? "bg-base-black border-base-black text-white hover:bg-base-black/90 hover:text-white"
                           : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300"
                       )}
                     >
@@ -363,7 +363,7 @@ export function PengajuanFormValidated() {
                             "flex items-center justify-center w-9 h-9 rounded-full font-medium text-xs shrink-0 transition-colors",
                             field.value === "SURAT_TUGAS"
                               ? "bg-white text-[#2B2B2B]"
-                              : "bg-[#2B2B2B] text-white"
+                              : "bg-base-black text-white"
                           )}
                         >
                           ST
@@ -669,7 +669,7 @@ export function PengajuanFormValidated() {
             <Button
               type="submit"
               disabled={isSubmitting || !form.formState.isValid}
-              className="bg-[#2B2B2B] hover:bg-[#2B2B2B]/90 text-white"
+              className="bg-base-black hover:bg-base-black/90 text-white"
             >
               <FileText className="mr-2 h-4 w-4" />
               {isSubmitting ? "Mengajukan..." : "Ajukan Surat"}

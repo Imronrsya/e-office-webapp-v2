@@ -73,6 +73,7 @@ import { useAuth } from "@/features/auth/hooks/use-auth";
 import { getPostDraftRedirectPath } from "@/lib/role-mapper";
 import { FileUpload } from "@/features/pengajuan/components/file-upload";
 import { departmentApprovalService } from "@/services/department-approval.service";
+import { Stepper, StepperSkeleton } from "@/components/ui/stepper";
 
 // ============================================================================
 // TYPES
@@ -1767,28 +1768,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 
                 {/* Skeleton Stepper */}
                 <div className="mb-8">
-                    <div className="flex justify-center">
-                        <div className="flex items-start w-full max-w-2xl">
-                            {Array.from({ length: skeletonStepCount }).map((_, index) => {
-                                const isLast = index === skeletonStepCount - 1;
-                                return (
-                                    <div key={index} className={cn("flex items-start", isLast ? "flex-none" : "flex-1")}>
-                                        {/* Skeleton Step Circle and Label */}
-                                        <div className="flex flex-col items-center">
-                                            <Skeleton className="w-10 h-10 rounded-full" />
-                                            <Skeleton className="h-4 w-16 mt-2" />
-                                        </div>
-                                        {/* Skeleton Connector Line */}
-                                        {!isLast && (
-                                            <div className="flex-1 flex items-center px-3 mt-5">
-                                                <Skeleton className="h-0.5 w-full" />
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    <StepperSkeleton stepCount={skeletonStepCount} />
                 </div>
                 
                 {/* Skeleton Content */}
@@ -1849,59 +1829,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
             {/* Step Indicator - Only show active steps */}
             <div className="mb-8">
-                <div className="flex justify-center">
-                    <div className="flex items-start w-full max-w-2xl">
-                        {activeSteps.map((step, index) => {
-                            const Icon = step.icon;
-                            const isActive = step.key === currentStep;
-                            const isCompleted = index < currentStepIndex;
-                            const isLast = index === activeSteps.length - 1;
-                            
-                            return (
-                                <div key={step.key} className={cn("flex items-start", isLast ? "flex-none" : "flex-1")}>
-                                    {/* Step Circle and Label */}
-                                    <div className="flex flex-col items-center">
-                                        <div
-                                            className={cn(
-                                                "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-                                                isActive
-                                                    ? "bg-blue-600 text-white"
-                                                    : isCompleted
-                                                        ? "bg-emerald-600 text-white"
-                                                        : "bg-zinc-200 text-zinc-500"
-                                            )}
-                                        >
-                                            {isCompleted ? (
-                                                <CheckCircle className="w-5 h-5" />
-                                            ) : (
-                                                <Icon className="w-5 h-5" />
-                                            )}
-                                        </div>
-                                        <span
-                                            className={cn(
-                                                "text-sm font-medium text-center mt-2 whitespace-nowrap",
-                                                isActive ? "text-blue-600" : isCompleted ? "text-emerald-600" : "text-zinc-500"
-                                            )}
-                                        >
-                                            {step.label}
-                                        </span>
-                                    </div>
-                                    {/* Connector Line */}
-                                    {!isLast && (
-                                        <div className="flex-1 flex items-center px-3 mt-5">
-                                            <div
-                                                className={cn(
-                                                    "h-0.5 w-full",
-                                                    index < currentStepIndex ? "bg-emerald-600" : "bg-zinc-200"
-                                                )}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
+                <Stepper
+                    steps={activeSteps}
+                    activeStep={currentStepIndex}
+                />
             </div>
 
             {/* Content */}
@@ -3393,7 +3324,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     ) : (
                         <Button
                             onClick={goToNextStep}
-                            className="bg-blue-600 hover:bg-blue-700 gap-2"
+                            className="bg-base-black hover:bg-base-black/90 text-white gap-2"
                         >
                             Lanjutkan
                             <ArrowRight className="w-4 h-4" />

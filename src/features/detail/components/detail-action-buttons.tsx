@@ -56,7 +56,7 @@ export function DetailActionButtons({ permissions, onApprove, onReject, onSign, 
     // Department Sign Actions (Kadep)
     if (permissions.canSign && onSign) {
         buttons.push(
-            <Button key="sign" onClick={onSign} className="bg-blue-600 hover:bg-blue-700">
+            <Button key="sign" onClick={onSign} className="bg-base-black hover:bg-base-black/90 text-white">
                 <FileSignature className="w-4 h-4 mr-2" />
                 Tanda Tangan
             </Button>
@@ -66,7 +66,7 @@ export function DetailActionButtons({ permissions, onApprove, onReject, onSign, 
     // Department Draft Actions (Admin Prodi)
     if (permissions.canDraft && onDraft) {
         buttons.push(
-            <Button key="draft" onClick={onDraft} className="bg-purple-600 hover:bg-purple-700">
+            <Button key="draft" onClick={onDraft} className="bg-base-black hover:bg-base-black/90 text-white">
                 <FileSignature className="w-4 h-4 mr-2" />
                 Buat Surat Pengantar
             </Button>
@@ -76,7 +76,7 @@ export function DetailActionButtons({ permissions, onApprove, onReject, onSign, 
     // Faculty Actions
     if (permissions.canForward && onForward) {
         buttons.push(
-            <Button key="forward" onClick={onForward} className="bg-indigo-600 hover:bg-indigo-700">
+            <Button key="forward" onClick={onForward} className="bg-base-black hover:bg-base-black/90 text-white">
                 <Send className="w-4 h-4 mr-2" />
                 Teruskan
             </Button>
@@ -85,7 +85,7 @@ export function DetailActionButtons({ permissions, onApprove, onReject, onSign, 
 
     if (permissions.canDispose && onDispose) {
         buttons.push(
-            <Button key="dispose" onClick={onDispose} className="bg-cyan-600 hover:bg-cyan-700">
+            <Button key="dispose" onClick={onDispose} className="bg-base-black hover:bg-base-black/90 text-white">
                 <Share2 className="w-4 h-4 mr-2" />
                 Disposisi
             </Button>
@@ -103,7 +103,7 @@ export function DetailActionButtons({ permissions, onApprove, onReject, onSign, 
 
     if (permissions.canReturn && onReturn) {
         buttons.push(
-            <Button key="return" onClick={onReturn} variant="outline" className="border-orange-600 text-orange-600 hover:bg-orange-50">
+            <Button key="return" onClick={onReturn} className="bg-base-black hover:bg-base-black/90 text-white">
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Kembalikan
             </Button>
@@ -122,7 +122,7 @@ export function DetailActionButtons({ permissions, onApprove, onReject, onSign, 
     // UPA Actions
     if (permissions.canAssignNumber && onAssignNumber) {
         buttons.push(
-            <Button key="assign-number" onClick={onAssignNumber} className="bg-amber-600 hover:bg-amber-700">
+            <Button key="assign-number" onClick={onAssignNumber} className="bg-base-black hover:bg-base-black/90 text-white">
                 <Hash className="w-4 h-4 mr-2" />
                 Beri Nomor
             </Button>
@@ -131,7 +131,7 @@ export function DetailActionButtons({ permissions, onApprove, onReject, onSign, 
 
     if (permissions.canStamp && onStamp) {
         buttons.push(
-            <Button key="stamp" onClick={onStamp} className="bg-rose-600 hover:bg-rose-700">
+            <Button key="stamp" onClick={onStamp} className="bg-base-black hover:bg-base-black/90 text-white">
                 <Stamp className="w-4 h-4 mr-2" />
                 Beri Cap
             </Button>

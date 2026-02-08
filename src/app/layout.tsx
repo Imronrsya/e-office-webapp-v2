@@ -23,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body className={`${poppins.variable} font-sans antialiased bg-grey-100`}>
+      <body className={`${poppins.variable} font-sans antialiased bg-base-gray-light`}>
         <AuthProvider>
           {children}
           <Toaster position="top-center" richColors />
