@@ -162,7 +162,7 @@ export default function QuickLoginDev({ onLogin, isLoading = false }: QuickLogin
     <div className="pt-4 border-t border-zinc-200">
       <div className="flex items-center gap-2 mb-3">
         <Zap className="h-4 w-4 text-amber-500 flex-shrink-0" />
-        <span className="text-xs font-medium text-zinc-500">Quick Login (Dev Only)</span>
+        <span className="text-xs font-medium text-zinc-500">Masuk Cepat (Dev Only)</span>
       </div>
       
       <div className="space-y-4 max-h-96 overflow-y-auto">

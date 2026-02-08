@@ -44,6 +44,10 @@
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
 
+  --color-logout: hsl(var(--logout));
+  --color-logout-foreground: hsl(var(--logout-foreground));
+  --color-logout-hover: hsl(var(--logout-hover));
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -97,6 +101,11 @@
   --warning: 37.7 92.1% 50.2%;
   --warning-foreground: 0 0% 100%;
   
+  /* Logout - Red (untuk tombol logout) */
+  --logout: 0 72% 51%;
+  --logout-foreground: 0 0% 100%;
+  --logout-hover: 0 72% 44%;
+
   /* Border, Input, Ring */
   --border: 240 5.9% 90%;
   --input: 240 5.9% 90%;

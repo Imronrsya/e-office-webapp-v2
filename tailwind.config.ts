@@ -49,6 +49,11 @@ const config: Config = {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        logout: {
+          DEFAULT: "hsl(var(--logout))",
+          foreground: "hsl(var(--logout-foreground))",
+          hover: "hsl(var(--logout-hover))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

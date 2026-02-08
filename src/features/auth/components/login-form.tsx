@@ -29,7 +29,7 @@ export default function LoginForm() {
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err.response?.data?.error || "Invalid email or password");
+      setError(err.response?.data?.error || "Email atau kata sandi salah");
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +42,7 @@ export default function LoginForm() {
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err.response?.data?.error || "Quick login failed");
+      setError(err.response?.data?.error || "Gagal masuk");
       throw err; // Re-throw agar QuickLoginDev bisa handle loading state
     } finally {
       setIsLoading(false);
@@ -80,7 +80,7 @@ export default function LoginForm() {
             SK/ST DEKAN
           </h1>
           <p className="text-xl text-gray-500">
-            Enter your credentials to access your account.
+            Masukkan kredensial Anda untuk mengakses akun.
           </p>
         </div>
 
@@ -106,7 +106,7 @@ export default function LoginForm() {
                 <Label htmlFor="password">Password</Label>
                 <PasswordInput
                   id="password"
-                  placeholder="Enter your password"
+                  placeholder="Masukkan kata sandi"
                   className="bg-white"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -129,10 +129,10 @@ export default function LoginForm() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing In...
+                    Sedang masuk...
                   </>
                 ) : (
-                  "Sign In"
+                  "Masuk"
                 )}
               </Button>
             </form>
