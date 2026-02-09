@@ -236,16 +236,20 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Surat Keputusan Dekan - FSM UNDIP</title>
   <style>
+    @page {
+      size: A4;
+      margin: 15mm 20mm 20mm 20mm;
+    }
     @media print {
       body {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+        background: #ffffff !important;
       }
-      .page-break-gap { display: none !important; }
-    }
-    @page {
-      size: A4;
-      margin: 15mm 20mm 20mm 20mm;
+      #surat-content, .lampiran-content {
+        padding: 0 !important;
+        box-shadow: none !important;
+      }
     }
     * {
       -webkit-print-color-adjust: exact !important;
@@ -263,7 +267,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       font-size: 11pt;
       line-height: 1;
       color: #000000 !important;
-      background: #e0e0e0 !important;
+      background: #ffffff !important;
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
@@ -280,23 +284,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       padding: 15mm 20mm 20mm 20mm;
       background: #ffffff;
       color: #000000 !important;
-    }
-    .page-break-gap {
-      width: 210mm;
-      height: 10mm;
-      background: #e0e0e0;
-      margin: 0 auto;
-      box-shadow:
-        inset 0 5px 8px -4px rgba(0,0,0,0.15),
-        inset 0 -5px 8px -4px rgba(0,0,0,0.15);
-    }
-    .visual-page {
-      width: 210mm;
-      margin: 0 auto;
-      background: #ffffff;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      page-break-before: always;
     }
     .force-page-break {
       /* Marker class for JS pagination to force a new page before this element */
@@ -673,93 +661,6 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
   </div>
   ` : ''}
   
-  <script>
-  (function() {
-    function paginate() {
-      var mmToPx = function(mm) { return mm * 3.7795275591; };
-      var PAGE_HEIGHT = mmToPx(297);
 
-      // Collect content sections
-      var mainContent = document.getElementById('surat-content');
-      var lampiranContent = document.getElementById('lampiran-content');
-      var sections = [];
-      if (mainContent) sections.push(mainContent);
-      if (lampiranContent) sections.push(lampiranContent);
-
-      if (sections.length === 0) return;
-
-      // FIRST: Measure heights BEFORE hiding
-      var sectionHeights = [];
-      var totalContentHeight = 0;
-      for (var s = 0; s < sections.length; s++) {
-        var h = sections[s].scrollHeight;
-        sectionHeights.push(h);
-        totalContentHeight += h;
-      }
-
-      // Check if pagination is needed
-      if (totalContentHeight <= PAGE_HEIGHT && sections.length === 1) return;
-
-      // NOW hide original sections
-      for (var s = 0; s < sections.length; s++) {
-        sections[s].style.visibility = 'hidden';
-        sections[s].style.position = 'absolute';
-        sections[s].style.left = '-9999px';
-      }
-
-      var pagesContainer = document.createElement('div');
-      pagesContainer.id = 'pages-container';
-      var pageCount = 0;
-
-      for (var s = 0; s < sections.length; s++) {
-        var section = sections[s];
-        var sectionHeight = sectionHeights[s];
-        var numPagesForSection = Math.max(1, Math.ceil(sectionHeight / PAGE_HEIGHT));
-
-        for (var i = 0; i < numPagesForSection; i++) {
-          // Gap between pages
-          if (pageCount > 0) {
-            var gap = document.createElement('div');
-            gap.className = 'page-break-gap';
-            pagesContainer.appendChild(gap);
-          }
-
-          var page = document.createElement('div');
-          page.className = 'visual-page';
-          page.style.width = '210mm';
-          page.style.height = PAGE_HEIGHT + 'px';
-          page.style.overflow = 'hidden';
-          page.style.position = 'relative';
-          page.style.background = '#ffffff';
-          page.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12)';
-
-          var clone = section.cloneNode(true);
-          clone.style.visibility = 'visible';
-          clone.style.position = 'absolute';
-          clone.style.top = -(i * PAGE_HEIGHT) + 'px';
-          clone.style.left = '0';
-          clone.style.width = '100%';
-          clone.style.margin = '0';
-
-          page.appendChild(clone);
-          pagesContainer.appendChild(page);
-          pageCount++;
-        }
-      }
-
-      document.body.appendChild(pagesContainer);
-
-      var finalHeight = pagesContainer.scrollHeight;
-      document.body.style.height = finalHeight + 'px';
-      pagesContainer.setAttribute('data-page-count', pageCount.toString());
-    }
-
-    if (document.readyState === 'complete') {
-      setTimeout(paginate, 150);
-    } else {
-      window.addEventListener('load', function() { setTimeout(paginate, 150); });
-    }
-  })();
-  </script>
 </body>
 </html>`;

@@ -232,21 +232,25 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${data.jenisSuratText} - FSM UNDIP</title>
   <style>
+    @page {
+      size: A4;
+      margin: 15mm 20mm 20mm 20mm;
+    }
     @media print {
       body {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+        background: #ffffff !important;
       }
-      .page-break-gap { display: none !important; }
+      #surat-content {
+        padding: 0 !important;
+        box-shadow: none !important;
+      }
     }
     * {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
       box-sizing: border-box;
-    }
-    @page {
-      size: A4;
-      margin: 15mm 20mm 20mm 20mm;
     }
     html {
       margin: 0; padding: 0;
@@ -259,36 +263,16 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       font-size: 12pt;
       line-height: 1;
       color: #000000 !important;
-      background: #e0e0e0 !important;
+      background: #ffffff !important;
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
-    /* Continuous content container - JS will paginate this */
     #surat-content {
       width: 210mm;
       margin: 0 auto;
       padding: 10mm 20mm 20mm 20mm;
       background: #ffffff;
       color: #000000 !important;
-    }
-    /* Visual page break gap between pages */
-    .page-break-gap {
-      width: 210mm;
-      height: 10mm;
-      background: #e0e0e0;
-      margin: 0 auto;
-      box-shadow: 
-        inset 0 5px 8px -4px rgba(0,0,0,0.15),
-        inset 0 -5px 8px -4px rgba(0,0,0,0.15);
-    }
-    /* Each visual page */
-    .visual-page {
-      width: 210mm;
-      margin: 0 auto;
-      background: #ffffff;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
     }
     .header-container {
       display: flex;
@@ -525,74 +509,6 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       ${renderQRCode(data.qrCodeDataUrl, data.verificationUrl)}
     </div>
   </div>
-  <script>
-  (function() {
-    function paginate() {
-      var content = document.getElementById('surat-content');
-      if (!content) return;
 
-      var mmToPx = function(mm) { return mm * 3.7795275591; };
-      var PAGE_HEIGHT = mmToPx(297);
-
-      // Measure total content height BEFORE hiding
-      var totalHeight = content.scrollHeight;
-      if (totalHeight <= PAGE_HEIGHT) return; // fits on one page, no pagination needed
-
-      var numPages = Math.ceil(totalHeight / PAGE_HEIGHT);
-
-      // Hide original content using visibility (keeps dimensions)
-      content.style.visibility = 'hidden';
-      content.style.position = 'absolute';
-      content.style.left = '-9999px';
-
-      // Build pages container
-      var pagesContainer = document.createElement('div');
-      pagesContainer.id = 'pages-container';
-
-      for (var i = 0; i < numPages; i++) {
-        // Gap between pages
-        if (i > 0) {
-          var gap = document.createElement('div');
-          gap.className = 'page-break-gap';
-          pagesContainer.appendChild(gap);
-        }
-
-        // Viewport page - clips a vertical slice of the content
-        var page = document.createElement('div');
-        page.className = 'visual-page';
-        page.style.width = '210mm';
-        page.style.height = PAGE_HEIGHT + 'px';
-        page.style.overflow = 'hidden';
-        page.style.position = 'relative';
-        page.style.background = '#ffffff';
-        page.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12)';
-
-        // Clone content and offset vertically
-        var clone = content.cloneNode(true);
-        clone.style.visibility = 'visible';
-        clone.style.position = 'absolute';
-        clone.style.top = -(i * PAGE_HEIGHT) + 'px';
-        clone.style.left = '0';
-        clone.style.width = '100%';
-        clone.style.margin = '0';
-
-        page.appendChild(clone);
-        pagesContainer.appendChild(page);
-      }
-
-      document.body.appendChild(pagesContainer);
-
-      var finalHeight = pagesContainer.scrollHeight;
-      document.body.style.height = finalHeight + 'px';
-      pagesContainer.setAttribute('data-page-count', numPages.toString());
-    }
-
-    if (document.readyState === 'complete') {
-      setTimeout(paginate, 150);
-    } else {
-      window.addEventListener('load', function() { setTimeout(paginate, 150); });
-    }
-  })();
-  </script>
 </body>
 </html>`;

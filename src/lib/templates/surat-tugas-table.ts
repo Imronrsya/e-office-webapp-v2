@@ -288,7 +288,6 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
-      .page-break-gap { display: none !important; }
     }
     @page {
       size: A4;
@@ -310,7 +309,7 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       font-size: 12pt;
       line-height: 1;
       color: #000000 !important;
-      background: #e0e0e0 !important;
+      background: #ffffff !important;
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
@@ -320,23 +319,6 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       padding: 10mm 20mm 20mm 20mm;
       background: #ffffff;
       color: #000000 !important;
-    }
-    .page-break-gap {
-      width: 210mm;
-      height: 10mm;
-      background: #e0e0e0;
-      margin: 0 auto;
-      box-shadow: 
-        inset 0 5px 8px -4px rgba(0,0,0,0.15),
-        inset 0 -5px 8px -4px rgba(0,0,0,0.15);
-    }
-    .visual-page {
-      width: 210mm;
-      margin: 0 auto;
-      background: #ffffff;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
     }
     .header-container {
       display: flex;
@@ -593,68 +575,6 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       ${renderQRCode(data.qrCodeDataUrl)}
     </div>
   </div>
-  <script>
-  (function() {
-    function paginate() {
-      var content = document.getElementById('surat-content');
-      if (!content) return;
 
-      var mmToPx = function(mm) { return mm * 3.7795275591; };
-      var PAGE_HEIGHT = mmToPx(297);
-
-      var totalHeight = content.scrollHeight;
-      if (totalHeight <= PAGE_HEIGHT) return;
-
-      var numPages = Math.ceil(totalHeight / PAGE_HEIGHT);
-
-      content.style.visibility = 'hidden';
-      content.style.position = 'absolute';
-      content.style.left = '-9999px';
-
-      var pagesContainer = document.createElement('div');
-      pagesContainer.id = 'pages-container';
-
-      for (var i = 0; i < numPages; i++) {
-        if (i > 0) {
-          var gap = document.createElement('div');
-          gap.className = 'page-break-gap';
-          pagesContainer.appendChild(gap);
-        }
-
-        var page = document.createElement('div');
-        page.className = 'visual-page';
-        page.style.width = '210mm';
-        page.style.height = PAGE_HEIGHT + 'px';
-        page.style.overflow = 'hidden';
-        page.style.position = 'relative';
-        page.style.background = '#ffffff';
-        page.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12)';
-
-        var clone = content.cloneNode(true);
-        clone.style.visibility = 'visible';
-        clone.style.position = 'absolute';
-        clone.style.top = -(i * PAGE_HEIGHT) + 'px';
-        clone.style.left = '0';
-        clone.style.width = '100%';
-        clone.style.margin = '0';
-
-        page.appendChild(clone);
-        pagesContainer.appendChild(page);
-      }
-
-      document.body.appendChild(pagesContainer);
-
-      var finalHeight = pagesContainer.scrollHeight;
-      document.body.style.height = finalHeight + 'px';
-      pagesContainer.setAttribute('data-page-count', numPages.toString());
-    }
-
-    if (document.readyState === 'complete') {
-      setTimeout(paginate, 150);
-    } else {
-      window.addEventListener('load', function() { setTimeout(paginate, 150); });
-    }
-  })();
-  </script>
 </body>
 </html>`;
