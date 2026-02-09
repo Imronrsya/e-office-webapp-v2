@@ -36,6 +36,7 @@ export interface TembusanDetail extends TembusanInboxItem {
   submissionValues: Record<string, unknown>;
   contentHtml?: string | null;
   qrCodeUrl?: string | null;
+  attachmentUrls?: Array<string | { url: string; name: string }> | null;
 }
 
 export interface TembusanInboxResponse {

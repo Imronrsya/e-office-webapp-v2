@@ -23,7 +23,17 @@ import {
   PenTool,
   QrCode,
   Loader2,
+  Eye,
+  X,
+  Paperclip,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { tembusanService, TembusanDetail } from "@/services/tembusan.service";
 
@@ -66,6 +76,8 @@ export default function TembusanDetailPage({
   const [detail, setDetail] = useState<TembusanDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<{ url: string; name: string; isPdf: boolean } | null>(null);
+  const [attachmentPreviewOpen, setAttachmentPreviewOpen] = useState(false);
 
   // Fetch detail
   const fetchDetail = useCallback(async () => {
@@ -263,6 +275,116 @@ export default function TembusanDetailPage({
                 )}
               </div>
 
+              {/* Lampiran Surat Keluar */}
+              {(() => {
+                const rawAttachments = detail.attachmentUrls || [];
+                const docAttachments: Array<{ url: string; name: string }> = Array.isArray(rawAttachments)
+                  ? rawAttachments.map((item: any) => {
+                      if (typeof item === 'string') {
+                        const urlWithoutParams = item.split('?')[0];
+                        const parts = urlWithoutParams.split('/');
+                        const fullName = parts[parts.length - 1] || 'Lampiran';
+                        const cleanName = fullName.replace(/^\d+-/, '');
+                        return { url: item, name: decodeURIComponent(cleanName) };
+                      }
+                      return { url: item.url || '', name: item.name || 'Lampiran' };
+                    }).filter((item) => item.url && item.url.length > 0)
+                  : [];
+
+                if (docAttachments.length === 0) return null;
+
+                const handleAttachmentPreview = (url: string, name: string) => {
+                  const isPdf = url.toLowerCase().includes('.pdf');
+                  setPreviewAttachment({ url, name, isPdf });
+                  setAttachmentPreviewOpen(true);
+                };
+
+                const handleAttachmentDownload = async (url: string, fileName: string) => {
+                  try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(downloadUrl);
+                    toast.success(`Berhasil mengunduh ${fileName}`);
+                  } catch (error) {
+                    console.error('Download failed:', error);
+                    toast.error('Gagal mengunduh file');
+                  }
+                };
+
+                return (
+                  <>
+                    <Separator className="my-4" />
+                    <div className="space-y-3">
+                      <h4 className="font-bold text-sm flex items-center gap-2">
+                        <Paperclip className="w-4 h-4" />
+                        Lampiran Surat Keluar ({docAttachments.length})
+                      </h4>
+                      <div className="space-y-3">
+                        {docAttachments.map((attachment, index) => {
+                          const { url, name } = attachment;
+                          const isPdf = url.toLowerCase().includes('.pdf');
+                          const isImage = /\.(jpg|jpeg|png|gif)/i.test(url);
+
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-amber-300"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={cn(
+                                  "w-10 h-10 rounded-lg flex items-center justify-center",
+                                  isPdf ? "bg-red-100" : isImage ? "bg-green-100" : "bg-blue-100"
+                                )}>
+                                  <FileText className={cn(
+                                    "w-5 h-5",
+                                    isPdf ? "text-red-600" : isImage ? "text-green-600" : "text-blue-600"
+                                  )} />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-black truncate max-w-[180px]" title={name}>
+                                    {name}
+                                  </p>
+                                  <p className="text-xs text-amber-600">
+                                    {isPdf ? 'PDF Document' : isImage ? 'Image' : 'Attachment'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleAttachmentPreview(url, name)}
+                                  title="Preview"
+                                  className="h-8 w-8"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleAttachmentDownload(url, name)}
+                                  title="Download"
+                                  className="h-8 w-8"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+
               {/* QR Code */}
               {detail.qrCodeUrl && (
                 <>
@@ -382,6 +504,34 @@ export default function TembusanDetailPage({
           </Card>
         </div>
       </div>
+
+      {/* Attachment Preview Dialog */}
+      <Dialog open={attachmentPreviewOpen} onOpenChange={setAttachmentPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span className="truncate pr-4">{previewAttachment?.name}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            {previewAttachment?.isPdf ? (
+              <iframe
+                src={`${previewAttachment.url}#toolbar=0&navpanes=0`}
+                className="w-full h-[70vh] rounded-lg border"
+                title="Preview Lampiran"
+              />
+            ) : (
+              <div className="flex items-center justify-center bg-zinc-50 rounded-lg p-4">
+                <img
+                  src={previewAttachment?.url}
+                  alt={previewAttachment?.name}
+                  className="max-w-full max-h-[70vh] object-contain rounded"
+                />
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
