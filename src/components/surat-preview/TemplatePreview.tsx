@@ -48,10 +48,6 @@ export function TemplatePreview({
     tembusan,
     isLoading = false,
 }: TemplatePreviewProps) {
-    const [zoom, setZoom] = useState(100);
-    const [rotation, setRotation] = useState(0);
-    const containerRef = useRef<HTMLDivElement>(null);
-
     // Generate HTML content with signatures
     const htmlContent = useMemo(() => {
         if (!suratType || !formData) return null;
@@ -183,74 +179,33 @@ export function TemplatePreview({
         }
     }, [suratType, formData, signers, tembusan]);
 
-    const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 200));
-    const handleZoomOut = () => setZoom(prev => Math.max(prev - 25, 50));
-    const handleRotate = () => setRotation(prev => (prev + 90) % 360);
-
-    const handleFullscreen = () => {
-        if (containerRef.current) {
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-            } else {
-                containerRef.current.requestFullscreen();
-            }
-        }
-    };
-
-    if (isLoading) {
+    if (!isLoading && !htmlContent) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground bg-gray-50 rounded-lg border">
-                <Loader2 className="w-10 h-10 animate-spin mb-4" />
-                <p>Memuat preview...</p>
-            </div>
-        );
-    }
-
-    if (!htmlContent) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground bg-gray-50 rounded-lg border">
-                <p>Tidak dapat menampilkan preview</p>
+            <div className="flex flex-col items-center justify-center text-muted-foreground bg-zinc-800 rounded-xl border border-zinc-700" style={{ minHeight: '800px', height: '75vh' }}>
+                <p className="text-zinc-400">Tidak dapat menampilkan preview</p>
             </div>
         );
     }
 
     return (
-        <div ref={containerRef} className="flex flex-col bg-white rounded-lg border overflow-hidden">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between p-2 bg-gray-50 border-b">
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 50}>
-                        <ZoomOut className="w-4 h-4" />
-                    </Button>
-                    <span className="text-sm text-muted-foreground min-w-[4rem] text-center">{zoom}%</span>
-                    <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 200}>
-                        <ZoomIn className="w-4 h-4" />
-                    </Button>
+        <div className="flex flex-col h-full w-full">
+            {isLoading ? (
+                <div className="flex flex-col h-full bg-zinc-800 rounded-xl overflow-hidden" style={{ minHeight: '800px', height: '75vh' }}>
+                    <div className="flex items-center bg-zinc-700 px-3 py-2 text-white text-sm">
+                        <span className="truncate">Preview Dokumen</span>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center bg-zinc-600">
+                        <div className="text-center">
+                            <Loader2 className="h-10 w-10 animate-spin text-white mb-3 mx-auto" />
+                            <span className="text-sm text-gray-300">Generating preview...</span>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={handleRotate}>
-                        <RotateCw className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={handleFullscreen}>
-                        <Maximize2 className="w-4 h-4" />
-                    </Button>
-                </div>
-            </div>
-
-            {/* Preview Container with PDF */}
-            <div
-                className="flex-1 overflow-auto"
-                style={{
-                    maxHeight: "80vh",
-                    transform: `rotate(${rotation}deg)`,
-                    transformOrigin: "center center",
-                }}
-            >
+            ) : (
                 <PDFPreview
-                    htmlContent={htmlContent}
-                    zoom={zoom}
+                    htmlContent={htmlContent || ""}
                 />
-            </div>
+            )}
         </div>
     );
 }

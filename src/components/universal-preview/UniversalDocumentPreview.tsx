@@ -58,7 +58,7 @@ export function UniversalDocumentPreview({
     showToolbar = true,
     showStatusBadge = true,
     initialZoom = 100,
-    minHeight = 600,
+    minHeight = 800,
     maxHeight,
     className,
     theme = 'dark',
@@ -701,7 +701,7 @@ export function UniversalDocumentPreview({
                 themeClasses.container,
                 className
             )}
-            style={containerStyle}
+            style={{ ...containerStyle, height: '75vh' }}
         >
             {/* Skip parent toolbar for HTML mode - PDFPreview has its own */}
             {actualMode !== 'html' && renderToolbar()}

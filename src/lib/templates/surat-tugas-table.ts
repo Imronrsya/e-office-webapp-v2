@@ -195,14 +195,7 @@ const renderQRRunningFooter = (qrCodeDataUrl?: string): string => {
   }
 
   // Placeholder when QR code not yet generated
-  return `
-    <div class="qr-running">
-      <div class="qr-placeholder">
-        <span class="qr-placeholder-text">QR Code</span>
-      </div>
-      <p class="qr-label">Akan muncul setelah verifikasi</p>
-    </div>
-  `;
+  return '';
 };
 
 /**
@@ -239,14 +232,14 @@ const renderTembusan = (tembusan?: (TembusanRecipient | string)[]): string => {
 
   const recipients = textBasedTembusan.map((t, idx) => {
     const desc = t.description ? ` (${t.description})` : '';
-    return `<li style="color: #000000 !important; margin-bottom: 2px;">${t.name}${desc}</li>`;
+    return `<li style="color: #000000 !important; margin-bottom: 2px;">${idx + 1}. ${t.name}${desc}</li>`;
   }).join('\n');
 
   // Tembusan sekarang menggunakan static position agar tidak muncul di setiap halaman
   return `
     <div class="tembusan-container">
       <p style="margin: 0 0 5px 0; color: #000000 !important; font-weight: bold;">Tembusan:</p>
-      <ol style="margin: 0; padding-left: 20px; color: #000000 !important; line-height: 1.4;">
+      <ol style="margin: 0; padding-left: 0; list-style-type: none; color: #000000 !important; line-height: 1.4;">
         ${recipients}
       </ol>
     </div>

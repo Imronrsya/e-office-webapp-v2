@@ -75,39 +75,64 @@ export function PDFPreview({
         setError(null);
 
         try {
-            const tempContainer = document.createElement('div');
-            tempContainer.style.cssText = `
+            // Create an iframe to render the content in isolation (preserves body styles/fonts)
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = `
                 position: fixed;
                 left: -9999px;
                 top: 0;
                 width: 210mm;
-                background: white;
+                min-height: 297mm;
+                border: none;
                 z-index: -1;
             `;
-            tempContainer.innerHTML = htmlContent;
-            document.body.appendChild(tempContainer);
+            document.body.appendChild(iframe);
 
-            const images = tempContainer.querySelectorAll('img');
-            await Promise.all(Array.from(images).map(img => {
-                if (img.complete) return Promise.resolve();
-                return new Promise((resolve) => {
-                    img.onload = resolve;
-                    img.onerror = resolve;
-                });
-            }));
+            // Write content to iframe
+            const doc = iframe.contentDocument || iframe.contentWindow?.document;
+            if (!doc) {
+                throw new Error("Could not access iframe document");
+            }
 
-            await new Promise(resolve => setTimeout(resolve, 300));
+            doc.open();
+            doc.write(htmlContent);
+            doc.close();
 
-            const canvas = await html2canvas(tempContainer, {
+            // Wait for images to load
+            await new Promise<void>((resolve) => {
+                const checkImages = () => {
+                    const images = doc.images;
+                    let loaded = true;
+                    for (let i = 0; i < images.length; i++) {
+                        if (!images[i].complete) {
+                            loaded = false;
+                            break;
+                        }
+                    }
+                    if (loaded) resolve();
+                    else setTimeout(checkImages, 100);
+                };
+
+                if (doc.readyState === 'complete') {
+                    checkImages();
+                } else {
+                    iframe.onload = checkImages;
+                }
+            });
+
+            // Small buffer to ensure rendering is complete
+            await new Promise(resolve => requestAnimationFrame(resolve));
+
+            const canvas = await html2canvas(doc.body, {
                 scale: 2,
                 useCORS: true,
                 allowTaint: true,
                 backgroundColor: '#ffffff',
-                width: tempContainer.scrollWidth,
-                height: tempContainer.scrollHeight,
+                width: 794, // A4 width at 96 DPI approx
+                windowWidth: 794,
             });
 
-            document.body.removeChild(tempContainer);
+            document.body.removeChild(iframe);
 
             if (currentRenderId !== renderIdRef.current) return;
 
@@ -222,7 +247,8 @@ export function PDFPreview({
     }, [htmlContent]);
 
     useEffect(() => {
-        const timer = setTimeout(() => generatePDF(), 500);
+        // Debounce slightly to prevent flicker on rapid updates, but keep it snappy
+        const timer = setTimeout(() => generatePDF(), 100);
         return () => clearTimeout(timer);
     }, [generatePDF]);
 
@@ -238,8 +264,14 @@ export function PDFPreview({
     };
 
     const goToPage = (page: number) => {
-        setCurrentPage(Math.max(1, Math.min(numPages, page)));
-        if (mainViewRef.current) mainViewRef.current.scrollTop = 0;
+        const targetPage = Math.max(1, Math.min(numPages, page));
+        setCurrentPage(targetPage);
+
+        // Scroll to the specific page
+        const pageElement = document.getElementById(`page-${targetPage}`);
+        if (pageElement && mainViewRef.current) {
+            pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     };
 
     const handleZoomIn = () => setZoom(Math.min(zoom + 25, 200));
@@ -296,10 +328,42 @@ export function PDFPreview({
         }
     };
 
-    // Loading state
-    if (isGenerating) {
+    // Sync sidebar with scroll
+    useEffect(() => {
+        if (!mainViewRef.current) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const pageNumber = Number(entry.target.id.replace('page-', ''));
+                        setCurrentPage(pageNumber);
+                    }
+                });
+            },
+            {
+                root: mainViewRef.current,
+                threshold: 0,
+                // Shrink the detection area to just the middle 10% horizontal strip
+                // This ensures we highlight the page that occupies the center of the view,
+                // regardless of its height relative to the viewport.
+                rootMargin: '-45% 0px -45% 0px'
+            }
+        );
+
+        // Observe all page elements
+        for (let i = 1; i <= numPages; i++) {
+            const element = document.getElementById(`page-${i}`);
+            if (element) observer.observe(element);
+        }
+
+        return () => observer.disconnect();
+    }, [numPages, pdfUrl]); // Re-run when PDF changes
+
+    // Initial loading state (only when no PDF is shown yet)
+    if (isGenerating && !pdfUrl) {
         return (
-            <div className={cn("flex flex-col bg-zinc-800 rounded-xl overflow-hidden", className)} style={{ height: '70vh', minHeight: '500px' }}>
+            <div className={cn("flex flex-col bg-zinc-800 rounded-xl overflow-hidden", className)} style={{ height: '75vh', minHeight: '800px' }}>
                 <div className="flex items-center bg-zinc-700 px-3 py-2 text-white text-sm">
                     <span className="truncate">{fileName}</span>
                 </div>
@@ -313,10 +377,10 @@ export function PDFPreview({
         );
     }
 
-    // Error state
-    if (error || !pdfUrl) {
+    // Error state (only when no PDF and not generating)
+    if ((error || !pdfUrl) && !isGenerating) {
         return (
-            <div className={cn("flex flex-col bg-zinc-800 rounded-xl overflow-hidden", className)} style={{ height: '70vh', minHeight: '500px' }}>
+            <div className={cn("flex flex-col bg-zinc-800 rounded-xl overflow-hidden", className)} style={{ height: '75vh', minHeight: '800px' }}>
                 <div className="flex items-center bg-zinc-700 px-3 py-2 text-white text-sm">
                     <span className="truncate">{fileName}</span>
                 </div>
@@ -327,12 +391,25 @@ export function PDFPreview({
         );
     }
 
+
+
     return (
         <div
             ref={containerRef}
-            className={cn("flex flex-col bg-zinc-800 rounded-xl overflow-hidden", className)}
-            style={{ height: '70vh', minHeight: '500px' }}
+            className={cn("flex flex-col bg-zinc-800 rounded-xl overflow-hidden relative", className)}
+            style={{ height: '75vh', minHeight: '800px' }}
         >
+            {/* ... rest of the component ... */}
+            {/* Loading Overlay when updating */}
+            {isGenerating && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
+                    <div className="bg-zinc-800/90 text-white px-6 py-4 rounded-lg shadow-xl flex flex-col items-center border border-zinc-700">
+                        <Loader2 className="h-8 w-8 animate-spin mb-2 text-blue-400" />
+                        <span className="text-sm font-medium">Updating preview...</span>
+                    </div>
+                </div>
+            )}
+
             {/* Toolbar */}
             <div className="flex items-center justify-between bg-zinc-700 px-3 py-2 text-white text-sm border-b border-zinc-600">
                 {/* Left section: Menu & filename & page nav */}
@@ -484,10 +561,10 @@ export function PDFPreview({
                 {/* Main PDF view */}
                 <div
                     ref={mainViewRef}
-                    className="flex-1 overflow-auto bg-zinc-600"
+                    className="flex-1 overflow-auto bg-zinc-600 relative"
                 >
                     <div
-                        className="flex justify-center p-6"
+                        className="flex flex-col items-center p-6 space-y-4"
                         style={{
                             transform: `rotate(${rotation}deg)`,
                             transformOrigin: 'center center',
@@ -504,14 +581,27 @@ export function PDFPreview({
                             error={
                                 <div className="text-red-400 py-4">Gagal memuat PDF</div>
                             }
+                            className="flex flex-col gap-4"
                         >
-                            <Page
-                                pageNumber={currentPage}
-                                scale={zoom / 100}
-                                className="shadow-2xl rounded"
-                                renderTextLayer={false}
-                                renderAnnotationLayer={false}
-                            />
+                            {Array.from(new Array(numPages), (el, index) => (
+                                <div
+                                    key={`page_${index + 1}`}
+                                    id={`page-${index + 1}`}
+                                    className="relative"
+                                >
+                                    <Page
+                                        pageNumber={index + 1}
+                                        scale={zoom / 100}
+                                        className="shadow-2xl rounded bg-white"
+                                        renderTextLayer={false}
+                                        renderAnnotationLayer={false}
+                                    />
+                                    {/* Page number indicator (optional, mostly for debug/clarity on long docs) */}
+                                    <div className="absolute -right-12 top-0 text-zinc-400 text-xs font-mono hidden xl:block">
+                                        {index + 1}
+                                    </div>
+                                </div>
+                            ))}
                         </Document>
                     </div>
                 </div>

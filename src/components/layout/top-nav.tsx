@@ -71,7 +71,11 @@ export default function TopNav() {
             {/* Profile Dropdown */}
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
-                <button className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-2 pr-3 transition-colors hover:bg-gray-50 focus:outline-none">
+                <button
+                  id="user-menu-button"
+                  suppressHydrationWarning
+                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-2 pr-3 transition-colors hover:bg-gray-50 focus:outline-none"
+                >
                   {loading || !user ? (
                     <>
                       <div className="h-10 w-10 rounded-full bg-zinc-200 animate-pulse" />
@@ -98,9 +102,8 @@ export default function TopNav() {
                         </span>
                       </div>
                       <ChevronDown
-                        className={`size-4 text-gray-500 transition-transform duration-200 ${
-                          dropdownOpen ? "rotate-180" : "rotate-0"
-                        }`}
+                        className={`size-4 text-gray-500 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : "rotate-0"
+                          }`}
                       />
                     </>
                   )}

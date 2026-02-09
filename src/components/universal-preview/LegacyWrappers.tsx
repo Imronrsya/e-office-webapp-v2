@@ -14,14 +14,15 @@
  */
 
 import { useMemo } from "react";
+import { Loader2 } from "lucide-react";
 import { UniversalDocumentPreview } from "./UniversalDocumentPreview";
-import type { 
-    SignatureData, 
+import type {
+    SignatureData,
     DocumentType,
-    UniversalDocumentPreviewProps 
+    UniversalDocumentPreviewProps
 } from "./types";
-import { 
-    generateSuratPengantarHTML, 
+import {
+    generateSuratPengantarHTML,
     formatTanggalIndonesia,
 } from "@/lib/templates/surat-pengantar";
 
@@ -44,6 +45,7 @@ interface LegacyPDFPreviewProps {
         positionX?: number | null;
         positionY?: number | null;
         positionPage?: number | null;
+        prefix?: string | null;
     }>;
     onDownload?: () => void;
 }
@@ -153,75 +155,75 @@ export function LegacySuratPreview({
     const htmlContent = useMemo(() => {
         // If there's a PDF file URL, don't generate HTML
         if (fileUrl) return null;
-        
+
         // If there's contentHtml, use it directly
         if (documentData?.contentHtml) return documentData.contentHtml;
-        
+
         // Otherwise generate from submission data
         if (!submissionData) return null;
-        
+
         // Extract signature data
-        const kaprodiSig = documentData?.signatures?.find(s => 
-            s.signerRole.toLowerCase().includes('kaprodi') || 
+        const kaprodiSig = documentData?.signatures?.find(s =>
+            s.signerRole.toLowerCase().includes('kaprodi') ||
             s.signerRole.toLowerCase().includes('ketua prodi')
         );
-        const kadepSig = documentData?.signatures?.find(s => 
-            s.signerRole.toLowerCase().includes('kadep') || 
+        const kadepSig = documentData?.signatures?.find(s =>
+            s.signerRole.toLowerCase().includes('kadep') ||
             s.signerRole.toLowerCase().includes('ketua departemen')
         );
-        
+
         // Extract content data - Admin Prodi saves form data here
         const contentData = documentData?.content as Record<string, unknown> || {};
-        
+
         // Use content data as primary source, with fallbacks to separate columns or submission data
         const nomorSurat = contentData.nomorSurat as string || documentData?.nomorSurat || "-";
         const tanggalSuratRaw = contentData.tanggalSurat as string || documentData?.tanggalSurat;
-        const tanggalSurat = tanggalSuratRaw 
+        const tanggalSurat = tanggalSuratRaw
             ? formatTanggalIndonesia(new Date(tanggalSuratRaw))
             : formatTanggalIndonesia(new Date());
-        
+
         return generateSuratPengantarHTML({
             nomorSurat: nomorSurat,
             tanggalSurat: tanggalSurat,
-            
+
             // Target dari content (diisi Admin Prodi)
             namaTujuan: contentData.namaTujuan as string || "[Nama Tujuan]",
             jabatanTujuan: contentData.jabatanTujuan as string || "[Jabatan Tujuan]",
             alamatTujuan: contentData.alamatTujuan as string || "",
-            
+
             // Perihal dari content atau document atau submission
             perihal: contentData.perihal as string || documentData?.perihal || submissionData.keperluan,
             keperluan: contentData.keperluan as string || submissionData.keperluan,
-            
+
             // Data pengaju - dari content jika ada (Admin Prodi bisa edit), atau dari submission
             namaMahasiswa: contentData.namaMahasiswa as string || submissionData.nama,
             nimMahasiswa: contentData.nimMahasiswa as string || submissionData.nim || submissionData.nip || "",
             programStudi: contentData.programStudi as string || submissionData.programStudi,
             departemen: contentData.departemen as string || submissionData.departemen || "Teknik Informatika",
-            
+
             // Flag untuk menentukan apakah pengaju mahasiswa atau dosen
             isPengajuMahasiswa: !!submissionData.nim, // true jika ada NIM, false jika NIP
-            
+
             // Detail kegiatan - dari content jika ada, atau dari submission
             judulAcara: contentData.judulAcara as string || submissionData.judulAcara,
             tanggalMulai: contentData.tanggalMulai as string || submissionData.tanggalAcara,
             lokasiAcara: contentData.lokasiAcara as string || submissionData.lokasiAcara,
             durasiAcara: contentData.durasiAcara as string || submissionData.durasiAcara || "",
-            
+
             // Tembusan
             tembusan: documentData?.tembusan || [],
-            
+
             // Signatures - Kaprodi
             namaKaprodi: kaprodiSig?.signerName,
             nipKaprodi: kaprodiSig?.signerNip,
             signatureKaprodi: kaprodiSig?.signatureUrl,
-            prefixKaprodi: kaprodiSig?.prefix, // Awalan seperti "Mengetahui,"
-            
+            prefixKaprodi: kaprodiSig?.prefix || undefined, // Awalan seperti "Mengetahui,"
+
             // Signatures - Kadep
             namaKadep: kadepSig?.signerName,
             nipKadep: kadepSig?.signerNip,
             signatureKadep: kadepSig?.signatureUrl,
-            prefixKadep: kadepSig?.prefix, // Awalan seperti "Mengetahui,"
+            prefixKadep: kadepSig?.prefix || undefined, // Awalan seperti "Mengetahui,"
         });
     }, [submissionData, documentData, fileUrl]);
 
@@ -247,7 +249,7 @@ export function LegacySuratPreview({
             fileName={fileName}
             signatures={convertedSignatures}
             showDraftBadge={!documentData?.isSigned && !fileUrl}
-            metadata={{ 
+            metadata={{
                 status: documentData?.isSigned ? 'SIGNED' : 'DRAFT',
                 nomorSurat: documentData?.nomorSurat || undefined,
                 perihal: documentData?.perihal || undefined,
@@ -318,9 +320,16 @@ export function LegacyTemplatePreview({
 
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground">
-                <div className="w-10 h-10 animate-spin border-4 border-primary border-t-transparent rounded-full mb-4" />
-                <p>Memuat preview...</p>
+            <div className="flex flex-col bg-zinc-800 rounded-xl overflow-hidden" style={{ height: '75vh', minHeight: '800px' }}>
+                <div className="flex items-center bg-zinc-700 px-3 py-2 text-white text-sm">
+                    <span className="truncate">Preview Dokumen</span>
+                </div>
+                <div className="flex-1 flex items-center justify-center bg-zinc-600">
+                    <div className="text-center">
+                        <Loader2 className="h-10 w-10 animate-spin text-white mb-3 mx-auto" />
+                        <span className="text-sm text-gray-300">Generating PDF preview...</span>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -335,7 +344,7 @@ export function LegacyTemplatePreview({
             showDraftBadge={true}
             showToolbar={true}
             theme="light"
-            minHeight={400}
+            minHeight={800}
         />
     );
 }

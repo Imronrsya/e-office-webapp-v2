@@ -133,12 +133,5 @@ export const generateQRRunningFooter = (qrCodeDataUrl?: string): string => {
     }
 
     // Placeholder when QR code not yet generated
-    return `
-        <div class="qr-running">
-            <div class="qr-placeholder">
-                <span class="qr-placeholder-text">QR Code</span>
-            </div>
-            <p class="qr-label">Akan muncul setelah verifikasi</p>
-        </div>
-    `;
+    return '';
 };
