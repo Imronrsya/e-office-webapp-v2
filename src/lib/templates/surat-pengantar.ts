@@ -95,6 +95,11 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             body {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+                background: #ffffff !important;
+            }
+            #surat-content {
+                padding: 0 !important;
+                box-shadow: none !important;
             }
         }
         * {
@@ -104,24 +109,28 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         }
         @page {
             size: A4;
-            margin: 3cm 2cm 3cm 2cm;
+            margin: 15mm 20mm 25mm 20mm;
         }
-        html, body {
-            width: 21cm;
-            min-height: 29.7cm;
+        html {
+            margin: 0; padding: 0;
         }
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 12pt;
             line-height: 1;
-            margin: 0;
-            padding: 38px 76px 113px 76px;
-            max-width: 21cm;
+            margin: 0 auto;
+            padding: 0;
+            width: 210mm;
             color: #000000;
             background: #ffffff;
-            box-sizing: border-box;
             word-wrap: break-word;
             overflow-wrap: break-word;
+        }
+        #surat-content {
+            width: 210mm;
+            margin: 0 auto;
+            padding: 10mm 20mm 20mm 20mm;
+            background: #ffffff;
         }
         .header-container {
             display: flex;
@@ -300,160 +309,162 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
 <body>
     ${!signatureKaprodi && !signatureKadep ? '<div class="draft-watermark">DRAFT</div>' : ''}
     
-    <div class="header-container">
-        <div class="logo-container">
-            <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
+    <div id="surat-content">
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
+            </div>
+            <div class="kop-surat">
+                <h3>KEMENTERIAN PENDIDIKAN TINGGI, SAINS,<br>DAN TEKNOLOGI</h3>
+                <h2 style="color: #3e4ba8;">UNIVERSITAS DIPONEGORO</h2>
+                <h2 style="color: #3e4ba8;">FAKULTAS SAINS DAN MATEMATIKA</h2>
+            </div>
+            <div class="alamat-kontak">
+                <p>Jalan Prof. Sudarto, S.H Tembalang Semarang<br>
+                    Kode Pos 50275<br>
+                    Telp (024) 7474754 Fax (024) 76480690<br>
+                    Laman https://fsm.undip.ac.id<br>
+                    e-mail fsm@undip.ac.id</p>
+            </div>
         </div>
-        <div class="kop-surat">
-            <h3>KEMENTERIAN PENDIDIKAN TINGGI, SAINS,<br>DAN TEKNOLOGI</h3>
-            <h2 style="color: #3e4ba8;">UNIVERSITAS DIPONEGORO</h2>
-            <h2 style="color: #3e4ba8;">FAKULTAS SAINS DAN MATEMATIKA</h2>
-        </div>
-        <div class="alamat-kontak">
-            <p>Jalan Prof. Sudarto, S.H Tembalang Semarang<br>
-                Kode Pos 50275<br>
-                Telp (024) 7474754 Fax (024) 76480690<br>
-                Laman https://fsm.undip.ac.id<br>
-                e-mail fsm@undip.ac.id</p>
-        </div>
-    </div>
-    
-    <div class="info-surat">
-        <table>
-            <tr>
-                <td class="label">Nomor</td>
-                <td class="colon">:</td>
-                <td>${nomorSurat}</td>
-                <td rowspan="3" style="text-align: right;"><i>${tanggalSurat}</i></td>
-            </tr>
-            <tr>
-                <td class="label">Lampiran</td>
-                <td class="colon">:</td>
-                <td>-</td>
-            </tr>
-            <tr>
-                <td class="label">Hal</td>
-                <td class="colon">:</td>
-                <td>${perihal}</td>
-            </tr>
-        </table>
-    </div>
-    
-    <div class="alamat-tujuan">
-        <p style="margin: 0;">
-            <b>Yth. ${namaTujuan || '[Nama Penerima]'}</b><br>
-            <b>${jabatanTujuan || '[Jabatan]'}</b><br>
-            ${alamatTujuan || '[Alamat]'}
-        </p>
-    </div>
-    
-    <div class="isi-surat">
-        <p>
-            Sehubungan dengan kegiatan ${keperluan} ${isPengajuMahasiswa ? 'mahasiswa' : 'dosen'} Program Studi ${programStudi} 
-            Departemen ${departemen} Fakultas Sains dan Matematika Universitas Diponegoro 
-            tersebut di bawah ini:
-        </p>
         
-        <table class="data-table">
-            <tr>
-                <td class="label-col">Nama</td>
-                <td class="colon-col">:</td>
-                <td>${namaMahasiswa}</td>
-            </tr>
-            <tr>
-                <td class="label-col">${isPengajuMahasiswa ? 'NIM' : 'NIP'}</td>
-                <td class="colon-col">:</td>
-                <td>${nimMahasiswa}</td>
-            </tr>
-            <tr>
-                <td class="label-col">Judul Kegiatan</td>
-                <td class="colon-col">:</td>
-                <td>${judulAcara}</td>
-            </tr>
-            <tr>
-                <td class="label-col">Lokasi</td>
-                <td class="colon-col">:</td>
-                <td>${lokasiAcara}</td>
-            </tr>
-            ${durasiAcara ? `
-            <tr>
-                <td class="label-col">Durasi</td>
-                <td class="colon-col">:</td>
-                <td>${durasiAcara}</td>
-            </tr>
+        <div class="info-surat">
+            <table>
+                <tr>
+                    <td class="label">Nomor</td>
+                    <td class="colon">:</td>
+                    <td>${nomorSurat}</td>
+                    <td rowspan="3" style="text-align: right;"><i>${tanggalSurat}</i></td>
+                </tr>
+                <tr>
+                    <td class="label">Lampiran</td>
+                    <td class="colon">:</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="label">Hal</td>
+                    <td class="colon">:</td>
+                    <td>${perihal}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="alamat-tujuan">
+            <p style="margin: 0;">
+                <b>Yth. ${namaTujuan || '[Nama Penerima]'}</b><br>
+                <b>${jabatanTujuan || '[Jabatan]'}</b><br>
+                ${alamatTujuan || '[Alamat]'}
+            </p>
+        </div>
+        
+        <div class="isi-surat">
+            <p>
+                Sehubungan dengan kegiatan ${keperluan} ${isPengajuMahasiswa ? 'mahasiswa' : 'dosen'} Program Studi ${programStudi} 
+                Departemen ${departemen} Fakultas Sains dan Matematika Universitas Diponegoro 
+                tersebut di bawah ini:
+            </p>
+            
+            <table class="data-table">
+                <tr>
+                    <td class="label-col">Nama</td>
+                    <td class="colon-col">:</td>
+                    <td>${namaMahasiswa}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">${isPengajuMahasiswa ? 'NIM' : 'NIP'}</td>
+                    <td class="colon-col">:</td>
+                    <td>${nimMahasiswa}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Judul Kegiatan</td>
+                    <td class="colon-col">:</td>
+                    <td>${judulAcara}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Lokasi</td>
+                    <td class="colon-col">:</td>
+                    <td>${lokasiAcara}</td>
+                </tr>
+                ${durasiAcara ? `
+                <tr>
+                    <td class="label-col">Durasi</td>
+                    <td class="colon-col">:</td>
+                    <td>${durasiAcara}</td>
+                </tr>
+                ` : ''}
+            </table>
+            
+            <p>
+                dengan ini mohon kiranya dapat diizinkan bagi mahasiswa tersebut untuk 
+                melaksanakan kegiatan ${(keperluan || 'kegiatan').toLowerCase()} di tempat Saudara yang akan 
+                dilaksanakan mulai tanggal ${tanggalMulai}.
+            </p>
+            
+            <p>
+                Segala persyaratan dan konsekuensi yang ada menjadi tanggung jawab 
+                mahasiswa yang bersangkutan.
+            </p>
+        </div>
+        
+        <div class="penutup">
+            <p>Atas perhatian dan kerjasama Saudara kami ucapkan terima kasih.</p>
+        </div>
+        
+        <!-- TTD Container - Dynamic based on signers -->
+        <div class="ttd-container ${tingkatTTD}">
+        
+            ${tingkatTTD === "dua" ? `
+            <!-- Dua TTD: Kaprodi di kiri, Kadep di kanan -->
+            <div class="ttd-box kaprodi">
+                ${prefixKaprodi ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKaprodi}</p>` : ''}
+                <p class="jabatan-ttd">Ketua Program Studi</p>
+                <div class="signature-area">
+                    ${signatureKaprodi ? `<img src="${signatureKaprodi}" alt="TTD Kaprodi" class="signature-img" />` : ''}
+                </div>
+                <p class="nama-pejabat">${namaKaprodi || '...'}</p>
+                <p class="nip-pejabat">${nipKaprodi ? `NIP. ${nipKaprodi}` : ''}</p>
+            </div>
+            <div class="ttd-box kadep">
+                ${prefixKadep ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKadep}</p>` : ''}
+                <p class="jabatan-ttd">Ketua Departemen</p>
+                <div class="signature-area">
+                    ${signatureKadep ? `<img src="${signatureKadep}" alt="TTD Kadep" class="signature-img" />` : ''}
+                </div>
+                <p class="nama-pejabat">${namaKadep || '...'}</p>
+                <p class="nip-pejabat">${nipKadep ? `NIP. ${nipKadep}` : ''}</p>
+            </div>
             ` : ''}
-        </table>
         
-        <p>
-            dengan ini mohon kiranya dapat diizinkan bagi mahasiswa tersebut untuk 
-            melaksanakan kegiatan ${(keperluan || 'kegiatan').toLowerCase()} di tempat Saudara yang akan 
-            dilaksanakan mulai tanggal ${tanggalMulai}.
-        </p>
+            ${tingkatTTD === "kaprodi" ? `
+            <!-- Hanya Kaprodi: di kanan -->
+            <div class="ttd-box kaprodi">
+                ${prefixKaprodi ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKaprodi}</p>` : ''}
+                <p class="jabatan-ttd">Ketua Program Studi</p>
+                <div class="signature-area">
+                    ${signatureKaprodi ? `<img src="${signatureKaprodi}" alt="TTD Kaprodi" class="signature-img" />` : ''}
+                </div>
+                <p class="nama-pejabat">${namaKaprodi || '...'}</p>
+                <p class="nip-pejabat">${nipKaprodi ? `NIP. ${nipKaprodi}` : ''}</p>
+            </div>
+            ` : ''}
         
-        <p>
-            Segala persyaratan dan konsekuensi yang ada menjadi tanggung jawab 
-            mahasiswa yang bersangkutan.
-        </p>
+            ${tingkatTTD === "kadep" ? `
+            <!-- Hanya Kadep: di kanan -->
+            <div class="ttd-box kadep">
+                ${prefixKadep ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKadep}</p>` : ''}
+                <p class="jabatan-ttd">Ketua Departemen</p>
+                <div class="signature-area">
+                    ${signatureKadep ? `<img src="${signatureKadep}" alt="TTD Kadep" class="signature-img" />` : ''}
+                </div>
+                <p class="nama-pejabat">${namaKadep || '...'}</p>
+                <p class="nip-pejabat">${nipKadep ? `NIP. ${nipKadep}` : ''}</p>
+            </div>
+            ` : ''}
+        
+        </div>
+        
+        ${renderTembusan(tembusan)}
     </div>
-    
-    <div class="penutup">
-        <p>Atas perhatian dan kerjasama Saudara kami ucapkan terima kasih.</p>
-    </div>
-    
-    <!-- TTD Container - Dynamic based on signers -->
-    <div class="ttd-container ${tingkatTTD}">
-    
-        ${tingkatTTD === "dua" ? `
-        <!-- Dua TTD: Kaprodi di kiri, Kadep di kanan -->
-        <div class="ttd-box kaprodi">
-            ${prefixKaprodi ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKaprodi}</p>` : ''}
-            <p class="jabatan-ttd">Ketua Program Studi</p>
-            <div class="signature-area">
-                ${signatureKaprodi ? `<img src="${signatureKaprodi}" alt="TTD Kaprodi" class="signature-img" />` : ''}
-            </div>
-            <p class="nama-pejabat">${namaKaprodi || '...'}</p>
-            <p class="nip-pejabat">${nipKaprodi ? `NIP. ${nipKaprodi}` : ''}</p>
-        </div>
-        <div class="ttd-box kadep">
-            ${prefixKadep ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKadep}</p>` : ''}
-            <p class="jabatan-ttd">Ketua Departemen</p>
-            <div class="signature-area">
-                ${signatureKadep ? `<img src="${signatureKadep}" alt="TTD Kadep" class="signature-img" />` : ''}
-            </div>
-            <p class="nama-pejabat">${namaKadep || '...'}</p>
-            <p class="nip-pejabat">${nipKadep ? `NIP. ${nipKadep}` : ''}</p>
-        </div>
-        ` : ''}
-    
-        ${tingkatTTD === "kaprodi" ? `
-        <!-- Hanya Kaprodi: di kanan -->
-        <div class="ttd-box kaprodi">
-            ${prefixKaprodi ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKaprodi}</p>` : ''}
-            <p class="jabatan-ttd">Ketua Program Studi</p>
-            <div class="signature-area">
-                ${signatureKaprodi ? `<img src="${signatureKaprodi}" alt="TTD Kaprodi" class="signature-img" />` : ''}
-            </div>
-            <p class="nama-pejabat">${namaKaprodi || '...'}</p>
-            <p class="nip-pejabat">${nipKaprodi ? `NIP. ${nipKaprodi}` : ''}</p>
-        </div>
-        ` : ''}
-    
-        ${tingkatTTD === "kadep" ? `
-        <!-- Hanya Kadep: di kanan -->
-        <div class="ttd-box kadep">
-            ${prefixKadep ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKadep}</p>` : ''}
-            <p class="jabatan-ttd">Ketua Departemen</p>
-            <div class="signature-area">
-                ${signatureKadep ? `<img src="${signatureKadep}" alt="TTD Kadep" class="signature-img" />` : ''}
-            </div>
-            <p class="nama-pejabat">${namaKadep || '...'}</p>
-            <p class="nip-pejabat">${nipKadep ? `NIP. ${nipKadep}` : ''}</p>
-        </div>
-        ` : ''}
-    
-    </div>
-    
-    ${renderTembusan(tembusan)}
 </body>
 </html>
 `;
