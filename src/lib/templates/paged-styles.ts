@@ -28,19 +28,23 @@ export const pagedStyles = `
 /* QR Code Running Element */
 .qr-running {
     position: running(qr-running);
-    text-align: center;
-    padding: 2mm;
+    text-align: right;
+    padding: 0;
+    margin-right: -2mm; /* Fine-tune alignment with text edge if needed, or remove */
+    width: 60mm; /* Ensure it has space to align right */
 }
 
 .qr-running img {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
+    display: inline-block;
 }
 
 .qr-running .qr-label {
     font-size: 5pt;
     color: #666666;
     margin-top: 1mm;
+    text-align: right;
 }
 
 /* QR Placeholder ketika belum di-generate */

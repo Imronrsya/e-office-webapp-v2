@@ -98,6 +98,12 @@ export function PDFPreview({
             doc.write(htmlContent);
             doc.close();
 
+            // Hide QR code in the HTML snapshot so we don't render it twice (we manually stamp it)
+            const qrElements = doc.querySelectorAll('.qr-running');
+            qrElements.forEach((el) => {
+                (el as HTMLElement).style.display = 'none';
+            });
+
             // Wait for images to load
             await new Promise<void>((resolve) => {
                 const checkImages = () => {
@@ -218,6 +224,41 @@ export function PDFPreview({
                     // Add top margin for pages 2+ (15mm)
                     const topMargin = pageNum > 0 ? 15 : 0;
                     pdf.addImage(sliceImgData, 'JPEG', 0, topMargin, imgWidth, sliceImgHeight);
+
+                    // --- Manual QR Code Stamping (Every Page) ---
+                    // Coordinates: Bottom-Right
+                    // A4 Width: 210mm
+                    // A4 Height: 297mm
+                    // Desired Right Margin from edge: ~20mm (aligned with text)
+                    // Desired Bottom Margin from edge: ~25mm
+                    const qrSize = 15; // 15mm size
+                    const qrX = 210 - 20 - qrSize; // Right align at 20mm margin
+                    const qrY = 297 - 25; // Bottom align at 25mm margin
+
+                    // Check if we found a QR code in the document
+                    const qrImgElement = doc.querySelector('.qr-running img') as HTMLImageElement;
+                    if (qrImgElement && qrImgElement.src) {
+                        try {
+                            pdf.addImage(qrImgElement.src, 'PNG', qrX, qrY, qrSize, qrSize);
+
+                            // Add "Scan untuk verifikasi" text below QR
+                            pdf.setFontSize(6);
+                            pdf.setTextColor(100, 100, 1000); // Grey
+                            // Center text relative to QR
+                            // Text is roughly 25mm wide at 6pt? Let's guess or align right.
+                            // Align right to match QR right edge
+                            const textValues = "Scan untuk verifikasi";
+                            const textWidth = pdf.getTextWidth(textValues);
+                            // x position: qrX + qrSize (right edge) - textWidth
+                            const textX = qrX + qrSize - textWidth + 1; // +1mm tweak
+                            const textY = qrY + qrSize + 3; // 3mm below QR
+
+                            pdf.text(textValues, textX, textY);
+                        } catch (e) {
+                            console.warn('Failed to add QR code to page', e);
+                        }
+                    }
+                    // ------------------------------------------
                 }
 
                 currentY = safeEndY;
