@@ -144,12 +144,15 @@
   html {
     overflow-y: scroll !important;
     overflow-x: hidden !important;
+    scrollbar-gutter: stable;
+    width: 100vw;
   }
 
   body {
     @apply bg-background text-foreground;
     overflow-y: scroll !important;
     overflow-x: hidden !important;
+    scrollbar-gutter: stable;
     width: 100%;
     /* Prevent padding-right injection by libraries */
     padding-right: 0 !important;
@@ -163,7 +166,12 @@
     padding-right: 0 !important;
   }
 
-
+  /* Ensure all major containers respect scrollbar gutter */
+  #__next,
+  [data-radix-portal],
+  main {
+    scrollbar-gutter: stable;
+  }
 
   /* Custom scrollbar styling - always visible */
   ::-webkit-scrollbar {
@@ -172,7 +180,7 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: hsl(var(--muted) / 0.3);
+    background: var(--color-base-white);
   }
 
   ::-webkit-scrollbar-thumb {
@@ -187,7 +195,7 @@
   /* For Firefox */
   html, body {
     scrollbar-width: auto;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.4) hsl(var(--muted) / 0.3);
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) var(--color-base-white);
   }
 }
 
