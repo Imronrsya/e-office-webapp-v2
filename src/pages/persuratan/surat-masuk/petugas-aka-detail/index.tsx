@@ -261,8 +261,12 @@ const SuratKeluarCreate: React.FC = () => {
           listLampiran: listLampiran.toString(),
         });
 
-        if (result) {
-          // Redirect ke dashboard/fashboard dengan filter surat keluar
+        if (result && result.data?.data?.id) {
+          // Redirect ke detail surat keluar yang baru dibuat
+          const suratKeluarId = result.data.data.id;
+          navigate(`/surat-keluar/mtu/${suratKeluarId}`);
+        } else if (result) {
+          // Fallback jika tidak ada id
           navigate('/fashboard?type=keluar');
         }
       // Kondisi untuk AK8 (SKL)
@@ -294,8 +298,17 @@ const SuratKeluarCreate: React.FC = () => {
           dataToSend.id_disposisi = dispositionDetail.id;
         }
 
-        await axios.post('/v1/pengajuan/surat-keluar', dataToSend);
+        const result = await axios.post('/v1/pengajuan/surat-keluar', dataToSend);
         message.success('Surat Rekomendasi Beasiswa berhasil dibuat');
+        
+        if (result && result.data?.data?.id) {
+          // Redirect ke detail surat keluar yang baru dibuat
+          const suratKeluarId = result.data.data.id;
+          navigate(`/surat-keluar/mtu/${suratKeluarId}`);
+        } else if (result) {
+          // Fallback jika tidak ada id
+          navigate('/fashboard?type=keluar');
+        }
       } else {
         console.log('Unknown letter type:', suratMasukDetail?.tipe_suratId);
         message.error('Tipe surat tidak dikenal');

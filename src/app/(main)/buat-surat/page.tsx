@@ -830,9 +830,15 @@ function BuatSuratContent() {
                 }
 
                 toast.success("Surat berhasil dibuat");
-                // Redirect berdasarkan role: Admin Prodi -> Dashboard, Staff -> Surat Keluar
-                const redirectPath = user?.role ? getPostDraftRedirectPath(user.role) : '/dashboard';
-                router.push(redirectPath);
+                // Redirect ke detail surat keluar yang baru dibuat
+                const submissionId = (response.data as any)?.id;
+                if (submissionId) {
+                    router.push(`/detail/${submissionId}?type=keluar`);
+                } else {
+                    // Fallback ke dashboard jika id tidak tersedia
+                    const redirectPath = user?.role ? getPostDraftRedirectPath(user.role) : '/dashboard';
+                    router.push(redirectPath);
+                }
             } else {
                 toast.error(response.message || "Gagal membuat surat");
             }
