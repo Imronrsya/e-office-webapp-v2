@@ -358,7 +358,10 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       /* Marker class for JS pagination to force a new page before this element */
     }
     .logo-container {
-      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
       margin-bottom: 20px;
     }
     .logo {

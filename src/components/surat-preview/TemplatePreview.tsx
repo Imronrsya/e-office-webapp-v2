@@ -3,7 +3,8 @@
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, ZoomIn, ZoomOut, Maximize2, RotateCw } from "lucide-react";
-import { PDFPreview } from "./PDFPreview";
+import dynamic from "next/dynamic";
+const PDFPreview = dynamic(() => import("./PDFPreview").then(mod => mod.PDFPreview), { ssr: false });
 import {
     generateSuratPengantarHTML,
     SuratPengantarData

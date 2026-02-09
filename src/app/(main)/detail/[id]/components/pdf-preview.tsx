@@ -24,7 +24,8 @@ import { suratTugasTemplate, type SuratTugasData } from "@/lib/templates/surat-t
 import { suratTugasTableTemplate, type SuratTugasTableData } from "@/lib/templates/surat-tugas-table";
 import { suratKeputusanTemplate, type SuratKeputusanData } from "@/lib/templates/surat-keputusan";
 import { generatePdfWithSignatures, SignerPlaceholder, htmlToPdfBlob, generateSuratHTML } from "@/lib/pdf-generator";
-import { PDFPreview as HTMLToPDFPreview } from "@/components/surat-preview/PDFPreview";
+import dynamic from "next/dynamic";
+const HTMLToPDFPreview = dynamic(() => import("@/components/surat-preview/PDFPreview").then(mod => mod.PDFPreview), { ssr: false });
 
 interface SignatureData {
     signerRole: string;

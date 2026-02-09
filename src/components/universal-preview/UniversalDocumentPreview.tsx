@@ -36,7 +36,8 @@ import { suratTugasTableTemplate, type SuratTugasTableData } from "@/lib/templat
 import { suratKeputusanTemplate, type SuratKeputusanData } from "@/lib/templates/surat-keputusan";
 import { generateSuratPengantarHTML, type SuratPengantarData } from "@/lib/templates/surat-pengantar";
 import { htmlToPdfBlob } from "@/lib/pdf-generator";
-import { PDFPreview } from "@/components/surat-preview/PDFPreview";
+import dynamic from "next/dynamic";
+const PDFPreview = dynamic(() => import("@/components/surat-preview/PDFPreview").then(mod => mod.PDFPreview), { ssr: false });
 
 // A4 dimensions in pixels at 96 DPI
 const A4_WIDTH_PX = 794;

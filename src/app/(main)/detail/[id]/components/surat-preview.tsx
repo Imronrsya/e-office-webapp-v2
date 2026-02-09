@@ -24,7 +24,8 @@ import {
     formatTanggalIndonesia,
     type SuratPengantarData
 } from "@/lib/templates/surat-pengantar";
-import { PDFPreview } from "@/components/surat-preview/PDFPreview";
+import dynamic from "next/dynamic";
+const PDFPreview = dynamic(() => import("@/components/surat-preview/PDFPreview").then(mod => mod.PDFPreview), { ssr: false });
 
 interface SuratPreviewProps {
     // Data dari submission
