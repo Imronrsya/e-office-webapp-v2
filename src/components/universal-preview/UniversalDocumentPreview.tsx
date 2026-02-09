@@ -34,7 +34,7 @@ import {
 import { suratTugasTemplate, type SuratTugasData } from "@/lib/templates/surat-tugas";
 import { suratTugasTableTemplate, type SuratTugasTableData } from "@/lib/templates/surat-tugas-table";
 import { suratKeputusanTemplate, type SuratKeputusanData } from "@/lib/templates/surat-keputusan";
-import { generateSuratPengantarHTML, type SuratPengantarData } from "@/lib/templates/surat-pengantar";
+import { generateSuratPengantarHTML, type SuratPengantarData, formatTanggalIndonesia } from "@/lib/templates/surat-pengantar";
 import { htmlToPdfBlob } from "@/lib/pdf-generator";
 import dynamic from "next/dynamic";
 const PDFPreview = dynamic(() => import("@/components/surat-preview/PDFPreview").then(mod => mod.PDFPreview), { ssr: false });
@@ -121,6 +121,10 @@ export function UniversalDocumentPreview({
                         tembusan: tembusanData || [],
                         stempelUrl,
                         qrCodeDataUrl,
+                        // Format tanggal surat if available
+                        tanggalSurat: (contentData.tanggalSurat as string)
+                            ? `Semarang, ${formatTanggalIndonesia(contentData.tanggalSurat as string)}`
+                            : undefined
                     };
                     return suratTugasTemplate(data);
                 }
@@ -142,6 +146,10 @@ export function UniversalDocumentPreview({
                         tembusan: tembusanData || [],
                         stempelUrl,
                         qrCodeDataUrl,
+                        // Format tanggal surat if available
+                        tanggalSurat: (contentData.tanggalSurat as string)
+                            ? `Semarang, ${formatTanggalIndonesia(contentData.tanggalSurat as string)}`
+                            : undefined
                     };
                     return suratTugasTableTemplate(data);
                 }

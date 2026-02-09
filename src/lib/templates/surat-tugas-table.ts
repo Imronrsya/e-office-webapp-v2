@@ -631,7 +631,7 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
     <div class="penutup">
       <p style="color: #000000;">Demikian untuk dilaksanakan dengan sebaik-baiknya dan memberikan laporan setelah selesai.</p>
     </div>
-    <p style="text-align: right; margin-top: 30px; color: #000000 !important;">${data.tanggalSurat || 'Semarang, XX Bulan YYYY'}</p>
+    <p style="text-align: right; margin-top: 30px; color: #000000 !important;">${data.tanggalSurat || 'Semarang, __ _______ _____'}</p>
     <div class="ttd-tembusan-wrapper">
       <div class="ttd-container">
         ${renderSignatures(data.signatures, data.stempelUrl)}

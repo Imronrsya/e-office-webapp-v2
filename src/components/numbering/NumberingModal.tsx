@@ -12,8 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2, XCircle, AlertCircle, Hash, Calendar } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, AlertCircle, Hash, Calendar as CalendarIcon } from "lucide-react";
 import { legalisasiService } from "@/services/legalisasi.service";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 interface NumberingModalProps {
   open: boolean;
@@ -46,9 +49,7 @@ export function NumberingModal({
   onSuccess,
 }: NumberingModalProps) {
   const [nomorSurat, setNomorSurat] = useState(nomorSuggestion || "");
-  const [tanggalSurat, setTanggalSurat] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [tanggalSurat, setTanggalSurat] = useState<Date | undefined>(new Date());
   const [checkResult, setCheckResult] = useState<CheckResult>({ status: "idle" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +58,7 @@ export function NumberingModal({
   useEffect(() => {
     if (open) {
       setNomorSurat(nomorSuggestion || "");
-      setTanggalSurat(new Date().toISOString().split("T")[0]);
+      setTanggalSurat(new Date());
       setCheckResult({ status: "idle" });
       setError(null);
     }
@@ -74,28 +75,28 @@ export function NumberingModal({
 
     try {
       const response = await legalisasiService.checkNumber(nomor);
-      
+
       if (response.success && response.data) {
         if (response.data.isAvailable) {
-          setCheckResult({ 
+          setCheckResult({
             status: "available",
             message: "Nomor tersedia"
           });
         } else {
-          setCheckResult({ 
+          setCheckResult({
             status: "taken",
             message: "Nomor sudah digunakan",
             existingDocument: response.data.existingDocument
           });
         }
       } else {
-        setCheckResult({ 
+        setCheckResult({
           status: "error",
           message: response.error || "Gagal memeriksa nomor"
         });
       }
     } catch {
-      setCheckResult({ 
+      setCheckResult({
         status: "error",
         message: "Terjadi kesalahan saat memeriksa nomor"
       });
@@ -145,10 +146,13 @@ export function NumberingModal({
     setError(null);
 
     try {
+      // Convert Date to ISO string (YYYY-MM-DD) for API
+      const tanggalSuratISO = tanggalSurat ? format(tanggalSurat, "yyyy-MM-dd") : "";
+
       // Call API tanpa position karena nomor sudah otomatis diisi di template HTML
       const response = await legalisasiService.assignNumber(documentId, {
         nomorSurat: nomorSurat.trim(),
-        tanggalSurat,
+        tanggalSurat: tanggalSuratISO,
       });
 
       if (response.success) {
@@ -240,20 +244,23 @@ export function NumberingModal({
             </div>
           </div>
 
-          {/* Tanggal Surat Input */}
-          <div className="space-y-2">
-            <Label htmlFor="tanggalSurat" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Tanggal Surat
-            </Label>
-            <Input
-              id="tanggalSurat"
-              type="date"
-              value={tanggalSurat}
-              onChange={(e) => setTanggalSurat(e.target.value)}
-              max={new Date().toISOString().split("T")[0]}
-            />
-          </div>
+          {/* Tanggal Surat Input - Hanya untuk Surat Tugas */}
+          {documentType !== "SURAT_KEPUTUSAN" && (
+            <div className="space-y-2">
+              <Label htmlFor="tanggalSurat" className="flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4" />
+                Tanggal Surat
+              </Label>
+              <DatePicker
+                value={tanggalSurat}
+                onChange={(date) => setTanggalSurat(date)}
+                placeholder="Pilih tanggal surat"
+              />
+              <p className="text-xs text-zinc-500">
+                Tanggal ini akan mengisi bagian "Semarang, ______" pada surat.
+              </p>
+            </div>
+          )}
 
           {/* Preview */}
           {nomorSurat && (
@@ -263,12 +270,13 @@ export function NumberingModal({
                 Nomor: {nomorSurat}
               </p>
               <p className="text-sm text-zinc-600 mt-1">
-                Tanggal: {new Date(tanggalSurat).toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
+                Tanggal: {tanggalSurat ? format(tanggalSurat, "dd MMMM yyyy", { locale: id }) : "-"}
               </p>
+              {documentType !== "SURAT_KEPUTUSAN" && (
+                <p className="text-xs text-zinc-500 mt-2 italic">
+                  Format dokumen: "Semarang, {tanggalSurat ? format(tanggalSurat, "dd MMMM yyyy", { locale: id }) : "[tanggal]"}"
+                </p>
+              )}
             </div>
           )}
 
