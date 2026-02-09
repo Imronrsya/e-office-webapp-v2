@@ -158,8 +158,14 @@ export function PDFPreview({
                     pdf.addPage();
                 }
 
+                // Calculate usable height for this specific page
+                // Page 1: 297mm - 30mm bottom = 267mm
+                // Page 2+: 297mm - 30mm bottom - 15mm top = 252mm
+                const pageUsableHeightMm = pageNum === 0 ? usableHeight : (usableHeight - 15);
+                const pageUsableHeightPx = Math.floor(pageUsableHeightMm * pxPerMm);
+
                 // Calculate target end position for this page
-                const targetEndY = currentY + usableHeightPx;
+                const targetEndY = currentY + pageUsableHeightPx;
 
                 // Find safe break point near target
                 const safeEndY = targetEndY >= totalHeight
@@ -433,30 +439,28 @@ export function PDFPreview({
                 {showSidebar && numPages > 0 && (
                     <div className="w-28 bg-zinc-800 border-r border-zinc-600 overflow-y-auto flex-shrink-0">
                         <div className="p-2 space-y-2">
-                            <Document file={pdfUrl} loading={null} error={null}>
+                            <Document file={pdfUrl} loading={null} error={null} className="flex flex-col items-center">
                                 {Array.from({ length: numPages }, (_, index) => (
                                     <div
                                         key={index + 1}
                                         onClick={() => goToPage(index + 1)}
                                         className={cn(
-                                            "cursor-pointer transition-all duration-150 rounded overflow-hidden mb-2",
+                                            "cursor-pointer transition-all duration-150 mb-3 relative flex justify-center", // Added flex justify-center
                                             currentPage === index + 1
-                                                ? "ring-2 ring-blue-500"
-                                                : "hover:ring-2 hover:ring-zinc-500 opacity-70 hover:opacity-100"
+                                                ? "ring-2 ring-blue-500 rounded-sm" // Changed rounded to rounded-sm
+                                                : "hover:ring-2 hover:ring-zinc-600 rounded-sm"
                                         )}
                                     >
-                                        <div className="bg-white shadow">
-                                            <Page
-                                                pageNumber={index + 1}
-                                                width={90}
-                                                renderTextLayer={false}
-                                                renderAnnotationLayer={false}
-                                            />
-                                        </div>
-                                        <div className={cn(
-                                            "text-center text-xs py-1",
-                                            currentPage === index + 1 ? "text-blue-400 font-medium" : "text-gray-400"
-                                        )}>
+                                        <Page
+                                            pageNumber={index + 1}
+                                            width={80} // Fixed width for thumbnails
+                                            renderTextLayer={false}
+                                            renderAnnotationLayer={false}
+                                            className="shadow-sm"
+                                        />
+
+                                        {/* Page number label */}
+                                        <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[9px] px-1 rounded">
                                             {index + 1}
                                         </div>
                                     </div>
