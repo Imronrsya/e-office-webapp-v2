@@ -59,7 +59,7 @@ import {
     Calendar as CalendarIcon,
     AlertCircle,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format as formatDate, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
@@ -181,7 +181,7 @@ interface SuratKeputusanForm {
     mengingat: string[];
     menetapkan: string;
     keputusan: KeputusanItem[];
-    tanggalDitetapkan: string;
+    tanggalDitetapkan: Date | undefined;
 }
 
 // ============================================================================
@@ -195,7 +195,7 @@ function formatTanggalIndonesia(date: Date | string | null | undefined): string 
     if (!date) return '';
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d.getTime())) return '';
-    return format(d, 'd MMMM yyyy', { locale: idLocale });
+    return formatDate(d, 'd MMMM yyyy', { locale: idLocale });
 }
 
 /**
@@ -368,7 +368,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         mengingat: [""],
         menetapkan: "",
         keputusan: [{ key: "1", label: "KESATU", content: "" }],
-        tanggalDitetapkan: "",
+        tanggalDitetapkan: undefined,
     });
 
     // Perihal/Judul Surat input - separate from content fields
@@ -735,6 +735,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 if (suratType === "SURAT_KEPUTUSAN" && existingDoc?.content) {
                     const content = existingDoc.content as Record<string, unknown>;
                     const existingKeputusan = (content.keputusan as Array<{ label: string; content: string }>) || [];
+                    
+                    // Parse tanggalDitetapkan - could be formatted string or ISO date
+                    const tanggalDitetapkanValue = (content.tanggalDitetapkan as string) || "";
+                    const parsedTanggalDitetapkan = parseToDate(tanggalDitetapkanValue);
+                    
                     setSuratKeputusanForm(prev => ({
                         ...prev,
                         nomorSurat: (content.nomorSurat as string) || "",
@@ -745,7 +750,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         keputusan: existingKeputusan.length > 0
                             ? existingKeputusan.map((k, index) => ({ key: String(index + 1), label: k.label, content: k.content }))
                             : [{ key: "1", label: "KESATU", content: "" }],
-                        tanggalDitetapkan: (content.tanggalDitetapkan as string) || "",
+                        tanggalDitetapkan: parsedTanggalDitetapkan,
                         namaPejabat: (content.namaPejabat as string) || "",
                         nipPejabat: (content.nipPejabat as string) || "",
                     }));
@@ -1514,8 +1519,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     keterangan: suratTugasTabelForm.keperluan || '',
                 };
             } else if (suratType === "SURAT_KEPUTUSAN") {
+                // Format tanggalDitetapkan ke bahasa Indonesia
+                const tanggalDitetapkanFormatted = suratKeputusanForm.tanggalDitetapkan 
+                    ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
+                    : "";
+                    
                 content = {
                     ...suratKeputusanForm,
+                    tanggalDitetapkan: tanggalDitetapkanFormatted,
                     menimbang: suratKeputusanForm.menimbang.filter(m => m.trim()),
                     mengingat: suratKeputusanForm.mengingat.filter(m => m.trim()),
                     keputusan: suratKeputusanForm.keputusan.filter(k => k.content.trim()).map(({ key, ...rest }) => rest),
@@ -2338,11 +2349,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="tanggalDitetapkan">Tanggal Ditetapkan <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                id="tanggalDitetapkan"
+                                            <DatePicker
                                                 value={suratKeputusanForm.tanggalDitetapkan}
-                                                onChange={(e) => updateSuratKeputusan("tanggalDitetapkan", e.target.value)}
-                                                placeholder="26 September 2025"
+                                                onChange={(date) => setSuratKeputusanForm(prev => ({ ...prev, tanggalDitetapkan: date }))}
+                                                placeholder="Pilih tanggal ditetapkan"
                                             />
                                         </div>
                                     </CardContent>
@@ -2626,7 +2636,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         suratType === "SURAT_PENGANTAR" ? suratPengantarForm :
                                             suratType === "SURAT_TUGAS" ? suratTugasForm :
                                                 suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
-                                                    suratKeputusanForm
+                                                    // Format tanggalDitetapkan untuk preview
+                                                    {
+                                                        ...suratKeputusanForm,
+                                                        tanggalDitetapkan: suratKeputusanForm.tanggalDitetapkan 
+                                                            ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
+                                                            : ""
+                                                    }
                                     }
                                     tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                 />
@@ -3270,7 +3286,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             suratType === "SURAT_PENGANTAR" ? suratPengantarForm :
                                                 suratType === "SURAT_TUGAS" ? suratTugasForm :
                                                     suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
-                                                        suratKeputusanForm
+                                                        // Format tanggalDitetapkan untuk preview
+                                                        {
+                                                            ...suratKeputusanForm,
+                                                            tanggalDitetapkan: suratKeputusanForm.tanggalDitetapkan 
+                                                                ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
+                                                                : ""
+                                                        }
                                         }
                                         tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                     />

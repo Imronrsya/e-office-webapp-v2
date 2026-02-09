@@ -51,6 +51,9 @@ import { toast } from "sonner";
 import BottomNav from "@/components/layout/bottom-nav";
 import { Checkbox } from "@/components/ui/checkbox";
 import { suratService } from "@/services/surat.service";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format as formatDate } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 // Universal Preview - Single Source of Truth
 import { TemplatePreview } from "@/components/universal-preview";
 import { Suspense } from "react";
@@ -143,7 +146,7 @@ interface SuratKeputusanForm {
     mengingat: string[];
     menetapkan: string;
     keputusan: KeputusanItem[];
-    tanggalDitetapkan: string;
+    tanggalDitetapkan: Date | undefined;
     namaPejabat: string;
     nipPejabat: string;
 }
@@ -263,7 +266,7 @@ function BuatSuratContent() {
         mengingat: [""],
         menetapkan: "",
         keputusan: [{ key: "1", label: "KESATU", content: "" }],
-        tanggalDitetapkan: "",
+        tanggalDitetapkan: undefined,
         namaPejabat: "",
         nipPejabat: "",
     });
@@ -344,7 +347,7 @@ function BuatSuratContent() {
         setSuratTugasTabelForm(prev => ({ ...prev, [field]: value }));
     };
 
-    const updateSuratKeputusan = (field: keyof SuratKeputusanForm, value: string | string[] | KeputusanItem[]) => {
+    const updateSuratKeputusan = (field: keyof SuratKeputusanForm, value: string | string[] | KeputusanItem[] | Date | undefined) => {
         setSuratKeputusanForm(prev => ({ ...prev, [field]: value }));
     };
 
@@ -732,8 +735,14 @@ function BuatSuratContent() {
                     keterangan: suratTugasTabelForm.keperluan || '',
                 };
             } else if (suratType === "SURAT_KEPUTUSAN") {
+                // Format tanggalDitetapkan ke bahasa Indonesia
+                const tanggalDitetapkanFormatted = suratKeputusanForm.tanggalDitetapkan 
+                    ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
+                    : "";
+                
                 content = {
                     ...suratKeputusanForm,
+                    tanggalDitetapkan: tanggalDitetapkanFormatted,
                     menimbang: suratKeputusanForm.menimbang.filter(m => m.trim()),
                     mengingat: suratKeputusanForm.mengingat.filter(m => m.trim()),
                     keputusan: suratKeputusanForm.keputusan.filter(k => k.content.trim()).map(({ key, ...rest }) => rest),
@@ -1183,11 +1192,10 @@ function BuatSuratContent() {
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="tanggalDitetapkan">Tanggal Ditetapkan <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                id="tanggalDitetapkan"
+                                            <DatePicker
                                                 value={suratKeputusanForm.tanggalDitetapkan}
-                                                onChange={(e) => updateSuratKeputusan("tanggalDitetapkan", e.target.value)}
-                                                placeholder="26 September 2025"
+                                                onChange={(date) => updateSuratKeputusan("tanggalDitetapkan", date)}
+                                                placeholder="Pilih tanggal ditetapkan"
                                             />
                                         </div>
                                     </CardContent>
@@ -1464,7 +1472,13 @@ function BuatSuratContent() {
                                     formData={
                                         suratType === "SURAT_TUGAS" ? suratTugasForm :
                                             suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
-                                                suratKeputusanForm
+                                                // Format tanggalDitetapkan untuk preview
+                                                {
+                                                    ...suratKeputusanForm,
+                                                    tanggalDitetapkan: suratKeputusanForm.tanggalDitetapkan 
+                                                        ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
+                                                        : ""
+                                                }
                                     }
                                     tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                 />
@@ -1884,7 +1898,13 @@ function BuatSuratContent() {
                                         formData={
                                             suratType === "SURAT_TUGAS" ? suratTugasForm :
                                                 suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
-                                                    suratKeputusanForm
+                                                    // Format tanggalDitetapkan untuk preview
+                                                    {
+                                                        ...suratKeputusanForm,
+                                                        tanggalDitetapkan: suratKeputusanForm.tanggalDitetapkan 
+                                                            ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
+                                                            : ""
+                                                    }
                                         }
                                         tembusan={tembusanTexts.map(t => ({ name: t.text }))}
                                     />
