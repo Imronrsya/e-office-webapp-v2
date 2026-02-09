@@ -109,8 +109,10 @@ export function UniversalDocumentPreview({
             const tembusanData = contentData.tembusan as Array<{ name: string; description?: string }> | undefined;
 
             // Get stempel and QR code URLs
-            // Stempel only appears after UPA clicks "bubuhkan stempel" which sets sealImageUrl in database
-            const stempelUrl = stempel?.imageUrl || stempel?.imageData || (contentData.stempelUrl as string) || undefined;
+            // Always use the local stempel from frontend public folder
+            // Only show stempel if there's an indication it should be shown (from backend sealImageUrl or stempel prop)
+            const hasStempel = !!(stempel?.imageUrl || stempel?.imageData || (contentData.stempelUrl as string));
+            const stempelUrl = hasStempel ? '/stempel.png' : undefined;
             const qrCodeDataUrl = qrCode?.content || (contentData.qrCodeDataUrl as string) || undefined;
 
             switch (documentType) {

@@ -117,12 +117,13 @@ export function PDFPreview({
             // Extract tembusan and stempelUrl from content if available
             const contentData = content as Record<string, unknown>;
             const tembusanData = contentData.tembusan as Array<{ name: string; description?: string }> | undefined;
-            // Extract stempel URL from content (passed from detail page as stempelUrl or sealImageUrl)
-            // Stempel only appears after UPA clicks "bubuhkan stempel" which sets sealImageUrl in database
-            const stempelUrl = (contentData.stempelUrl || contentData.sealImageUrl) as string | undefined;
+            // Always use the local stempel from frontend public folder
+            // Only show stempel if backend indicates it should be shown (sealImageUrl or stempelUrl set)
+            const hasStempel = !!(contentData.stempelUrl || contentData.sealImageUrl);
+            const stempelUrl = hasStempel ? '/stempel.png' : undefined;
 
             // Debug logging untuk stempel
-            console.log('[PDFPreview] stempelUrl:', stempelUrl);
+            console.log('[PDFPreview] stempelUrl:', stempelUrl, '(hasStempel:', hasStempel, ')');
             console.log('[PDFPreview] signatureBlocks:', signatureBlocks);
             console.log('[PDFPreview] content keys:', Object.keys(contentData));
 
