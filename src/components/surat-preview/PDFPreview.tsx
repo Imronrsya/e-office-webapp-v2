@@ -33,6 +33,8 @@ interface PDFPreviewProps {
     className?: string;
     showDraftBadge?: boolean;
     onZoomChange?: (zoom: number) => void;
+    /** Callback fired when PDF blob URL is ready (or null on error) */
+    onPdfReady?: (url: string | null) => void;
 }
 
 /**
@@ -45,7 +47,8 @@ export function PDFPreview({
     fileName = "Dokumen",
     className = "",
     showDraftBadge = true,
-    onZoomChange
+    onZoomChange,
+    onPdfReady
 }: PDFPreviewProps) {
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     const [numPages, setNumPages] = useState<number>(0);
@@ -274,11 +277,13 @@ export function PDFPreview({
             if (currentRenderId === renderIdRef.current) {
                 if (pdfUrl) URL.revokeObjectURL(pdfUrl);
                 setPdfUrl(url);
+                onPdfReady?.(url);
             }
         } catch (err) {
             console.error('PDF generation error:', err);
             if (currentRenderId === renderIdRef.current) {
                 setError('Gagal generate PDF preview');
+                onPdfReady?.(null);
             }
         } finally {
             if (currentRenderId === renderIdRef.current) {

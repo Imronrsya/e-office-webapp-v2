@@ -33,10 +33,32 @@ export interface TembusanDetail extends TembusanInboxItem {
     name: string;
     code: string;
   };
+  // Document type for frontend template selection
+  documentType: 'SURAT_TUGAS' | 'SURAT_KEPUTUSAN' | 'SURAT_TUGAS_TABEL' | 'SURAT_PENGANTAR';
+  // Form data JSON for frontend template rendering
+  content: Record<string, unknown> | null;
   submissionValues: Record<string, unknown>;
   contentHtml?: string | null;
   qrCodeUrl?: string | null;
   attachmentUrls?: Array<string | { url: string; name: string }> | null;
+  // Full signature data for frontend rendering
+  signaturesFull: Array<{
+    signerRole: string;
+    signerName: string;
+    signerNip?: string | null;
+    signatureUrl?: string | null;
+    prefix?: string | null;
+    signedAt: string | null;
+    order: number;
+  }>;
+  // Tembusan recipient list for template rendering
+  tembusanList: Array<{
+    userId?: string;
+    name: string;
+    description?: string;
+  }>;
+  // Stempel/seal info
+  sealImageUrl?: string | null;
 }
 
 export interface TembusanInboxResponse {
@@ -148,14 +170,14 @@ export const tembusanService = {
   /**
    * Check if user can download a document
    */
-  async canDownloadDocument(documentId: string): Promise<{ 
-    success: boolean; 
+  async canDownloadDocument(documentId: string): Promise<{
+    success: boolean;
     data?: { canDownload: boolean; fileUrl?: string };
     error?: string;
   }> {
     try {
-      const response = await api.get<{ 
-        success: boolean; 
+      const response = await api.get<{
+        success: boolean;
         data?: { canDownload: boolean; fileUrl?: string };
         error?: string;
       }>(`/api/tembusan/${documentId}/can-download`);
