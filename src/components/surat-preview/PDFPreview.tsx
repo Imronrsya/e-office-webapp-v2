@@ -258,12 +258,23 @@ export function PDFPreview({
 
     const handlePrint = async () => {
         if (!pdfUrl) return;
-        const printWindow = window.open(pdfUrl, '_blank');
-        if (printWindow) {
-            printWindow.addEventListener('load', () => {
-                printWindow.print();
-            });
-        }
+
+        // Create a hidden iframe for printing
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = pdfUrl;
+        document.body.appendChild(iframe);
+
+        iframe.onload = () => {
+            setTimeout(() => {
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+                // Clean up after print dialog is closed
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                }, 1000);
+            }, 100);
+        };
     };
 
     const handleDownload = async () => {
