@@ -688,16 +688,23 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
 
       if (sections.length === 0) return;
 
-      // Check if pagination is needed (total height > 1 page)
+      // FIRST: Measure heights BEFORE hiding
+      var sectionHeights = [];
       var totalContentHeight = 0;
       for (var s = 0; s < sections.length; s++) {
-        totalContentHeight += sections[s].scrollHeight;
+        var h = sections[s].scrollHeight;
+        sectionHeights.push(h);
+        totalContentHeight += h;
       }
+
+      // Check if pagination is needed
       if (totalContentHeight <= PAGE_HEIGHT && sections.length === 1) return;
 
-      // Hide all original sections
+      // NOW hide original sections
       for (var s = 0; s < sections.length; s++) {
-        sections[s].style.display = 'none';
+        sections[s].style.visibility = 'hidden';
+        sections[s].style.position = 'absolute';
+        sections[s].style.left = '-9999px';
       }
 
       var pagesContainer = document.createElement('div');
@@ -706,7 +713,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
 
       for (var s = 0; s < sections.length; s++) {
         var section = sections[s];
-        var sectionHeight = section.scrollHeight;
+        var sectionHeight = sectionHeights[s];
         var numPagesForSection = Math.max(1, Math.ceil(sectionHeight / PAGE_HEIGHT));
 
         for (var i = 0; i < numPagesForSection; i++) {
@@ -724,9 +731,10 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
           page.style.overflow = 'hidden';
           page.style.position = 'relative';
           page.style.background = '#ffffff';
+          page.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12)';
 
           var clone = section.cloneNode(true);
-          clone.style.display = '';
+          clone.style.visibility = 'visible';
           clone.style.position = 'absolute';
           clone.style.top = -(i * PAGE_HEIGHT) + 'px';
           clone.style.left = '0';
@@ -747,9 +755,9 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     }
 
     if (document.readyState === 'complete') {
-      setTimeout(paginate, 100);
+      setTimeout(paginate, 150);
     } else {
-      window.addEventListener('load', function() { setTimeout(paginate, 100); });
+      window.addEventListener('load', function() { setTimeout(paginate, 150); });
     }
   })();
   </script>

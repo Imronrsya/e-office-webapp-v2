@@ -607,7 +607,9 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
 
       var numPages = Math.ceil(totalHeight / PAGE_HEIGHT);
 
-      content.style.display = 'none';
+      content.style.visibility = 'hidden';
+      content.style.position = 'absolute';
+      content.style.left = '-9999px';
 
       var pagesContainer = document.createElement('div');
       pagesContainer.id = 'pages-container';
@@ -626,9 +628,10 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
         page.style.overflow = 'hidden';
         page.style.position = 'relative';
         page.style.background = '#ffffff';
+        page.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12)';
 
         var clone = content.cloneNode(true);
-        clone.style.display = '';
+        clone.style.visibility = 'visible';
         clone.style.position = 'absolute';
         clone.style.top = -(i * PAGE_HEIGHT) + 'px';
         clone.style.left = '0';
@@ -647,9 +650,9 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
     }
 
     if (document.readyState === 'complete') {
-      setTimeout(paginate, 100);
+      setTimeout(paginate, 150);
     } else {
-      window.addEventListener('load', function() { setTimeout(paginate, 100); });
+      window.addEventListener('load', function() { setTimeout(paginate, 150); });
     }
   })();
   </script>

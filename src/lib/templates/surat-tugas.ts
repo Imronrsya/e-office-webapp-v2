@@ -534,14 +534,16 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       var mmToPx = function(mm) { return mm * 3.7795275591; };
       var PAGE_HEIGHT = mmToPx(297);
 
-      // Measure total content height
+      // Measure total content height BEFORE hiding
       var totalHeight = content.scrollHeight;
       if (totalHeight <= PAGE_HEIGHT) return; // fits on one page, no pagination needed
 
       var numPages = Math.ceil(totalHeight / PAGE_HEIGHT);
 
-      // Hide original content (keep in DOM for measurement reference)
-      content.style.display = 'none';
+      // Hide original content using visibility (keeps dimensions)
+      content.style.visibility = 'hidden';
+      content.style.position = 'absolute';
+      content.style.left = '-9999px';
 
       // Build pages container
       var pagesContainer = document.createElement('div');
@@ -563,10 +565,11 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
         page.style.overflow = 'hidden';
         page.style.position = 'relative';
         page.style.background = '#ffffff';
+        page.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12)';
 
         // Clone content and offset vertically
         var clone = content.cloneNode(true);
-        clone.style.display = '';
+        clone.style.visibility = 'visible';
         clone.style.position = 'absolute';
         clone.style.top = -(i * PAGE_HEIGHT) + 'px';
         clone.style.left = '0';
@@ -585,9 +588,9 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
     }
 
     if (document.readyState === 'complete') {
-      setTimeout(paginate, 100);
+      setTimeout(paginate, 150);
     } else {
-      window.addEventListener('load', function() { setTimeout(paginate, 100); });
+      window.addEventListener('load', function() { setTimeout(paginate, 150); });
     }
   })();
   </script>
