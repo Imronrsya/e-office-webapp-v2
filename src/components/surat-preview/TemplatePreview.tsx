@@ -3,9 +3,10 @@
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, ZoomIn, ZoomOut, Maximize2, RotateCw } from "lucide-react";
-import { 
-    generateSuratPengantarHTML, 
-    SuratPengantarData 
+import { PDFPreview } from "./PDFPreview";
+import {
+    generateSuratPengantarHTML,
+    SuratPengantarData
 } from "@/lib/templates/surat-pengantar";
 import { suratTugasTemplate, SuratTugasData, SignatureBlock } from "@/lib/templates/surat-tugas";
 import { suratTugasTableTemplate, SuratTugasTableData } from "@/lib/templates/surat-tugas-table";
@@ -48,9 +49,7 @@ export function TemplatePreview({
 }: TemplatePreviewProps) {
     const [zoom, setZoom] = useState(100);
     const [rotation, setRotation] = useState(0);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const [iframeHeight, setIframeHeight] = useState(1123);
 
     // Generate HTML content with signatures
     const htmlContent = useMemo(() => {
@@ -73,7 +72,7 @@ export function TemplatePreview({
                     // For surat pengantar, map signers to specific roles
                     const kaprodiSigner = signers.find(s => s.role === "KAPRODI");
                     const kadepSigner = signers.find(s => s.role === "KADEP");
-                    
+
                     // Map form fields to template fields
                     const formDataMapped = data as Record<string, unknown>;
                     const pengantarData: SuratPengantarData = {
@@ -121,38 +120,38 @@ export function TemplatePreview({
                     const formDataMapped = data as Record<string, unknown>;
                     const pelaksana = (formDataMapped.pelaksana as Array<Record<string, string>>) || [];
                     const customColumns = (formDataMapped.customColumns as Array<{ key: string; label: string }>) || [];
-                    
+
                     // Convert pelaksana to dataMahasiswa format with custom columns
                     const dataMahasiswa = pelaksana.map(p => ({
                         nama: p.nama || "",
                         nim: p.nim || "",
                         prodi: p.prodi || "",
                         // Include custom column values
-                        ...customColumns.reduce((acc, col) => ({ 
-                            ...acc, 
-                            [col.key]: p[col.key] || "" 
+                        ...customColumns.reduce((acc, col) => ({
+                            ...acc,
+                            [col.key]: p[col.key] || ""
                         }), {})
                     }));
-                    
+
                     // Format tanggal untuk display
                     const formatTanggal = (dateStr: string): string => {
                         if (!dateStr) return "-";
                         try {
                             const date = new Date(dateStr);
-                            return date.toLocaleDateString('id-ID', { 
-                                day: 'numeric', 
-                                month: 'long', 
-                                year: 'numeric' 
+                            return date.toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
                             });
                         } catch {
                             return dateStr;
                         }
                     };
-                    
+
                     const tanggalMulai = (formDataMapped.tanggalMulai as string) || "";
                     const tanggalSelesai = (formDataMapped.tanggalSelesai as string) || "";
                     const tanggalSurat = (formDataMapped.tanggalSurat as string) || "";
-                    
+
                     const tabelData: SuratTugasTableData = {
                         nomorSurat: (formDataMapped.nomorSurat as string) || "-",
                         dataMahasiswa: dataMahasiswa,
@@ -186,7 +185,7 @@ export function TemplatePreview({
     const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 200));
     const handleZoomOut = () => setZoom(prev => Math.max(prev - 25, 50));
     const handleRotate = () => setRotation(prev => (prev + 90) % 360);
-    
+
     const handleFullscreen = () => {
         if (containerRef.current) {
             if (document.fullscreenElement) {
@@ -237,40 +236,19 @@ export function TemplatePreview({
                 </div>
             </div>
 
-            {/* Preview Container */}
-            <div 
-                className="flex-1 overflow-auto p-4 bg-gray-100"
-                style={{ maxHeight: "80vh" }}
+            {/* Preview Container with PDF */}
+            <div
+                className="flex-1 overflow-auto"
+                style={{
+                    maxHeight: "80vh",
+                    transform: `rotate(${rotation}deg)`,
+                    transformOrigin: "center center",
+                }}
             >
-                <div
-                    className="mx-auto bg-white shadow-lg"
-                    style={{
-                        width: `${794 * (zoom / 100)}px`,
-                        transform: `rotate(${rotation}deg)`,
-                        transformOrigin: "center center",
-                    }}
-                >
-                    <iframe
-                        ref={iframeRef}
-                        srcDoc={htmlContent}
-                        className="w-full border-0"
-                        style={{
-                            height: `${iframeHeight * (zoom / 100)}px`,
-                            pointerEvents: "none",
-                            overflow: "hidden",
-                        }}
-                        onLoad={() => {
-                            setTimeout(() => {
-                                const iframe = iframeRef.current;
-                                if (iframe?.contentDocument?.body) {
-                                    const contentHeight = iframe.contentDocument.body.scrollHeight;
-                                    setIframeHeight(Math.max(1123, contentHeight));
-                                }
-                            }, 250);
-                        }}
-                        title="Surat Preview"
-                    />
-                </div>
+                <PDFPreview
+                    htmlContent={htmlContent}
+                    zoom={zoom}
+                />
             </div>
         </div>
     );

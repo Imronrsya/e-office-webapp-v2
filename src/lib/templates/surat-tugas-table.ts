@@ -42,23 +42,23 @@ export interface SuratTugasTableData {
   keterangan: string;
   tanggalMulai: string;
   tanggalSelesai: string;
-  
+
   // Custom columns for table
   customColumns?: CustomColumn[];
-  
+
   // Tanda tangan
   signatures?: SignatureBlock[];
-  
+
   // Stempel URL
   stempelUrl?: string;
-  
+
   // Tanggal surat
   tanggalSurat?: string;
-  
+
   // QR Code untuk verifikasi
   qrCodeDataUrl?: string;
   verificationUrl?: string;
-  
+
   // Tembusan - daftar penerima salinan surat
   tembusan?: TembusanRecipient[];
 }
@@ -81,10 +81,10 @@ const getHierarchyRank = (role: string): number => {
  */
 const findStempelRecipientRole = (signatures: SignatureBlock[]): string | null => {
   if (!signatures || signatures.length === 0) return null;
-  
+
   let highestRank = 0;
   let stempelRecipientRole: string | null = null;
-  
+
   for (const sig of signatures) {
     const rank = getHierarchyRank(sig.signerRole);
     if (rank > highestRank) {
@@ -92,7 +92,7 @@ const findStempelRecipientRole = (signatures: SignatureBlock[]): string | null =
       stempelRecipientRole = sig.signerRole;
     }
   }
-  
+
   return stempelRecipientRole;
 };
 
@@ -114,10 +114,10 @@ const getRoleDisplayLabel = (role: string): string => {
  * Helper untuk render blok tanda tangan dengan dukungan stempel
  */
 const renderSignatureBlock = (signature: SignatureBlock, stempelUrl?: string, shouldHaveStempel = false): string => {
-  const signatureImage = signature.signatureUrl 
+  const signatureImage = signature.signatureUrl
     ? `<img src="${signature.signatureUrl}" alt="Tanda Tangan" style="max-width: 120px; max-height: 60px; object-fit: contain;" crossorigin="anonymous" />`
     : '<div style="height: 60px;"></div>';
-  
+
   // Stempel overlay untuk jabatan tertinggi
   // Posisi: di kiri tanda tangan, sedikit overlap
   const stempelOverlay = shouldHaveStempel && stempelUrl ? `
@@ -125,7 +125,7 @@ const renderSignatureBlock = (signature: SignatureBlock, stempelUrl?: string, sh
       <img src="${stempelUrl}" alt="Stempel" style="width: 100%; height: 100%; object-fit: contain;" crossorigin="anonymous" />
     </div>
   ` : '';
-  
+
   return `
     <div class="signature-block" style="text-align: center; min-width: 200px; position: relative;">
       ${signature.prefix ? `<p style="margin: 0 0 5px 0; color: #000000 !important; font-style: italic;">${signature.prefix}</p>` : ''}
@@ -164,35 +164,53 @@ const renderSignatures = (signatures?: SignatureBlock[], stempelUrl?: string): s
       </div>
     `;
   }
-  
+
   const sortedSignatures = sortSignaturesByHierarchy(signatures);
-  
+
   // Find which signature should receive the stempel (highest ranking)
   const stempelRecipientRole = findStempelRecipientRole(signatures);
-  
+
   const count = sortedSignatures.length;
   const countClass = `ttd-count-${Math.min(count, 4)}`;
-  
+
   const signatureBlocks = sortedSignatures.map(sig => {
     const shouldHaveStempel = sig.signerRole === stempelRecipientRole;
     return renderSignatureBlock(sig, stempelUrl, shouldHaveStempel);
   }).join('');
-  
+
   return `<div class="${countClass}">${signatureBlocks}</div>`;
 };
 
 /**
- * Helper untuk render QR Code - static positioning in footer
+ * Helper untuk render QR Code sebagai running footer - muncul di setiap halaman
  */
-const renderQRCode = (qrCodeDataUrl?: string): string => {
-  if (!qrCodeDataUrl) return '';
-  
+const renderQRRunningFooter = (qrCodeDataUrl?: string): string => {
+  if (qrCodeDataUrl) {
+    return `
+      <div class="qr-running">
+        <img src="${qrCodeDataUrl}" alt="QR Code Verifikasi" crossorigin="anonymous" />
+        <p class="qr-label">Scan untuk verifikasi</p>
+      </div>
+    `;
+  }
+
+  // Placeholder when QR code not yet generated
   return `
-    <div class="qr-code-box">
-      <img src="${qrCodeDataUrl}" alt="QR Code Verifikasi" style="width: 80px; height: 80px;" />
-      <p style="margin: 2px 0 0 0; font-size: 6pt; color: #666666 !important;">Scan untuk verifikasi</p>
+    <div class="qr-running">
+      <div class="qr-placeholder">
+        <span class="qr-placeholder-text">QR Code</span>
+      </div>
+      <p class="qr-label">Akan muncul setelah verifikasi</p>
     </div>
   `;
+};
+
+/**
+ * Helper untuk render QR Code (backward compat - returns empty)
+ */
+const renderQRCode = (qrCodeDataUrl?: string): string => {
+  // QR Code sekarang di-render sebagai running footer
+  return '';
 };
 
 /**
@@ -203,7 +221,7 @@ const renderQRCode = (qrCodeDataUrl?: string): string => {
  */
 const renderTembusan = (tembusan?: (TembusanRecipient | string)[]): string => {
   if (!tembusan || tembusan.length === 0) return '';
-  
+
   // Normalize: convert to TembusanRecipient format
   const normalizedTembusan: TembusanRecipient[] = tembusan.map(t => {
     if (typeof t === 'string') {
@@ -212,18 +230,18 @@ const renderTembusan = (tembusan?: (TembusanRecipient | string)[]): string => {
     }
     return t;
   });
-  
+
   // Filter: hanya tampilkan tembusan yang userId-nya kosong (text-based)
   // Tembusan dengan userId = untuk akses sistem saja, tidak ditampilkan di surat
   const textBasedTembusan = normalizedTembusan.filter(t => !t.userId || t.userId === '');
-  
+
   if (textBasedTembusan.length === 0) return '';
-  
+
   const recipients = textBasedTembusan.map((t, idx) => {
     const desc = t.description ? ` (${t.description})` : '';
     return `<li style="color: #000000 !important; margin-bottom: 2px;">${t.name}${desc}</li>`;
   }).join('\n');
-  
+
   // Tembusan sekarang menggunakan static position agar tidak muncul di setiap halaman
   return `
     <div class="tembusan-container">
@@ -240,7 +258,7 @@ const renderTembusan = (tembusan?: (TembusanRecipient | string)[]): string => {
  */
 const renderMahasiswaTable = (dataMahasiswa: MahasiswaData[], customColumns?: CustomColumn[]): string => {
   const cols = customColumns || [];
-  
+
   // Generate header
   const headerCells = [
     '<th style="color: #000000;">No</th>',
@@ -249,7 +267,7 @@ const renderMahasiswaTable = (dataMahasiswa: MahasiswaData[], customColumns?: Cu
     '<th style="color: #000000;">PRODI</th>',
     ...cols.map(col => `<th style="color: #000000;">${col.label || col.key}</th>`)
   ].join('\n          ');
-  
+
   // Generate body rows
   const bodyRows = (dataMahasiswa || []).map((mhs, index) => {
     const baseCells = [
@@ -261,7 +279,7 @@ const renderMahasiswaTable = (dataMahasiswa: MahasiswaData[], customColumns?: Cu
     const customCells = cols.map(col => `<td style="color: #000000;">${mhs[col.key] || ''}</td>`);
     return `<tr>\n          ${[...baseCells, ...customCells].join('\n          ')}\n        </tr>`;
   }).join('\n        ');
-  
+
   return `
     <table class="table-mahasiswa">
       <thead>
@@ -283,15 +301,66 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Surat Tugas - FSM UNDIP</title>
   <style>
+    /* Paged.js Configuration */
+    @page {
+      size: A4;
+      margin: 15mm 20mm 25mm 20mm; /* Extra bottom margin for QR */
+      
+      @bottom-right {
+        content: element(qr-running);
+      }
+    }
+    
+    /* QR Code Running Element - tampil di layar */
+    .qr-running {
+      position: fixed;
+      bottom: 10mm;
+      right: 10mm;
+      text-align: center;
+      padding: 2mm;
+      background: white;
+      z-index: 100;
+    }
+    
+    .qr-running img {
+      width: 60px;
+      height: 60px;
+    }
+    
+    .qr-running .qr-label {
+      font-size: 5pt;
+      color: #666666;
+      margin-top: 1mm;
+    }
+    
+    .qr-placeholder {
+      width: 60px;
+      height: 60px;
+      border: 1px dashed #cccccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9f9f9;
+    }
+    
+    .qr-placeholder-text {
+      font-size: 5pt;
+      color: #999999;
+      text-align: center;
+    }
+    
     @media print {
       body {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
-    }
-    @page {
-      size: A4;
-      margin: 15mm 20mm 20mm 20mm;
+      /* QR di print mode - gunakan running element di setiap halaman */
+      .qr-running {
+        position: running(qr-running);
+        bottom: auto;
+        right: auto;
+        background: none;
+      }
     }
     * {
       -webkit-print-color-adjust: exact !important;
@@ -497,12 +566,14 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
+      break-inside: avoid;
     }
     .tembusan-container {
       flex: 1;
-      max-width: 60%;
+      max-width: 100%;
       font-size: 11pt;
       line-height: 1.4;
+      break-inside: avoid;
     }
     .qr-code-box {
       text-align: center;
@@ -525,6 +596,9 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
   </style>
 </head>
 <body style="color: #000000;">
+  <!-- QR Code Running Footer - muncul di setiap halaman -->
+  ${renderQRRunningFooter(data.qrCodeDataUrl)}
+  
   <div id="surat-content">
     <div class="header-container" style="border-bottom: 3px solid #000000;">
       <div class="logo-container">
@@ -572,7 +646,6 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
     </div>
     <div class="footer-section">
       ${renderTembusan(data.tembusan)}
-      ${renderQRCode(data.qrCodeDataUrl)}
     </div>
   </div>
 

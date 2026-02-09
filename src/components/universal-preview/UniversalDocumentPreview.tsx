@@ -22,12 +22,12 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { 
-    type UniversalDocumentPreviewProps, 
+import {
+    type UniversalDocumentPreviewProps,
     type SignatureData,
     type PreviewMode,
     detectPreviewMode,
-    getStatusBadgeConfig 
+    getStatusBadgeConfig
 } from "./types";
 
 // Import templates
@@ -36,6 +36,7 @@ import { suratTugasTableTemplate, type SuratTugasTableData } from "@/lib/templat
 import { suratKeputusanTemplate, type SuratKeputusanData } from "@/lib/templates/surat-keputusan";
 import { generateSuratPengantarHTML, type SuratPengantarData } from "@/lib/templates/surat-pengantar";
 import { htmlToPdfBlob } from "@/lib/pdf-generator";
+import { PDFPreview } from "@/components/surat-preview/PDFPreview";
 
 // A4 dimensions in pixels at 96 DPI
 const A4_WIDTH_PX = 794;
@@ -75,7 +76,7 @@ export function UniversalDocumentPreview({
     const [isGenerating, setIsGenerating] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
-    
+
     // Refs
     const containerRef = useRef<HTMLDivElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -101,11 +102,11 @@ export function UniversalDocumentPreview({
                 signatureUrl: sig.signatureUrl || undefined,
                 prefix: sig.prefix || undefined,
             }));
-            
+
             // Extract tembusan from content if available
             const contentData = content as Record<string, unknown>;
             const tembusanData = contentData.tembusan as Array<{ name: string; description?: string }> | undefined;
-            
+
             // Get stempel and QR code URLs
             // Stempel only appears after UPA clicks "bubuhkan stempel" which sets sealImageUrl in database
             const stempelUrl = stempel?.imageUrl || stempel?.imageData || (contentData.stempelUrl as string) || undefined;
@@ -156,17 +157,17 @@ export function UniversalDocumentPreview({
                 case 'SURAT_PENGANTAR': {
                     // For SURAT_PENGANTAR, we need to convert signatures to namaKaprodi/namaKadep format
                     const pengantarData = content as unknown as SuratPengantarData;
-                    
+
                     // Extract Kaprodi and Kadep signatures
-                    const kaprodiSig = signatureBlocks.find(s => 
-                        s.signerRole.toLowerCase().includes('kaprodi') || 
+                    const kaprodiSig = signatureBlocks.find(s =>
+                        s.signerRole.toLowerCase().includes('kaprodi') ||
                         s.signerRole.toLowerCase().includes('ketua prodi')
                     );
-                    const kadepSig = signatureBlocks.find(s => 
-                        s.signerRole.toLowerCase().includes('kadep') || 
+                    const kadepSig = signatureBlocks.find(s =>
+                        s.signerRole.toLowerCase().includes('kadep') ||
                         s.signerRole.toLowerCase().includes('ketua departemen')
                     );
-                    
+
                     return generateSuratPengantarHTML({
                         ...pengantarData,
                         tembusan: tembusanData || pengantarData.tembusan || [],
@@ -259,7 +260,7 @@ export function UniversalDocumentPreview({
             onFullscreen();
             return;
         }
-        
+
         if (containerRef.current) {
             if (document.fullscreenElement) {
                 document.exitFullscreen();
@@ -275,7 +276,7 @@ export function UniversalDocumentPreview({
             onPrint();
             return;
         }
-        
+
         if (iframeRef.current) {
             iframeRef.current.contentWindow?.print();
         }
@@ -287,14 +288,14 @@ export function UniversalDocumentPreview({
             onDownload();
             return;
         }
-        
+
         // Jika ada HTML content, generate PDF dan download langsung
         if (effectiveHtmlContent) {
             try {
                 const { htmlToPdfBlob } = await import('@/lib/pdf-generator');
                 const pdfBlob = await htmlToPdfBlob(effectiveHtmlContent);
                 const blobUrl = URL.createObjectURL(pdfBlob);
-                
+
                 const a = document.createElement('a');
                 a.href = blobUrl;
                 a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
@@ -302,14 +303,14 @@ export function UniversalDocumentPreview({
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                
+
                 setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
             } catch (error) {
                 console.error('PDF generation failed:', error);
             }
             return;
         }
-        
+
         // Default download behavior for URL-based PDFs
         const url = fileUrl || pdfBlobUrl;
         if (url) {
@@ -318,7 +319,7 @@ export function UniversalDocumentPreview({
                 const response = await fetch(url);
                 const blob = await response.blob();
                 const blobUrl = URL.createObjectURL(blob);
-                
+
                 const a = document.createElement('a');
                 a.href = blobUrl;
                 a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
@@ -326,7 +327,7 @@ export function UniversalDocumentPreview({
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                
+
                 // Cleanup blob URL after download
                 setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
             } catch (error) {
@@ -357,7 +358,7 @@ export function UniversalDocumentPreview({
     // Iframe load handler - auto-resize iframe to content height and count pages
     const handleIframeLoad = useCallback(() => {
         setIsLoading(false);
-        
+
         // Wait a moment for the JS pagination script inside the iframe to finish
         setTimeout(() => {
             const iframe = iframeRef.current;
@@ -365,7 +366,7 @@ export function UniversalDocumentPreview({
                 const body = iframe.contentDocument.body;
                 const contentHeight = body.scrollHeight;
                 iframe.style.height = contentHeight + 'px';
-                
+
                 // Count pages from visual-page divs (JS pagination) or fallback
                 const pagesContainer = iframe.contentDocument.getElementById('pages-container');
                 if (pagesContainer) {
@@ -391,14 +392,14 @@ export function UniversalDocumentPreview({
 
     // Theme classes
     const themeClasses = {
-        container: theme === 'dark' 
-            ? 'bg-zinc-800' 
+        container: theme === 'dark'
+            ? 'bg-zinc-800'
             : 'bg-white border',
-        toolbar: theme === 'dark' 
-            ? 'bg-zinc-700 text-white' 
+        toolbar: theme === 'dark'
+            ? 'bg-zinc-700 text-white'
             : 'bg-gray-50 text-gray-900 border-b',
-        preview: theme === 'dark' 
-            ? 'bg-zinc-600' 
+        preview: theme === 'dark'
+            ? 'bg-zinc-600'
             : 'bg-gray-100',
         button: theme === 'dark'
             ? 'text-white hover:bg-zinc-600'
@@ -423,9 +424,9 @@ export function UniversalDocumentPreview({
                 <div className="flex items-center gap-3">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
+                            <Button
+                                variant="ghost"
+                                size="icon"
                                 className={cn("h-8 w-8", themeClasses.button)}
                             >
                                 <Menu className="w-4 h-4" />
@@ -442,10 +443,10 @@ export function UniversalDocumentPreview({
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    
+
                     <span className="truncate max-w-[150px]">{fileName}</span>
                     <span className={themeClasses.text}>|</span>
-                    
+
                     {/* Page navigation */}
                     <div className="flex items-center gap-1">
                         <Button
@@ -471,11 +472,11 @@ export function UniversalDocumentPreview({
                         </Button>
                     </div>
                 </div>
-                
+
                 <div className="flex items-center gap-1">
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={handleZoomOut}
                         disabled={zoom <= 50}
                         className={cn("h-8 w-8", themeClasses.button, zoom <= 50 && themeClasses.buttonDisabled)}
@@ -483,9 +484,9 @@ export function UniversalDocumentPreview({
                         <Minus className="w-4 h-4" />
                     </Button>
                     <span className="min-w-[50px] text-center">{zoom}%</span>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={handleZoomIn}
                         disabled={zoom >= 200}
                         className={cn("h-8 w-8", themeClasses.button, zoom >= 200 && themeClasses.buttonDisabled)}
@@ -493,33 +494,33 @@ export function UniversalDocumentPreview({
                         <Plus className="w-4 h-4" />
                     </Button>
                     <span className={cn("mx-2", themeClasses.text)}>|</span>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={handleFullscreen}
                         className={cn("h-8 w-8", themeClasses.button)}
                     >
                         <Maximize2 className="w-4 h-4" />
                     </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={handleRotate}
                         className={cn("h-8 w-8", themeClasses.button)}
                     >
                         <RotateCw className="w-4 h-4" />
                     </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={handlePrint}
                         className={cn("h-8 w-8", themeClasses.button)}
                     >
                         <Printer className="w-4 h-4" />
                     </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={handleDownload}
                         className={cn("h-8 w-8", themeClasses.button)}
                     >
@@ -532,10 +533,10 @@ export function UniversalDocumentPreview({
 
     // Render status badge
     const renderStatusBadge = () => {
-        const badge = showDraftBadge 
+        const badge = showDraftBadge
             ? { text: 'DRAFT', color: 'yellow' as const, position: 'top-right' as const }
             : statusBadge;
-            
+
         if (!badge) return null;
 
         const colorClasses = {
@@ -613,22 +614,22 @@ export function UniversalDocumentPreview({
     // Render PDF preview (from URL or blob)
     const renderPdfPreview = () => {
         const pdfUrl = fileUrl || pdfBlobUrl;
-        
+
         if (!pdfUrl) {
             if (isLoading || isGenerating) return renderLoading();
             return renderEmpty();
         }
 
         // Add #toolbar=0 to hide browser's built-in PDF toolbar
-        const pdfUrlWithoutToolbar = pdfUrl.includes('#') 
+        const pdfUrlWithoutToolbar = pdfUrl.includes('#')
             ? `${pdfUrl}&toolbar=0&navpanes=0&scrollbar=0`
             : `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`;
 
         return (
             <div className={cn("flex-1 overflow-auto", themeClasses.preview)}>
-                <div 
+                <div
                     className="flex items-start justify-center p-4"
-                    style={{ 
+                    style={{
                         transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
                         transformOrigin: 'top center',
                         transition: 'transform 0.2s ease'
@@ -638,8 +639,8 @@ export function UniversalDocumentPreview({
                         ref={iframeRef}
                         src={pdfUrlWithoutToolbar}
                         className="bg-white rounded shadow-lg"
-                        style={{ 
-                            width: '210mm', 
+                        style={{
+                            width: '210mm',
                             minHeight: '297mm',
                             border: 'none'
                         }}
@@ -651,46 +652,28 @@ export function UniversalDocumentPreview({
         );
     };
 
-    // Render HTML preview
+    // Render HTML preview with PDF pagination
+    // PDFPreview has its own toolbar, so return it directly
     const renderHtmlPreview = () => {
         if (!effectiveHtmlContent) {
             if (isLoading) return renderLoading();
             return renderEmpty();
         }
 
+        // Return PDFPreview directly - it has its own complete toolbar
         return (
-            <div className={cn("flex-1 overflow-auto", themeClasses.preview)}>
-                <div 
-                    className="flex items-start justify-center p-4"
-                    style={{ 
-                        transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
-                        transformOrigin: 'top center',
-                        transition: 'transform 0.2s ease'
-                    }}
-                >
-                    <iframe
-                        ref={iframeRef}
-                        srcDoc={effectiveHtmlContent}
-                        className="bg-white rounded shadow-lg"
-                        style={{ 
-                            width: '210mm', 
-                            minHeight: '297mm',
-                            border: 'none',
-                            pointerEvents: 'auto',
-                            overflow: 'hidden',
-                        }}
-                        onLoad={handleIframeLoad}
-                        title="HTML Preview"
-                    />
-                </div>
-            </div>
+            <PDFPreview
+                htmlContent={effectiveHtmlContent}
+                fileName={fileName}
+                showDraftBadge={showDraftBadge}
+            />
         );
     };
 
     // Render content based on mode
     const renderContent = () => {
         if (error) return renderError();
-        
+
         switch (actualMode) {
             case 'pdf':
                 return renderPdfPreview();
@@ -710,7 +693,7 @@ export function UniversalDocumentPreview({
     };
 
     return (
-        <div 
+        <div
             ref={containerRef}
             className={cn(
                 "rounded-xl overflow-hidden flex flex-col h-full relative",
@@ -719,9 +702,11 @@ export function UniversalDocumentPreview({
             )}
             style={containerStyle}
         >
-            {renderToolbar()}
+            {/* Skip parent toolbar for HTML mode - PDFPreview has its own */}
+            {actualMode !== 'html' && renderToolbar()}
             {renderContent()}
-            {renderStatusBadge()}
+            {/* Skip status badge for HTML mode - PDFPreview handles it */}
+            {actualMode !== 'html' && renderStatusBadge()}
         </div>
     );
 }

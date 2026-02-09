@@ -19,11 +19,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-    generateSuratPengantarHTML, 
+import {
+    generateSuratPengantarHTML,
     formatTanggalIndonesia,
-    type SuratPengantarData 
+    type SuratPengantarData
 } from "@/lib/templates/surat-pengantar";
+import { PDFPreview } from "@/components/surat-preview/PDFPreview";
 
 interface SuratPreviewProps {
     // Data dari submission
@@ -133,7 +134,7 @@ export function SuratPreview({
         // Generate dari template with signatures included directly
         const templateData: SuratPengantarData = {
             nomorSurat: documentData?.nomorSurat || "-",
-            tanggalSurat: documentData?.tanggalSurat 
+            tanggalSurat: documentData?.tanggalSurat
                 ? formatTanggalIndonesia(documentData.tanggalSurat)
                 : formatTanggalIndonesia(new Date()),
             perihal: documentData?.perihal || submissionData.keperluan,
@@ -190,16 +191,16 @@ export function SuratPreview({
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        
+
                         <span className="truncate max-w-[120px]">{fileName}</span>
                         <span className="text-zinc-400">|</span>
                         <span className="text-zinc-400">1 / 1</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-1">
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={handleZoomOut}
                             disabled={zoom <= 50}
                             className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
@@ -207,9 +208,9 @@ export function SuratPreview({
                             <Minus className="w-4 h-4" />
                         </Button>
                         <span className="min-w-[50px] text-center">{zoom}%</span>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={handleZoomIn}
                             disabled={zoom >= 200}
                             className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
@@ -217,33 +218,33 @@ export function SuratPreview({
                             <Plus className="w-4 h-4" />
                         </Button>
                         <span className="text-zinc-500 mx-2">|</span>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={handleFullscreen}
                             className="text-white hover:bg-zinc-600 h-8 w-8"
                         >
                             <Maximize2 className="w-4 h-4" />
                         </Button>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={handleRotate}
                             className="text-white hover:bg-zinc-600 h-8 w-8"
                         >
                             <RotateCw className="w-4 h-4" />
                         </Button>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={onDownload}
                             className="text-white hover:bg-zinc-600 h-8 w-8"
                         >
                             <Download className="w-4 h-4" />
                         </Button>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={handlePrint}
                             className="text-white hover:bg-zinc-600 h-8 w-8"
                         >
@@ -254,9 +255,9 @@ export function SuratPreview({
 
                 {/* PDF Viewer */}
                 <div className="flex-1 bg-zinc-600 overflow-auto">
-                    <div 
+                    <div
                         className="w-full h-full flex items-center justify-center p-4"
-                        style={{ 
+                        style={{
                             transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
                             transformOrigin: 'center center',
                             transition: 'transform 0.2s ease'
@@ -275,123 +276,15 @@ export function SuratPreview({
         );
     }
 
-    // Jika ada HTML content, render HTML
+    // Jika ada HTML content, render dengan PDFPreview
+    // PDFPreview sudah lengkap dengan toolbar, sidebar thumbnails, dan draft badge
     if (htmlContent) {
         return (
-            <div ref={containerRef} className="bg-zinc-800 rounded-xl overflow-hidden flex flex-col h-full min-h-[600px] relative">
-                {/* Toolbar */}
-                <div className="flex items-center justify-between bg-zinc-700 px-3 py-2 text-white text-sm">
-                    <div className="flex items-center gap-3">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-white hover:bg-zinc-600 h-8 w-8">
-                                    <Menu className="w-4 h-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                                <DropdownMenuItem onClick={handlePrint}>
-                                    <Printer className="w-4 h-4 mr-2" />
-                                    Cetak
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        
-                        <span className="truncate max-w-[120px]">{fileName}</span>
-                        <span className="text-zinc-400">|</span>
-                        <span className="text-zinc-400">- / -</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-1">
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={handleZoomOut}
-                            disabled={zoom <= 50}
-                            className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
-                        >
-                            <Minus className="w-4 h-4" />
-                        </Button>
-                        <span className="min-w-[50px] text-center">{zoom}%</span>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={handleZoomIn}
-                            disabled={zoom >= 200}
-                            className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
-                        >
-                            <Plus className="w-4 h-4" />
-                        </Button>
-                        <span className="text-zinc-500 mx-2">|</span>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={handleFullscreen}
-                            className="text-white hover:bg-zinc-600 h-8 w-8"
-                        >
-                            <Maximize2 className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={handleRotate}
-                            className="text-white hover:bg-zinc-600 h-8 w-8"
-                        >
-                            <RotateCw className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={handlePrint}
-                            className="text-white hover:bg-zinc-600 h-8 w-8"
-                        >
-                            <Printer className="w-4 h-4" />
-                        </Button>
-                    </div>
-                </div>
-
-                {/* HTML Preview */}
-                <div className="flex-1 bg-zinc-600 overflow-auto">
-                    <div 
-                        className="flex items-start justify-center p-4"
-                        style={{ 
-                            transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
-                            transformOrigin: 'top center',
-                            transition: 'transform 0.2s ease'
-                        }}
-                    >
-                        <iframe
-                            ref={iframeRef}
-                            srcDoc={htmlContent}
-                            className="bg-white rounded shadow-lg"
-                            style={{ 
-                                width: '210mm', 
-                                minHeight: '297mm',
-                                border: 'none',
-                                overflow: 'hidden',
-                            }}
-                            onLoad={() => {
-                                setTimeout(() => {
-                                    const iframe = iframeRef.current;
-                                    if (iframe?.contentDocument?.body) {
-                                        const h = iframe.contentDocument.body.scrollHeight;
-                                        iframe.style.height = h + 'px';
-                                    }
-                                }, 250);
-                            }}}
-                            title="Surat Preview"
-                        />
-                    </div>
-                </div>
-
-                {/* Draft indicator if not signed */}
-                {!documentData?.isSigned && (
-                    <div className="absolute top-16 right-4">
-                        <span className="bg-yellow-500 text-white px-3 py-1 rounded text-sm font-medium shadow">
-                            DRAFT
-                        </span>
-                    </div>
-                )}
-            </div>
+            <PDFPreview
+                htmlContent={htmlContent}
+                fileName={fileName}
+                showDraftBadge={!documentData?.isSigned}
+            />
         );
     }
 
@@ -408,7 +301,7 @@ export function SuratPreview({
                     <span className="text-zinc-400">|</span>
                     <span className="text-zinc-400">- / -</span>
                 </div>
-                
+
                 <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" disabled className="text-zinc-500 h-8 w-8">
                         <Minus className="w-4 h-4" />
