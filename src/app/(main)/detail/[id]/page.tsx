@@ -1823,7 +1823,19 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 leftContent={
                     <Button 
                         variant="outline" 
-                        onClick={() => router.push('/dashboard')}
+                        onClick={() => {
+                            // Redirect ke dashboard dengan bagian yang sesuai
+                            // Jika filterType adalah 'masuk', ke bagian Surat Masuk
+                            // Jika filterType adalah 'keluar', ke bagian Surat Keluar
+                            // Default ke dashboard utama jika tidak ada filterType
+                            if (filterType === 'masuk') {
+                                router.push('/dashboard?tab=masuk');
+                            } else if (filterType === 'keluar') {
+                                router.push('/dashboard?tab=keluar');
+                            } else {
+                                router.push('/dashboard');
+                            }
+                        }}
                         className="border-zinc-800 text-zinc-800 gap-2"
                     >
                         <ArrowLeft className="w-4 h-4" />
