@@ -364,10 +364,20 @@ export function SuratPreview({
                             srcDoc={htmlContent}
                             className="bg-white rounded shadow-lg"
                             style={{ 
-                                width: '21cm', 
-                                minHeight: '29.7cm',
-                                border: 'none'
+                                width: '210mm', 
+                                minHeight: '297mm',
+                                border: 'none',
+                                overflow: 'hidden',
                             }}
+                            onLoad={() => {
+                                setTimeout(() => {
+                                    const iframe = iframeRef.current;
+                                    if (iframe?.contentDocument?.body) {
+                                        const h = iframe.contentDocument.body.scrollHeight;
+                                        iframe.style.height = h + 'px';
+                                    }
+                                }, 250);
+                            }}}
                             title="Surat Preview"
                         />
                     </div>

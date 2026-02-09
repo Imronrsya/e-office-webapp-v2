@@ -288,27 +288,55 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
+      .page-break-gap { display: none !important; }
     }
     @page {
       size: A4;
-      margin: 0;
-    }
-    @page:first {
-      margin-top: 1cm;
+      margin: 15mm 20mm 20mm 20mm;
     }
     * {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      box-sizing: border-box;
+    }
+    html {
+      margin: 0; padding: 0;
     }
     body {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 0;
       font-family: 'Times New Roman', Times, serif;
       font-size: 12pt;
       line-height: 1;
-      margin: 0;
-      padding: 1cm 2cm 2cm 2cm;
-      max-width: 21cm;
       color: #000000 !important;
-      background: #ffffff !important;
+      background: #e0e0e0 !important;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    #surat-content {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 10mm 20mm 20mm 20mm;
+      background: #ffffff;
+      color: #000000 !important;
+    }
+    .page-break-gap {
+      width: 210mm;
+      height: 10mm;
+      background: #e0e0e0;
+      margin: 0 auto;
+      box-shadow: 
+        inset 0 5px 8px -4px rgba(0,0,0,0.15),
+        inset 0 -5px 8px -4px rgba(0,0,0,0.15);
+    }
+    .visual-page {
+      width: 210mm;
+      margin: 0 auto;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
     }
     .header-container {
       display: flex;
@@ -379,6 +407,7 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       margin: 15px 0;
       width: 100%;
       border-collapse: collapse;
+      table-layout: fixed;
     }
     .table-mahasiswa th {
       border: 1px solid #000000;
@@ -386,10 +415,15 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       text-align: center;
       background-color: #d3d3d3;
       font-weight: bold;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
     .table-mahasiswa td {
       border: 1px solid #000000;
       padding: 8px;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     .table-mahasiswa td:first-child {
       text-align: center;
@@ -411,7 +445,6 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
     }
     .ttd-container {
       margin-top: 30px;
-      page-break-inside: avoid;
       clear: both;
     }
     
@@ -477,13 +510,11 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       color: #000000 !important;
       text-decoration: underline;
     }
-    /* Footer section: Tembusan left, QR Code right */
     .footer-section {
       margin-top: 30px;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      page-break-inside: avoid;
     }
     .tembusan-container {
       flex: 1;
@@ -496,9 +527,7 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       padding: 5px;
       flex-shrink: 0;
     }
-    /* Wrapper untuk TTD agar tidak terpisah antar halaman */
     .ttd-tembusan-wrapper {
-      page-break-inside: avoid;
     }
     b, strong {
       font-weight: bold !important;
@@ -509,57 +538,120 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
     }
     table {
       color: #000000 !important;
+      max-width: 100%;
     }
   </style>
 </head>
 <body style="color: #000000;">
-  <div class="header-container" style="border-bottom: 3px solid #000000;">
-    <div class="logo-container">
-      <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
+  <div id="surat-content">
+    <div class="header-container" style="border-bottom: 3px solid #000000;">
+      <div class="logo-container">
+        <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
+      </div>
+      <div class="kop-surat">
+        <h3 style="color: #000000;">KEMENTERIAN PENDIDIKAN TINGGI, SAINS,<br>DAN TEKNOLOGI</h3>
+        <h2 style="color: #3e4ba8;">UNIVERSITAS DIPONEGORO</h2>
+        <h2 style="color: #3e4ba8;">FAKULTAS SAINS DAN MATEMATIKA</h2>
+      </div>
+      <div class="alamat-kontak">
+        <p style="color: #000000;">Jalan Prof. Sudarto, S.H Tembalang Semarang<br>
+           Kode Pos 50275<br>
+           Telp (024) 7474754 Fax (024) 76480690<br>
+           Laman https://fsm.undip.ac.id<br>
+           e-mail fsm@undip.ac.id</p>
+      </div>
     </div>
-    <div class="kop-surat">
-      <h3 style="color: #000000;">KEMENTERIAN PENDIDIKAN TINGGI, SAINS,<br>DAN TEKNOLOGI</h3>
-      <h2 style="color: #3e4ba8;">UNIVERSITAS DIPONEGORO</h2>
-      <h2 style="color: #3e4ba8;">FAKULTAS SAINS DAN MATEMATIKA</h2>
-    </div>
-    <div class="alamat-kontak">
-      <p style="color: #000000;">Jalan Prof. Sudarto, S.H Tembalang Semarang<br>
-         Kode Pos 50275<br>
-         Telp (024) 7474754 Fax (024) 76480690<br>
-         Laman https://fsm.undip.ac.id<br>
-         e-mail fsm@undip.ac.id</p>
-    </div>
-  </div>
-  
-  <div class="judul-surat">
-    <h4 style="color: #000000;">SURAT TUGAS</h4>
-    <p style="color: #000000;">Nomor : ${data.nomorSurat}</p>
-  </div>
-  
-  <div class="isi-surat">
-    <p style="color: #000000;">
-      Dekan Fakultas Sains dan Matematika Universitas Diponegoro menugaskan kepada mahasiswa Fakultas Sains dan Matematika Universitas Diponegoro sebagai berikut :
-    </p>
     
-    ${renderMahasiswaTable(data.dataMahasiswa, data.customColumns)}
+    <div class="judul-surat">
+      <h4 style="color: #000000;">SURAT TUGAS</h4>
+      <p style="color: #000000;">Nomor : ${data.nomorSurat}</p>
+    </div>
     
-    <p style="color: #000000;">
-      Sebagai <b style="color: #000000;">${data.keterangan}</b> mulai tanggal ${data.tanggalMulai} s.d ${data.tanggalSelesai}.
-    </p>
-  </div>
-  
-  <div class="penutup">
-    <p style="color: #000000;">Demikian untuk dilaksanakan dengan sebaik-baiknya dan memberikan laporan setelah selesai.</p>
-  </div>
-  <p style="text-align: right; margin-top: 30px; color: #000000 !important;">${data.tanggalSurat || 'Semarang, XX Bulan YYYY'}</p>
-  <div class="ttd-tembusan-wrapper">
-    <div class="ttd-container">
-      ${renderSignatures(data.signatures, data.stempelUrl)}
+    <div class="isi-surat">
+      <p style="color: #000000;">
+        Dekan Fakultas Sains dan Matematika Universitas Diponegoro menugaskan kepada mahasiswa Fakultas Sains dan Matematika Universitas Diponegoro sebagai berikut :
+      </p>
+      
+      ${renderMahasiswaTable(data.dataMahasiswa, data.customColumns)}
+      
+      <p style="color: #000000;">
+        Sebagai <b style="color: #000000;">${data.keterangan}</b> mulai tanggal ${data.tanggalMulai} s.d ${data.tanggalSelesai}.
+      </p>
+    </div>
+    
+    <div class="penutup">
+      <p style="color: #000000;">Demikian untuk dilaksanakan dengan sebaik-baiknya dan memberikan laporan setelah selesai.</p>
+    </div>
+    <p style="text-align: right; margin-top: 30px; color: #000000 !important;">${data.tanggalSurat || 'Semarang, XX Bulan YYYY'}</p>
+    <div class="ttd-tembusan-wrapper">
+      <div class="ttd-container">
+        ${renderSignatures(data.signatures, data.stempelUrl)}
+      </div>
+    </div>
+    <div class="footer-section">
+      ${renderTembusan(data.tembusan)}
+      ${renderQRCode(data.qrCodeDataUrl)}
     </div>
   </div>
-  <div class="footer-section">
-    ${renderTembusan(data.tembusan)}
-    ${renderQRCode(data.qrCodeDataUrl)}
-  </div>
+  <script>
+  (function() {
+    function paginate() {
+      var content = document.getElementById('surat-content');
+      if (!content) return;
+
+      var mmToPx = function(mm) { return mm * 3.7795275591; };
+      var PAGE_HEIGHT = mmToPx(297);
+
+      var totalHeight = content.scrollHeight;
+      if (totalHeight <= PAGE_HEIGHT) return;
+
+      var numPages = Math.ceil(totalHeight / PAGE_HEIGHT);
+
+      content.style.display = 'none';
+
+      var pagesContainer = document.createElement('div');
+      pagesContainer.id = 'pages-container';
+
+      for (var i = 0; i < numPages; i++) {
+        if (i > 0) {
+          var gap = document.createElement('div');
+          gap.className = 'page-break-gap';
+          pagesContainer.appendChild(gap);
+        }
+
+        var page = document.createElement('div');
+        page.className = 'visual-page';
+        page.style.width = '210mm';
+        page.style.height = PAGE_HEIGHT + 'px';
+        page.style.overflow = 'hidden';
+        page.style.position = 'relative';
+        page.style.background = '#ffffff';
+
+        var clone = content.cloneNode(true);
+        clone.style.display = '';
+        clone.style.position = 'absolute';
+        clone.style.top = -(i * PAGE_HEIGHT) + 'px';
+        clone.style.left = '0';
+        clone.style.width = '100%';
+        clone.style.margin = '0';
+
+        page.appendChild(clone);
+        pagesContainer.appendChild(page);
+      }
+
+      document.body.appendChild(pagesContainer);
+
+      var finalHeight = pagesContainer.scrollHeight;
+      document.body.style.height = finalHeight + 'px';
+      pagesContainer.setAttribute('data-page-count', numPages.toString());
+    }
+
+    if (document.readyState === 'complete') {
+      setTimeout(paginate, 100);
+    } else {
+      window.addEventListener('load', function() { setTimeout(paginate, 100); });
+    }
+  })();
+  </script>
 </body>
 </html>`;

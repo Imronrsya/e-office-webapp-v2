@@ -50,6 +50,7 @@ export function TemplatePreview({
     const [rotation, setRotation] = useState(0);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const [iframeHeight, setIframeHeight] = useState(1123);
 
     // Generate HTML content with signatures
     const htmlContent = useMemo(() => {
@@ -239,7 +240,7 @@ export function TemplatePreview({
             {/* Preview Container */}
             <div 
                 className="flex-1 overflow-auto p-4 bg-gray-100"
-                style={{ maxHeight: "600px" }}
+                style={{ maxHeight: "80vh" }}
             >
                 <div
                     className="mx-auto bg-white shadow-lg"
@@ -254,8 +255,18 @@ export function TemplatePreview({
                         srcDoc={htmlContent}
                         className="w-full border-0"
                         style={{
-                            height: `${1123 * (zoom / 100)}px`,
+                            height: `${iframeHeight * (zoom / 100)}px`,
                             pointerEvents: "none",
+                            overflow: "hidden",
+                        }}
+                        onLoad={() => {
+                            setTimeout(() => {
+                                const iframe = iframeRef.current;
+                                if (iframe?.contentDocument?.body) {
+                                    const contentHeight = iframe.contentDocument.body.scrollHeight;
+                                    setIframeHeight(Math.max(1123, contentHeight));
+                                }
+                            }, 250);
                         }}
                         title="Surat Preview"
                     />

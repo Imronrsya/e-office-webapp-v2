@@ -236,40 +236,70 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Surat Keputusan Dekan - FSM UNDIP</title>
   <style>
-    @page {
-      size: A4;
-      margin: 0;
-    }
-    @page:first {
-      margin-top: 1cm;
-    }
-    html, body {
-      width: 21cm;
-      min-height: 29.7cm;
-    }
     @media print {
       body {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
+      .page-break-gap { display: none !important; }
+    }
+    @page {
+      size: A4;
+      margin: 15mm 20mm 20mm 20mm;
     }
     * {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
       box-sizing: border-box;
     }
+    html {
+      margin: 0; padding: 0;
+    }
     body {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 0;
       font-family: 'Times New Roman', Times, serif;
       font-size: 11pt;
       line-height: 1;
-      margin: 0;
-      padding: 1cm 2cm 2cm 2cm;
-      max-width: 21cm;
       color: #000000 !important;
-      background: #ffffff !important;
+      background: #e0e0e0 !important;
       word-wrap: break-word;
       overflow-wrap: break-word;
-      box-sizing: border-box;
+    }
+    #surat-content {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 10mm 20mm 20mm 20mm;
+      background: #ffffff;
+      color: #000000 !important;
+    }
+    .lampiran-content {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 15mm 20mm 20mm 20mm;
+      background: #ffffff;
+      color: #000000 !important;
+    }
+    .page-break-gap {
+      width: 210mm;
+      height: 10mm;
+      background: #e0e0e0;
+      margin: 0 auto;
+      box-shadow:
+        inset 0 5px 8px -4px rgba(0,0,0,0.15),
+        inset 0 -5px 8px -4px rgba(0,0,0,0.15);
+    }
+    .visual-page {
+      width: 210mm;
+      margin: 0 auto;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .force-page-break {
+      /* Marker class for JS pagination to force a new page before this element */
     }
     .logo-container {
       text-align: center;
@@ -329,7 +359,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       max-width: calc(100% - 140px);
       word-wrap: break-word;
       overflow-wrap: break-word;
-      word-break: break-all;
+      word-break: break-word;
     }
     .point-list {
       margin-left: 0;
@@ -349,7 +379,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       text-align: justify;
       word-wrap: break-word;
       overflow-wrap: break-word;
-      word-break: break-all;
+      word-break: break-word;
     }
     .keputusan-section {
       margin: 20px 0;
@@ -371,12 +401,16 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       width: 100%;
       border-collapse: collapse;
       margin: 15px 0;
+      table-layout: fixed;
     }
     .table-peserta th,
     .table-peserta td {
       border: 1px solid #000000;
       padding: 6px 8px;
       font-size: 10pt;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     .table-peserta th {
       background-color: #d3d3d3;
@@ -396,7 +430,6 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     }
     .ttd-section {
       margin-top: 40px;
-      page-break-inside: avoid;
       clear: both;
     }
     
@@ -406,7 +439,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       justify-content: flex-end;
     }
 
-    /* 2 TTD → kiri & kanan (yang lebih tinggi di kanan) */
+    /* 2 TTD → kiri & kanan */
     .ttd-count-2 {
       display: flex;
       justify-content: space-between;
@@ -457,54 +490,29 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       font-weight: normal;
       text-decoration: underline;
     }
-    /* Footer section untuk tembusan dan QR Code */
     .footer-section {
       margin-top: 30px;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      page-break-inside: avoid;
     }
     .tembusan-container {
       flex: 1;
       max-width: 60%;
+      font-size: 11pt;
+      line-height: 1.5;
     }
     .qr-code-box {
       text-align: center;
       padding: 5px;
       flex-shrink: 0;
     }
-    .tembusan-container {
-      margin-top: 30px;
-      margin-bottom: 20px;
-      max-width: 300px;
-      font-size: 11pt;
-      line-height: 1.5;
-      page-break-inside: avoid;
-      position: static;
-      background: white;
-    }
-    /* Wrapper untuk ttd + tembusan agar tidak terpotong */
-    .ttd-tembusan-wrapper {
-      page-break-inside: avoid;
-    }
-    /* Wrapper untuk MEMUTUSKAN + Menetapkan agar tidak terpisah */
     .memutuskan-wrapper {
-      page-break-inside: avoid;
     }
-    /* Wrapper untuk footer (tanggal, ttd, tembusan) agar tembusan tidak sendirian */
     .footer-section-wrapper {
-      page-break-inside: avoid;
     }
-    @media print {
-      .qr-code-container {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-      }
-      .tembusan-container {
-        position: static !important;
-      }
+    table {
+      max-width: 100%;
     }
     b, strong {
       font-weight: bold !important;
@@ -512,106 +520,107 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
   </style>
 </head>
 <body>
-  <div class="logo-container">
-    <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
-  </div>
-  
-  <div class="judul-keputusan">
-    <h4>KEPUTUSAN DEKAN FAKULTAS SAINS DAN MATEMATIKA</h4>
-    <h4>UNIVERSITAS DIPONEGORO</h4>
-    <p><b>NOMOR : ${data.nomorSurat}</b></p>
-  </div>
-  
-  <div class="tentang">
-    <p><b>TENTANG</b></p>
-    <p style="font-style: italic;">${data.tentang}</p>
-  </div>
-  
-  <div class="section-title">
-    <p>DEKAN FAKULTAS SAINS DAN MATEMATIKA</p>
-  </div>
-  
-  <div class="content-section">
-    <div class="section-header">
-      <div class="section-label">Menimbang</div>
-      <div class="section-colon">:</div>
-      <div class="section-content">
-        <div class="point-list">
-          ${data.menimbang.map((item, index) => `
-          <div class="point-item">
-            <div class="point-number">${String.fromCharCode(97 + index)}.</div>
-            <div class="point-content">${item}</div>
-          </div>
-          `).join('')}
-        </div>
-      </div>
+  <div id="surat-content">
+    <div class="logo-container">
+      <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
     </div>
-  </div>
-  
-  <div class="content-section">
-    <div class="section-header">
-      <div class="section-label">Mengingat</div>
-      <div class="section-colon">:</div>
-      <div class="section-content">
-        <div class="point-list">
-          ${data.mengingat.map((item, index) => `
-          <div class="point-item">
-            <div class="point-number">${index + 1}.</div>
-            <div class="point-content">${item}</div>
-          </div>
-          `).join('')}
-        </div>
-      </div>
+    
+    <div class="judul-keputusan">
+      <h4>KEPUTUSAN DEKAN FAKULTAS SAINS DAN MATEMATIKA</h4>
+      <h4>UNIVERSITAS DIPONEGORO</h4>
+      <p><b>NOMOR : ${data.nomorSurat}</b></p>
     </div>
-  </div>
-  
-  <div class="memutuskan-wrapper">
+    
+    <div class="tentang">
+      <p><b>TENTANG</b></p>
+      <p style="font-style: italic;">${data.tentang}</p>
+    </div>
+    
     <div class="section-title">
-      <p>MEMUTUSKAN</p>
+      <p>DEKAN FAKULTAS SAINS DAN MATEMATIKA</p>
     </div>
     
     <div class="content-section">
       <div class="section-header">
-        <div class="section-label">Menetapkan</div>
+        <div class="section-label">Menimbang</div>
         <div class="section-colon">:</div>
         <div class="section-content">
-          <p style="margin: 0; text-align: justify;">${data.menetapkan}</p>
+          <div class="point-list">
+            ${data.menimbang.map((item, index) => `
+            <div class="point-item">
+              <div class="point-number">${String.fromCharCode(97 + index)}.</div>
+              <div class="point-content">${item}</div>
+            </div>
+            `).join('')}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  
-  <div class="keputusan-section">
-    ${data.keputusan.map((item) => `
-    <div class="keputusan-point">
-      <div style="display: flex; align-items: flex-start; max-width: 100%;">
-        <div style="min-width: 120px; flex-shrink: 0;"><span class="keputusan-label">${item.label}</span></div>
-        <div style="min-width: 20px; flex-shrink: 0;">:</div>
-        <div style="flex: 1; min-width: 0; max-width: calc(100% - 140px); text-align: justify; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;">${item.content}</div>
+    
+    <div class="content-section">
+      <div class="section-header">
+        <div class="section-label">Mengingat</div>
+        <div class="section-colon">:</div>
+        <div class="section-content">
+          <div class="point-list">
+            ${data.mengingat.map((item, index) => `
+            <div class="point-item">
+              <div class="point-number">${index + 1}.</div>
+              <div class="point-content">${item}</div>
+            </div>
+            `).join('')}
+          </div>
+        </div>
       </div>
     </div>
-    `).join('')}
-  </div>
-  
-  <div class="footer-section-wrapper">
-    <div class="tanggal-ditetapkan" style="text-align: right; margin-top: 30px; margin-bottom: 20px;">
-      <p style="margin: 0;">Ditetapkan di Semarang</p>
-      <p style="margin: 0;">pada tanggal ${data.tanggalDitetapkan}</p>
+    
+    <div class="memutuskan-wrapper">
+      <div class="section-title">
+        <p>MEMUTUSKAN</p>
+      </div>
+      
+      <div class="content-section">
+        <div class="section-header">
+          <div class="section-label">Menetapkan</div>
+          <div class="section-colon">:</div>
+          <div class="section-content">
+            <p style="margin: 0; text-align: justify;">${data.menetapkan}</p>
+          </div>
+        </div>
+      </div>
     </div>
     
-    <div class="ttd-section">
-      ${renderSignatures(data.signatures, data.stempelUrl)}
+    <div class="keputusan-section">
+      ${data.keputusan.map((item) => `
+      <div class="keputusan-point">
+        <div style="display: flex; align-items: flex-start; max-width: 100%;">
+          <div style="min-width: 120px; flex-shrink: 0;"><span class="keputusan-label">${item.label}</span></div>
+          <div style="min-width: 20px; flex-shrink: 0;">:</div>
+          <div style="flex: 1; min-width: 0; max-width: calc(100% - 140px); text-align: justify; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;">${item.content}</div>
+        </div>
+      </div>
+      `).join('')}
     </div>
     
-    <!-- Footer dengan Tembusan di kiri dan QR di kanan -->
-    <div class="footer-section">
-      ${renderTembusan(data.tembusan)}
-      ${renderQRCode(data.qrCodeDataUrl)}
+    <div class="footer-section-wrapper">
+      <div class="tanggal-ditetapkan" style="text-align: right; margin-top: 30px; margin-bottom: 20px;">
+        <p style="margin: 0;">Ditetapkan di Semarang</p>
+        <p style="margin: 0;">pada tanggal ${data.tanggalDitetapkan}</p>
+      </div>
+      
+      <div class="ttd-section">
+        ${renderSignatures(data.signatures, data.stempelUrl)}
+      </div>
+      
+      <div class="footer-section">
+        ${renderTembusan(data.tembusan)}
+        ${renderQRCode(data.qrCodeDataUrl)}
+      </div>
     </div>
   </div>
   
   ${data.lampiran && data.dataPeserta ? `
-  <div style="page-break-before: always; margin-top: 50px;">
+  <div id="lampiran-content" class="lampiran-content force-page-break">
     <div class="content-section">
       <div class="section-header">
         <div class="section-label">LAMPIRAN:</div>
@@ -657,12 +666,92 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       ${renderSignatures(data.signatures, data.stempelUrl)}
     </div>
     
-    <!-- Footer dengan QR di kanan (untuk lampiran) -->
     <div class="footer-section">
       <div></div>
       ${renderQRCode(data.qrCodeDataUrl)}
     </div>
   </div>
   ` : ''}
+  
+  <script>
+  (function() {
+    function paginate() {
+      var mmToPx = function(mm) { return mm * 3.7795275591; };
+      var PAGE_HEIGHT = mmToPx(297);
+
+      // Collect content sections
+      var mainContent = document.getElementById('surat-content');
+      var lampiranContent = document.getElementById('lampiran-content');
+      var sections = [];
+      if (mainContent) sections.push(mainContent);
+      if (lampiranContent) sections.push(lampiranContent);
+
+      if (sections.length === 0) return;
+
+      // Check if pagination is needed (total height > 1 page)
+      var totalContentHeight = 0;
+      for (var s = 0; s < sections.length; s++) {
+        totalContentHeight += sections[s].scrollHeight;
+      }
+      if (totalContentHeight <= PAGE_HEIGHT && sections.length === 1) return;
+
+      // Hide all original sections
+      for (var s = 0; s < sections.length; s++) {
+        sections[s].style.display = 'none';
+      }
+
+      var pagesContainer = document.createElement('div');
+      pagesContainer.id = 'pages-container';
+      var pageCount = 0;
+
+      for (var s = 0; s < sections.length; s++) {
+        var section = sections[s];
+        var sectionHeight = section.scrollHeight;
+        var numPagesForSection = Math.max(1, Math.ceil(sectionHeight / PAGE_HEIGHT));
+
+        for (var i = 0; i < numPagesForSection; i++) {
+          // Gap between pages
+          if (pageCount > 0) {
+            var gap = document.createElement('div');
+            gap.className = 'page-break-gap';
+            pagesContainer.appendChild(gap);
+          }
+
+          var page = document.createElement('div');
+          page.className = 'visual-page';
+          page.style.width = '210mm';
+          page.style.height = PAGE_HEIGHT + 'px';
+          page.style.overflow = 'hidden';
+          page.style.position = 'relative';
+          page.style.background = '#ffffff';
+
+          var clone = section.cloneNode(true);
+          clone.style.display = '';
+          clone.style.position = 'absolute';
+          clone.style.top = -(i * PAGE_HEIGHT) + 'px';
+          clone.style.left = '0';
+          clone.style.width = '100%';
+          clone.style.margin = '0';
+
+          page.appendChild(clone);
+          pagesContainer.appendChild(page);
+          pageCount++;
+        }
+      }
+
+      document.body.appendChild(pagesContainer);
+
+      var finalHeight = pagesContainer.scrollHeight;
+      document.body.style.height = finalHeight + 'px';
+      pagesContainer.setAttribute('data-page-count', pageCount.toString());
+    }
+
+    if (document.readyState === 'complete') {
+      setTimeout(paginate, 100);
+    } else {
+      window.addEventListener('load', function() { setTimeout(paginate, 100); });
+    }
+  })();
+  </script>
 </body>
 </html>`;

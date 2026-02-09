@@ -237,34 +237,58 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
+      .page-break-gap { display: none !important; }
     }
     * {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      box-sizing: border-box;
     }
     @page {
       size: A4;
-      margin: 0;
+      margin: 15mm 20mm 20mm 20mm;
     }
-    @page:first {
-      margin-top: 1cm;
-    }
-    html, body {
-      width: 21cm;
-      min-height: 29.7cm;
+    html {
+      margin: 0; padding: 0;
     }
     body {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 0;
       font-family: 'Times New Roman', Times, serif;
       font-size: 12pt;
       line-height: 1;
-      margin: 0;
-      padding: 1cm 2cm 2cm 2cm;
-      max-width: 21cm;
       color: #000000 !important;
-      background: #ffffff !important;
-      box-sizing: border-box;
+      background: #e0e0e0 !important;
       word-wrap: break-word;
       overflow-wrap: break-word;
+    }
+    /* Continuous content container - JS will paginate this */
+    #surat-content {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 10mm 20mm 20mm 20mm;
+      background: #ffffff;
+      color: #000000 !important;
+    }
+    /* Visual page break gap between pages */
+    .page-break-gap {
+      width: 210mm;
+      height: 10mm;
+      background: #e0e0e0;
+      margin: 0 auto;
+      box-shadow: 
+        inset 0 5px 8px -4px rgba(0,0,0,0.15),
+        inset 0 -5px 8px -4px rgba(0,0,0,0.15);
+    }
+    /* Each visual page */
+    .visual-page {
+      width: 210mm;
+      margin: 0 auto;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
     }
     .header-container {
       display: flex;
@@ -342,7 +366,6 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
     }
     .ttd-container {
       margin-top: 30px;
-      page-break-inside: avoid;
       clear: both;
     }
     
@@ -413,7 +436,6 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      page-break-inside: avoid;
     }
     .tembusan-container {
       flex: 1;
@@ -426,9 +448,7 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
       padding: 5px;
       flex-shrink: 0;
     }
-    /* Wrapper untuk TTD dan Tembusan agar tidak terpisah antar halaman */
     .ttd-tembusan-wrapper {
-      page-break-inside: avoid;
     }
     b, strong {
       font-weight: bold !important;
@@ -439,68 +459,137 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
     }
     table {
       color: #000000 !important;
+      max-width: 100%;
     }
   </style>
 </head>
 <body style="color: #000000;">
-  <div class="header-container" style="border-bottom: 3px solid #000000;">
-    <div class="logo-container">
-      <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
+  <div id="surat-content">
+    <div class="header-container" style="border-bottom: 3px solid #000000;">
+      <div class="logo-container">
+        <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
+      </div>
+      <div class="kop-surat">
+        <h3 style="color: #000000;">KEMENTERIAN PENDIDIKAN TINGGI, SAINS,<br>DAN TEKNOLOGI</h3>
+        <h2 style="color: #3e4ba8;">UNIVERSITAS DIPONEGORO</h2>
+        <h2 style="color: #3e4ba8;">FAKULTAS SAINS DAN MATEMATIKA</h2>
+      </div>
+      <div class="alamat-kontak">
+        <p style="color: #000000;">Jalan Prof. Sudarto, S.H Tembalang Semarang<br>
+           Kode Pos 50275<br>
+           Telp (024) 7474754 Fax (024) 76480690<br>
+           Laman https://fsm.undip.ac.id<br>
+           e-mail fsm@undip.ac.id</p>
+      </div>
     </div>
-    <div class="kop-surat">
-      <h3 style="color: #000000;">KEMENTERIAN PENDIDIKAN TINGGI, SAINS,<br>DAN TEKNOLOGI</h3>
-      <h2 style="color: #3e4ba8;">UNIVERSITAS DIPONEGORO</h2>
-      <h2 style="color: #3e4ba8;">FAKULTAS SAINS DAN MATEMATIKA</h2>
+    <div class="judul-surat">
+      <h4 style="color: #000000;">${data.jenisSuratText}</h4>
+      <p style="color: #000000;">Nomor : ${data.nomorSurat}</p>
     </div>
-    <div class="alamat-kontak">
-      <p style="color: #000000;">Jalan Prof. Sudarto, S.H Tembalang Semarang<br>
-         Kode Pos 50275<br>
-         Telp (024) 7474754 Fax (024) 76480690<br>
-         Laman https://fsm.undip.ac.id<br>
-         e-mail fsm@undip.ac.id</p>
+    <div class="isi-surat">
+      <p style="color: #000000;">
+        Dekan Fakultas Sains dan Matematika Universitas Diponegoro dengan ini ${data.jenisSurat === 'keputusan' ? 'memutuskan' : 'menugaskan'} kepada yang nama-namanya tercantum di bawah ini:
+      </p>
+      <table style="margin: 20px 0 20px 50px; width: calc(100% - 100px); color: #000000; border-collapse: collapse;">
+        <tr>
+          <td style="width: 120px; vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">Nama</td>
+          <td style="width: 15px; vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">:</td>
+          <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6; word-break: break-word;">${data.namaLengkap}</td>
+        </tr>
+        <tr>
+          <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">NIM/NIP</td>
+          <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">:</td>
+          <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">${data.nimNip}</td>
+        </tr>
+        <tr>
+          <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">Program Studi</td>
+          <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">:</td>
+          <td style="vertical-align: top; padding: 4px 0; text-transform: capitalize; color: #000000; line-height: 1.6;">${data.programStudi}</td>
+        </tr>
+      </table>
+      <p style="text-indent: 50px; color: #000000;">
+        Untuk <b style="color: #000000; font-weight: bold;">${data.keperluan}</b> terkait <b style="color: #000000; font-weight: bold;">${data.judulSurat}</b> pada Fakultas Sains dan Matematika Universitas Diponegoro.
+      </p>
     </div>
-  </div>
-  <div class="judul-surat">
-    <h4 style="color: #000000;">${data.jenisSuratText}</h4>
-    <p style="color: #000000;">Nomor : ${data.nomorSurat}</p>
-  </div>
-  <div class="isi-surat">
-    <p style="color: #000000;">
-      Dekan Fakultas Sains dan Matematika Universitas Diponegoro dengan ini ${data.jenisSurat === 'keputusan' ? 'memutuskan' : 'menugaskan'} kepada yang nama-namanya tercantum di bawah ini:
-    </p>
-    <table style="margin: 20px 0 20px 50px; width: calc(100% - 100px); color: #000000; border-collapse: collapse;">
-      <tr>
-        <td style="width: 120px; vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">Nama</td>
-        <td style="width: 15px; vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">:</td>
-        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">${data.namaLengkap}</td>
-      </tr>
-      <tr>
-        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">NIM/NIP</td>
-        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">:</td>
-        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">${data.nimNip}</td>
-      </tr>
-      <tr>
-        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">Program Studi</td>
-        <td style="vertical-align: top; padding: 4px 0; color: #000000; line-height: 1.6;">:</td>
-        <td style="vertical-align: top; padding: 4px 0; text-transform: capitalize; color: #000000; line-height: 1.6;">${data.programStudi}</td>
-      </tr>
-    </table>
-    <p style="text-indent: 50px; color: #000000;">
-      Untuk <b style="color: #000000; font-weight: bold;">${data.keperluan}</b> terkait <b style="color: #000000; font-weight: bold;">${data.judulSurat}</b> pada Fakultas Sains dan Matematika Universitas Diponegoro.
-    </p>
-  </div>
-  <div class="penutup">
-    <p style="color: #000000;">Demikian surat ${data.jenisSurat === 'keputusan' ? 'keputusan' : 'tugas'} ini dibuat untuk dapat dipergunakan sebagaimana mestinya.</p>
-  </div>
-  <p style="text-align: right; margin-top: 30px; color: #000000 !important;">${data.tanggalSurat || 'Semarang, XX Bulan YYYY'}</p>
-  <div class="ttd-tembusan-wrapper">
-    <div class="ttd-container">
-      ${renderSignatures(data.signatures, data.stempelUrl)}
+    <div class="penutup">
+      <p style="color: #000000;">Demikian surat ${data.jenisSurat === 'keputusan' ? 'keputusan' : 'tugas'} ini dibuat untuk dapat dipergunakan sebagaimana mestinya.</p>
+    </div>
+    <p style="text-align: right; margin-top: 30px; color: #000000 !important;">${data.tanggalSurat || 'Semarang, XX Bulan YYYY'}</p>
+    <div class="ttd-tembusan-wrapper">
+      <div class="ttd-container">
+        ${renderSignatures(data.signatures, data.stempelUrl)}
+      </div>
+    </div>
+    <div class="footer-section">
+      ${renderTembusan(data.tembusan)}
+      ${renderQRCode(data.qrCodeDataUrl, data.verificationUrl)}
     </div>
   </div>
-  <div class="footer-section">
-    ${renderTembusan(data.tembusan)}
-    ${renderQRCode(data.qrCodeDataUrl, data.verificationUrl)}
-  </div>
+  <script>
+  (function() {
+    function paginate() {
+      var content = document.getElementById('surat-content');
+      if (!content) return;
+
+      var mmToPx = function(mm) { return mm * 3.7795275591; };
+      var PAGE_HEIGHT = mmToPx(297);
+
+      // Measure total content height
+      var totalHeight = content.scrollHeight;
+      if (totalHeight <= PAGE_HEIGHT) return; // fits on one page, no pagination needed
+
+      var numPages = Math.ceil(totalHeight / PAGE_HEIGHT);
+
+      // Hide original content (keep in DOM for measurement reference)
+      content.style.display = 'none';
+
+      // Build pages container
+      var pagesContainer = document.createElement('div');
+      pagesContainer.id = 'pages-container';
+
+      for (var i = 0; i < numPages; i++) {
+        // Gap between pages
+        if (i > 0) {
+          var gap = document.createElement('div');
+          gap.className = 'page-break-gap';
+          pagesContainer.appendChild(gap);
+        }
+
+        // Viewport page - clips a vertical slice of the content
+        var page = document.createElement('div');
+        page.className = 'visual-page';
+        page.style.width = '210mm';
+        page.style.height = PAGE_HEIGHT + 'px';
+        page.style.overflow = 'hidden';
+        page.style.position = 'relative';
+        page.style.background = '#ffffff';
+
+        // Clone content and offset vertically
+        var clone = content.cloneNode(true);
+        clone.style.display = '';
+        clone.style.position = 'absolute';
+        clone.style.top = -(i * PAGE_HEIGHT) + 'px';
+        clone.style.left = '0';
+        clone.style.width = '100%';
+        clone.style.margin = '0';
+
+        page.appendChild(clone);
+        pagesContainer.appendChild(page);
+      }
+
+      document.body.appendChild(pagesContainer);
+
+      var finalHeight = pagesContainer.scrollHeight;
+      document.body.style.height = finalHeight + 'px';
+      pagesContainer.setAttribute('data-page-count', numPages.toString());
+    }
+
+    if (document.readyState === 'complete') {
+      setTimeout(paginate, 100);
+    } else {
+      window.addEventListener('load', function() { setTimeout(paginate, 100); });
+    }
+  })();
+  </script>
 </body>
 </html>`;

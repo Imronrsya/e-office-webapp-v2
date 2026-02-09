@@ -354,9 +354,36 @@ export function UniversalDocumentPreview({
         setCurrentPage(prev => Math.min(prev + 1, totalPages));
     }, [totalPages]);
 
-    // Iframe load handler
+    // Iframe load handler - auto-resize iframe to content height and count pages
     const handleIframeLoad = useCallback(() => {
         setIsLoading(false);
+        
+        // Wait a moment for the JS pagination script inside the iframe to finish
+        setTimeout(() => {
+            const iframe = iframeRef.current;
+            if (iframe?.contentDocument?.body) {
+                const body = iframe.contentDocument.body;
+                const contentHeight = body.scrollHeight;
+                iframe.style.height = contentHeight + 'px';
+                
+                // Count pages from visual-page divs (JS pagination) or fallback
+                const pagesContainer = iframe.contentDocument.getElementById('pages-container');
+                if (pagesContainer) {
+                    const pageCount = parseInt(pagesContainer.getAttribute('data-page-count') || '1', 10);
+                    setTotalPages(pageCount);
+                } else {
+                    const visualPages = iframe.contentDocument.querySelectorAll('.visual-page');
+                    if (visualPages.length > 0) {
+                        setTotalPages(visualPages.length);
+                    } else {
+                        // Fallback: calculate pages from content height (A4 = 297mm ≈ 1123px at 96dpi)
+                        const pageHeight = 1123;
+                        const pages = Math.max(1, Math.ceil(contentHeight / pageHeight));
+                        setTotalPages(pages);
+                    }
+                }
+            }
+        }, 250);
     }, []);
 
     // Status badge config
@@ -612,8 +639,8 @@ export function UniversalDocumentPreview({
                         src={pdfUrlWithoutToolbar}
                         className="bg-white rounded shadow-lg"
                         style={{ 
-                            width: '21cm', 
-                            minHeight: '29.7cm',
+                            width: '210mm', 
+                            minHeight: '297mm',
                             border: 'none'
                         }}
                         onLoad={handleIframeLoad}
@@ -646,10 +673,11 @@ export function UniversalDocumentPreview({
                         srcDoc={effectiveHtmlContent}
                         className="bg-white rounded shadow-lg"
                         style={{ 
-                            width: '21cm', 
-                            minHeight: '29.7cm',
+                            width: '210mm', 
+                            minHeight: '297mm',
                             border: 'none',
                             pointerEvents: 'auto',
+                            overflow: 'hidden',
                         }}
                         onLoad={handleIframeLoad}
                         title="HTML Preview"
