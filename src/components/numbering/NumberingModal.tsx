@@ -194,7 +194,8 @@ export function NumberingModal({
             </div>
             {checkResult.existingDocument && (
               <p className="text-xs text-red-500 ml-6">
-                Digunakan pada: {checkResult.existingDocument.perihal || "Tidak ada perihal"}
+                {/* Digunakan pada: {checkResult.existingDocument.perihal || "Tidak ada perihal"} */}
+                Nomor surat yang Anda masukkan sudah terdaftar. Silakan gunakan nomor yang lain.
               </p>
             )}
           </div>
