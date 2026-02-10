@@ -66,6 +66,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SignatureModal, type SignatureModalResult } from "@/components/signature";
 import { NumberingModal } from "@/components/numbering";
 import { legalisasiService } from "@/services/legalisasi.service";
+import { generateFinalPdf, type SuratType } from "@/lib/pdf-generator";
 
 // ============================================================================
 // CONSTANTS
@@ -769,17 +770,38 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
         );
 
-        if (!suratHasilDoc || !suratHasilDoc.fileUrl) {
-            toast.error("Dokumen atau file tidak ditemukan");
+        if (!suratHasilDoc || !suratHasilDoc.content) {
+            toast.error("Dokumen atau konten tidak ditemukan");
             return;
         }
 
         setActionLoading(true);
         try {
-            const response = await legalisasiService.finalize(suratHasilDoc.id, {
-                fileUrl: suratHasilDoc.fileUrl,
-                notes: "Surat telah selesai diproses"
-            });
+            // Build content data with all metadata for PDF generation
+            const pdfData: Record<string, unknown> = {
+                ...suratHasilDoc.content,
+                nomorSurat: suratHasilDoc.nomorSurat || '',
+                tanggalSurat: suratHasilDoc.tanggalSurat || undefined,
+                tembusan: suratHasilDoc.tembusan || [],
+                stempelUrl: suratHasilDoc.sealImageUrl || undefined,
+                qrCodeDataUrl: suratHasilDoc.qrCodeUrl || undefined,
+                signatures: suratHasilDoc.signatures || [],
+            };
+
+            // Generate PDF client-side
+            toast.info("Sedang membuat PDF final...");
+            const pdfBlob = await generateFinalPdf(
+                suratHasilDoc.type as SuratType,
+                pdfData,
+                { embedQRToAllPages: true }
+            );
+
+            // Upload PDF to backend
+            const response = await legalisasiService.finalize(
+                suratHasilDoc.id,
+                pdfBlob,
+                "Surat telah selesai diproses"
+            );
 
             if (response.success) {
                 toast.success("Surat berhasil diselesaikan");
@@ -790,7 +812,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             }
         } catch (err) {
             console.error("Finalize failed:", err);
-            toast.error("Terjadi kesalahan saat menyelesaikan surat");
+            toast.error("Terjadi kesalahan saat membuat PDF atau menyelesaikan surat");
         } finally {
             setActionLoading(false);
         }
@@ -1574,20 +1596,40 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     qrCodeDataUrl: suratHasilDoc.qrCodeUrl || undefined,
                 };
 
+            // Always use HTML template for preview (rendered from DB data, always up-to-date).
+            // The stored PDF is only used for download after COMPLETED.
+            const isCompleted = detail.status === 'COMPLETED' && suratHasilDoc.fileUrl;
+
             return (
                 <PDFPreview
                     key={`surat-hasil-${pdfRefreshKey}`}
-                    fileUrl={null}  // Selalu gunakan HTML template untuk preview agar konsisten
+                    fileUrl={null}
                     fileName={suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
                     isSigned={suratHasilDoc.isSigned || false}
                     content={contentWithTembusan}
                     documentType={suratHasilDoc.type as 'SURAT_PENGANTAR' | 'SURAT_TUGAS' | 'SURAT_TUGAS_TABEL' | 'SURAT_KEPUTUSAN'}
                     signatures={suratHasilDoc.signatures}
-                    onDownload={suratHasilDoc.fileUrl ? () => {
-                        const link = document.createElement('a');
-                        link.href = suratHasilDoc.fileUrl!;
-                        link.download = `${suratHasilDoc.type.toLowerCase().replace('_', '-')}.pdf`;
-                        link.click();
+                    onDownload={isCompleted ? async () => {
+                        // For COMPLETED: fetch stored PDF via authenticated API, then trigger download
+                        try {
+                            const { api } = await import("@/lib/api");
+                            const response = await api.get(
+                                `/api/legalisasi/document/${suratHasilDoc.id}/pdf`,
+                                { responseType: 'blob' }
+                            );
+                            const blob = new Blob([response.data], { type: 'application/pdf' });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `${suratHasilDoc.type.toLowerCase().replace('_', '-')}.pdf`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                        } catch (err) {
+                            console.error("Download failed:", err);
+                            toast.error("Gagal mengunduh PDF");
+                        }
                     } : undefined}
                 />
             );

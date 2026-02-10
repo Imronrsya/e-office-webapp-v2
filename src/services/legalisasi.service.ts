@@ -314,15 +314,26 @@ export const legalisasiService = {
 
   /**
    * Finalize document (complete legalisasi process)
+   * Uploads client-generated PDF via FormData
    */
   async finalize(
     documentId: string,
-    data: { fileUrl: string; notes?: string }
+    pdfBlob: Blob,
+    notes?: string
   ): Promise<FinalizeResponse> {
     try {
+      const formData = new FormData();
+      formData.append("pdfFile", pdfBlob, "surat-final.pdf");
+      if (notes) {
+        formData.append("notes", notes);
+      }
+
       const response = await api.post<FinalizeResponse>(
         `/api/legalisasi/document/${documentId}/finalize`,
-        data
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
       );
       return response.data;
     } catch (error) {
