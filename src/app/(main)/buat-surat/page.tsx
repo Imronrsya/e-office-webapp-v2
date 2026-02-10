@@ -137,6 +137,10 @@ interface SuratTugasTabelForm {
     judulSurat: string;
     pelaksana: PelaksanaItem[];
     customColumns: CustomColumn[];
+    // Editable column labels (defaults: Nama, NIM, PRODI)
+    namaLabel: string;
+    nimLabel: string;
+    prodiLabel: string;
 }
 
 interface SuratKeputusanForm {
@@ -257,6 +261,9 @@ function BuatSuratContent() {
         judulSurat: "",
         pelaksana: [{ key: "1", nama: "", nim: "", prodi: "" }],
         customColumns: [],
+        namaLabel: "Nama",
+        nimLabel: "NIM",
+        prodiLabel: "Prodi",
     });
 
     const [suratKeputusanForm, setSuratKeputusanForm] = useState<SuratKeputusanForm>({
@@ -274,6 +281,10 @@ function BuatSuratContent() {
     // Perihal/Judul Surat input - separate from content fields
     // This maps to LetterDocument.perihal for dashboard/detail display
     const [perihalInput, setPerihalInput] = useState("");
+
+    // Date state for Surat Tugas Tabel DatePicker components
+    const [tanggalMulaiDate, setTanggalMulaiDate] = useState<Date | undefined>(undefined);
+    const [tanggalSelesaiDate, setTanggalSelesaiDate] = useState<Date | undefined>(undefined);
 
     // Signature state
     const [signers, setSigners] = useState<SignerItem[]>([
@@ -736,10 +747,10 @@ function BuatSuratContent() {
                 };
             } else if (suratType === "SURAT_KEPUTUSAN") {
                 // Format tanggalDitetapkan ke bahasa Indonesia
-                const tanggalDitetapkanFormatted = suratKeputusanForm.tanggalDitetapkan 
+                const tanggalDitetapkanFormatted = suratKeputusanForm.tanggalDitetapkan
                     ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
                     : "";
-                
+
                 content = {
                     ...suratKeputusanForm,
                     tanggalDitetapkan: tanggalDitetapkanFormatted,
@@ -1020,20 +1031,30 @@ function BuatSuratContent() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label htmlFor="tanggalMulai">Tanggal Mulai <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    id="tanggalMulai"
-                                                    type="date"
-                                                    value={suratTugasTabelForm.tanggalMulai}
-                                                    onChange={(e) => updateSuratTugasTabel("tanggalMulai", e.target.value)}
+                                                <DatePicker
+                                                    value={tanggalMulaiDate}
+                                                    onChange={(date) => {
+                                                        setTanggalMulaiDate(date);
+                                                        updateSuratTugasTabel("tanggalMulai", date ? formatDate(date, "dd MMMM yyyy", { locale: idLocale }) : "");
+                                                        // Reset tanggal selesai if it's before the new tanggal mulai
+                                                        if (date && tanggalSelesaiDate && tanggalSelesaiDate < date) {
+                                                            setTanggalSelesaiDate(undefined);
+                                                            updateSuratTugasTabel("tanggalSelesai", "");
+                                                        }
+                                                    }}
+                                                    placeholder="Pilih tanggal mulai"
                                                 />
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="tanggalSelesai">Tanggal Selesai <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    id="tanggalSelesai"
-                                                    type="date"
-                                                    value={suratTugasTabelForm.tanggalSelesai}
-                                                    onChange={(e) => updateSuratTugasTabel("tanggalSelesai", e.target.value)}
+                                                <DatePicker
+                                                    value={tanggalSelesaiDate}
+                                                    onChange={(date) => {
+                                                        setTanggalSelesaiDate(date);
+                                                        updateSuratTugasTabel("tanggalSelesai", date ? formatDate(date, "dd MMMM yyyy", { locale: idLocale }) : "");
+                                                    }}
+                                                    placeholder="Pilih tanggal selesai"
+                                                    fromDate={tanggalMulaiDate}
                                                 />
                                             </div>
                                         </div>
@@ -1046,6 +1067,30 @@ function BuatSuratContent() {
                                         <CardDescription>Tambahkan daftar orang yang akan ditugaskan dalam format tabel</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
+                                        {/* Kolom Wajib - Editable Labels */}
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-medium text-muted-foreground">Kolom Wajib:</Label>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <Input
+                                                    value={suratTugasTabelForm.namaLabel}
+                                                    onChange={(e) => updateSuratTugasTabel("namaLabel", e.target.value)}
+                                                    placeholder="Nama"
+                                                    className="h-9"
+                                                />
+                                                <Input
+                                                    value={suratTugasTabelForm.nimLabel}
+                                                    onChange={(e) => updateSuratTugasTabel("nimLabel", e.target.value)}
+                                                    placeholder="NIM"
+                                                    className="h-9"
+                                                />
+                                                <Input
+                                                    value={suratTugasTabelForm.prodiLabel}
+                                                    onChange={(e) => updateSuratTugasTabel("prodiLabel", e.target.value)}
+                                                    placeholder="Prodi"
+                                                    className="h-9"
+                                                />
+                                            </div>
+                                        </div>
                                         {/* Custom Columns Management */}
                                         {suratTugasTabelForm.customColumns.length > 0 && (
                                             <div className="space-y-2">
@@ -1090,9 +1135,9 @@ function BuatSuratContent() {
                                                     gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px`
                                                 }}>
                                                     <div className="text-xs font-medium text-center">No</div>
-                                                    <div className="text-xs font-medium">Nama <span className="text-red-500">*</span></div>
-                                                    <div className="text-xs font-medium">NIM <span className="text-red-500">*</span></div>
-                                                    <div className="text-xs font-medium">Prodi <span className="text-red-500">*</span></div>
+                                                    <div className="text-xs font-medium">{suratTugasTabelForm.namaLabel || 'Nama'} <span className="text-red-500">*</span></div>
+                                                    <div className="text-xs font-medium">{suratTugasTabelForm.nimLabel || 'NIM'} <span className="text-red-500">*</span></div>
+                                                    <div className="text-xs font-medium">{suratTugasTabelForm.prodiLabel || 'Prodi'} <span className="text-red-500">*</span></div>
                                                     {suratTugasTabelForm.customColumns.map((col) => (
                                                         <div key={col.key} className="text-xs font-medium">{col.label || "(Belum diberi nama)"}</div>
                                                     ))}
@@ -1113,19 +1158,19 @@ function BuatSuratContent() {
                                                             <Input
                                                                 value={p.nama}
                                                                 onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
-                                                                placeholder="Nama"
+                                                                placeholder={suratTugasTabelForm.namaLabel || "Nama"}
                                                                 className="h-9"
                                                             />
                                                             <Input
                                                                 value={p.nim}
                                                                 onChange={(e) => updatePelaksana(p.key, "nim", e.target.value)}
-                                                                placeholder="NIM"
+                                                                placeholder={suratTugasTabelForm.nimLabel || "NIM"}
                                                                 className="h-9"
                                                             />
                                                             <Input
                                                                 value={p.prodi}
                                                                 onChange={(e) => updatePelaksana(p.key, "prodi", e.target.value)}
-                                                                placeholder="Prodi"
+                                                                placeholder={suratTugasTabelForm.prodiLabel || "Prodi"}
                                                                 className="h-9"
                                                             />
                                                             {suratTugasTabelForm.customColumns.map((col) => (
@@ -1475,7 +1520,7 @@ function BuatSuratContent() {
                                                 // Format tanggalDitetapkan untuk preview
                                                 {
                                                     ...suratKeputusanForm,
-                                                    tanggalDitetapkan: suratKeputusanForm.tanggalDitetapkan 
+                                                    tanggalDitetapkan: suratKeputusanForm.tanggalDitetapkan
                                                         ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
                                                         : ""
                                                 }
@@ -1901,7 +1946,7 @@ function BuatSuratContent() {
                                                     // Format tanggalDitetapkan untuk preview
                                                     {
                                                         ...suratKeputusanForm,
-                                                        tanggalDitetapkan: suratKeputusanForm.tanggalDitetapkan 
+                                                        tanggalDitetapkan: suratKeputusanForm.tanggalDitetapkan
                                                             ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
                                                             : ""
                                                     }

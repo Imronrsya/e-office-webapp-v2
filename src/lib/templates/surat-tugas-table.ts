@@ -46,6 +46,11 @@ export interface SuratTugasTableData {
   // Custom columns for table
   customColumns?: CustomColumn[];
 
+  // Customizable column labels
+  namaLabel?: string;
+  nimLabel?: string;
+  prodiLabel?: string;
+
   // Tanda tangan
   signatures?: SignatureBlock[];
 
@@ -249,15 +254,21 @@ const renderTembusan = (tembusan?: (TembusanRecipient | string)[]): string => {
 /**
  * Helper untuk render tabel mahasiswa dengan kolom custom
  */
-const renderMahasiswaTable = (dataMahasiswa: MahasiswaData[], customColumns?: CustomColumn[]): string => {
+const renderMahasiswaTable = (
+  dataMahasiswa: MahasiswaData[],
+  customColumns?: CustomColumn[],
+  namaLabel: string = 'Nama',
+  nimLabel: string = 'NIM',
+  prodiLabel: string = 'PRODI'
+): string => {
   const cols = customColumns || [];
 
-  // Generate header
+  // Generate header with customizable labels
   const headerCells = [
     '<th style="color: #000000;">No</th>',
-    '<th style="color: #000000;">Nama</th>',
-    '<th style="color: #000000;">NIM</th>',
-    '<th style="color: #000000;">PRODI</th>',
+    `<th style="color: #000000;">${namaLabel}</th>`,
+    `<th style="color: #000000;">${nimLabel}</th>`,
+    `<th style="color: #000000;">${prodiLabel}</th>`,
     ...cols.map(col => `<th style="color: #000000;">${col.label || col.key}</th>`)
   ].join('\n          ');
 
@@ -462,26 +473,23 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
+    .table-mahasiswa th:first-child,
+    .table-mahasiswa td:first-child {
+      width: 7%; /* Kolom No - fixed small width */
+      text-align: center;
+    }
+    /* Remove fixed widths for other columns to support dynamic custom columns */
+    /* Let them auto-distribute based on available space */
     .table-mahasiswa td {
       border: 1px solid #000000;
       padding: 8px;
       word-wrap: break-word;
       overflow-wrap: break-word;
       word-break: break-word;
-    }
-    .table-mahasiswa td:first-child {
-      text-align: center;
-      width: 5%;
+      text-align: center; /* Default center for all columns */
     }
     .table-mahasiswa td:nth-child(2) {
-      width: 35%;
-    }
-    .table-mahasiswa td:nth-child(3) {
-      text-align: center;
-      width: 20%;
-    }
-    .table-mahasiswa td:nth-child(4) {
-      width: 40%;
+      text-align: left; /* Kolom Nama - rata kiri */
     }
     .penutup {
       margin: 15px 0;
@@ -621,7 +629,13 @@ export const suratTugasTableTemplate = (data: SuratTugasTableData): string => `<
         Dekan Fakultas Sains dan Matematika Universitas Diponegoro menugaskan kepada mahasiswa Fakultas Sains dan Matematika Universitas Diponegoro sebagai berikut :
       </p>
       
-      ${renderMahasiswaTable(data.dataMahasiswa, data.customColumns)}
+      ${renderMahasiswaTable(
+  data.dataMahasiswa,
+  data.customColumns,
+  data.namaLabel || 'Nama',
+  data.nimLabel || 'NIM',
+  data.prodiLabel || 'PRODI'
+)}
       
       <p style="color: #000000;">
         Sebagai <b style="color: #000000;">${data.keterangan}</b> mulai tanggal ${data.tanggalMulai} s.d ${data.tanggalSelesai}.

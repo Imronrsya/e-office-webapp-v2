@@ -26,13 +26,17 @@ export function SuratTugasTableForm({ initialData }: SuratTugasTableFormProps) {
     keterangan: existingData?.keterangan || initialData?.keterangan || '',
     tanggalMulai: existingData?.tanggalMulai || initialData?.tanggalMulai || '',
     tanggalSelesai: existingData?.tanggalSelesai || initialData?.tanggalSelesai || '',
+    namaLabel: existingData?.namaLabel || initialData?.namaLabel || '',
+    nimLabel: existingData?.nimLabel || initialData?.nimLabel || '',
+    prodiLabel: existingData?.prodiLabel || initialData?.prodiLabel || '',
+    customColumns: existingData?.customColumns || initialData?.customColumns || [],
   });
 
   const handleChange = (field: keyof SuratTugasTableFormData, value: string) => {
     setFormValues(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleMahasiswaChange = (index: number, field: 'nama' | 'nim' | 'prodi', value: string) => {
+  const handleMahasiswaChange = (index: number, field: string, value: string) => {
     setFormValues(prev => ({
       ...prev,
       dataMahasiswa: prev.dataMahasiswa.map((mhs, i) =>
@@ -41,10 +45,53 @@ export function SuratTugasTableForm({ initialData }: SuratTugasTableFormProps) {
     }));
   };
 
-  const addMahasiswa = () => {
+  // Custom Columns Management
+  const addCustomColumn = () => {
+    const newColumn = {
+      key: `custom_${Date.now()}`,
+      label: '',
+    };
     setFormValues(prev => ({
       ...prev,
-      dataMahasiswa: [...prev.dataMahasiswa, { nama: '', nim: '', prodi: '' }],
+      customColumns: [...(prev.customColumns || []), newColumn],
+      // Add empty value for this column to all existing mahasiswa
+      dataMahasiswa: prev.dataMahasiswa.map(mhs => ({
+        ...mhs,
+        [newColumn.key]: '',
+      })),
+    }));
+  };
+
+  const removeCustomColumn = (columnKey: string) => {
+    setFormValues(prev => ({
+      ...prev,
+      customColumns: (prev.customColumns || []).filter(col => col.key !== columnKey),
+      // Remove this column from all mahasiswa
+      dataMahasiswa: prev.dataMahasiswa.map(mhs => {
+        const { [columnKey]: removed, ...rest } = mhs;
+        return rest as typeof mhs;
+      }),
+    }));
+  };
+
+  const updateCustomColumnLabel = (columnKey: string, newLabel: string) => {
+    setFormValues(prev => ({
+      ...prev,
+      customColumns: (prev.customColumns || []).map(col =>
+        col.key === columnKey ? { ...col, label: newLabel } : col
+      ),
+    }));
+  };
+
+  const addMahasiswa = () => {
+    const newMahasiswa: any = { nama: '', nim: '', prodi: '' };
+    // Add empty values for custom columns
+    (formValues.customColumns || []).forEach(col => {
+      newMahasiswa[col.key] = '';
+    });
+    setFormValues(prev => ({
+      ...prev,
+      dataMahasiswa: [...prev.dataMahasiswa, newMahasiswa],
     }));
   };
 
@@ -101,40 +148,138 @@ export function SuratTugasTableForm({ initialData }: SuratTugasTableFormProps) {
                 />
               </div>
 
+              <div className="border-t pt-6 mt-6 pb-6 mb-6 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold mb-4 text-base text-blue-900">🔒 Kolom Wajib (Mandatory) *</h4>
+                <p className="text-sm text-blue-800 mb-4 font-medium">
+                  Tiga kolom utama yang harus ada. Anda bisa mengubah label kolomnya sesuai kebutuhan Anda.
+                </p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="namaLabel" className="text-sm font-semibold text-gray-700">Label Kolom 1 (Nama)</Label>
+                    <Input
+                      id="namaLabel"
+                      value={formValues.namaLabel || 'Nama'}
+                      onChange={(e) => handleChange('namaLabel', e.target.value)}
+                      placeholder="Nama"
+                      className="w-full border-2 border-blue-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nimLabel" className="text-sm font-semibold text-gray-700">Label Kolom 2 (NIM/ID)</Label>
+                    <Input
+                      id="nimLabel"
+                      value={formValues.nimLabel || 'NIM'}
+                      onChange={(e) => handleChange('nimLabel', e.target.value)}
+                      placeholder="NIM"
+                      className="w-full border-2 border-blue-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="prodiLabel" className="text-sm font-semibold text-gray-700">Label Kolom 3 (Program)</Label>
+                    <Input
+                      id="prodiLabel"
+                      value={formValues.prodiLabel || 'Prodi'}
+                      onChange={(e) => handleChange('prodiLabel', e.target.value)}
+                      placeholder="Prodi"
+                      className="w-full border-2 border-blue-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="border-t pt-4 mt-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium">Daftar Mahasiswa</h4>
-                  <Button type="button" variant="outline" size="sm" onClick={addMahasiswa}>
+                  <div>
+                    <h4 className="font-medium">Kolom Tambahan</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Tambahkan kolom custom sesuai kebutuhan (opsional)
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addCustomColumn}>
                     <Plus className="w-4 h-4 mr-1" />
-                    Tambah
+                    Tambah Kolom
                   </Button>
                 </div>
-                
-                <div className="space-y-3 max-h-[300px] overflow-y-auto">
+
+                {(formValues.customColumns && formValues.customColumns.length > 0) && (
+                  <div className="space-y-2 mb-3">
+                    {formValues.customColumns.map((col) => (
+                      <div key={col.key} className="flex gap-2 items-center bg-blue-50 p-2 rounded">
+                        <Input
+                          value={col.label}
+                          onChange={(e) => updateCustomColumnLabel(col.key, e.target.value)}
+                          placeholder="Nama Kolom"
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeCustomColumn(col.key)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium">Data Pelaksana</h4>
+                  <Button type="button" variant="outline" size="sm" onClick={addMahasiswa}>
+                    <Plus className="w-4 h-4 mr-1" />
+                    Tambah Pelaksana
+                  </Button>
+                </div>
+
+                {/* Header row showing column names */}
+                <div className="grid gap-2 mb-2 px-2" style={{ gridTemplateColumns: `24px repeat(${3 + (formValues.customColumns?.length || 0)}, 1fr) auto` }}>
+                  <div className="text-xs font-medium text-gray-500">No</div>
+                  <div className="text-xs font-medium text-gray-500">{formValues.namaLabel || 'Nama'} *</div>
+                  <div className="text-xs font-medium text-gray-500">{formValues.nimLabel || 'NIM'} *</div>
+                  <div className="text-xs font-medium text-gray-500">{formValues.prodiLabel || 'Prodi'} *</div>
+                  {formValues.customColumns?.map((col) => (
+                    <div key={col.key} className="text-xs font-medium text-gray-500">{col.label || 'Kolom Custom'}</div>
+                  ))}
+                  <div></div>
+                </div>
+
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
                   {formValues.dataMahasiswa.map((mhs, index) => (
                     <div key={index} className="flex gap-2 items-start bg-gray-50 p-3 rounded-lg">
                       <div className="text-sm font-medium text-gray-500 w-6 pt-2">
                         {index + 1}.
                       </div>
-                      <div className="flex-1 grid grid-cols-3 gap-2">
+                      <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: `repeat(${3 + (formValues.customColumns?.length || 0)}, 1fr)` }}>
                         <Input
                           value={mhs.nama}
                           onChange={(e) => handleMahasiswaChange(index, 'nama', e.target.value)}
-                          placeholder="Nama"
+                          placeholder={formValues.namaLabel || "Nama"}
                           required
                         />
                         <Input
                           value={mhs.nim}
                           onChange={(e) => handleMahasiswaChange(index, 'nim', e.target.value)}
-                          placeholder="NIM"
+                          placeholder={formValues.nimLabel || "NIM"}
                           required
                         />
                         <Input
                           value={mhs.prodi}
                           onChange={(e) => handleMahasiswaChange(index, 'prodi', e.target.value)}
-                          placeholder="Prodi"
+                          placeholder={formValues.prodiLabel || "Prodi"}
                           required
                         />
+                        {formValues.customColumns?.map((col) => (
+                          <Input
+                            key={col.key}
+                            value={mhs[col.key] || ''}
+                            onChange={(e) => handleMahasiswaChange(index, col.key, e.target.value)}
+                            placeholder={col.label || 'Isi kolom'}
+                          />
+                        ))}
                       </div>
                       <Button
                         type="button"

@@ -49,10 +49,16 @@ export interface SuratTugasFormData {
 
 export interface SuratTugasTableFormData {
   nomorSurat: string;
-  dataMahasiswa: { nama: string; nim: string; prodi: string }[];
+  dataMahasiswa: Array<{ nama: string; nim: string; prodi: string;[key: string]: string }>;
   keterangan: string;
   tanggalMulai: string;
   tanggalSelesai: string;
+  // Customizable column labels (optional - default values in form)
+  namaLabel?: string; // Default: "Nama"
+  nimLabel?: string;  // Default: "NIM"
+  prodiLabel?: string; // Default: "PRODI"
+  // Custom columns (dynamic)
+  customColumns?: Array<{ key: string; label: string }>;
 }
 
 export interface SuratKeputusanFormData {
@@ -82,35 +88,35 @@ export interface SubmitterInfo {
   nip?: string;
 }
 
-export type DraftFormData = 
-  | SuratPengantarFormData 
-  | SuratTugasFormData 
-  | SuratTugasTableFormData 
+export type DraftFormData =
+  | SuratPengantarFormData
+  | SuratTugasFormData
+  | SuratTugasTableFormData
   | SuratKeputusanFormData;
 
 export interface DraftSuratState {
   // Current step (1-4)
   currentStep: number;
-  
+
   // Step 1: Selected template
   selectedTemplate: TemplateType | null;
-  
+
   // Step 2: Form data
   formData: DraftFormData | null;
-  
+
   // Step 3: Signers configuration
   signers: Signer[];
-  
+
   // Tembusan configuration
   tembusan: TembusanRecipient[];
-  
+
   // Submitter info (for auto-tembusan)
   submitterInfo: SubmitterInfo | null;
-  
+
   // Step 4: Generated PDF blob (for signature positioning)
   generatedPdfBlob: Blob | null;
   generatedPdfUrl: string | null;
-  
+
   // Submission ID (if editing existing)
   submissionId: string | null;
 }
@@ -170,12 +176,12 @@ export function DraftSuratProvider({ children }: { children: ReactNode }) {
 
   const addSigner = () => {
     setState(prev => {
-      const newId = prev.signers.length > 0 
-        ? Math.max(...prev.signers.map(s => s.id)) + 1 
+      const newId = prev.signers.length > 0
+        ? Math.max(...prev.signers.map(s => s.id)) + 1
         : 1;
-      
+
       const colorIndex = prev.signers.length % COLORS.length;
-      
+
       // Position calculation based on existing signers
       const BOX_H = 95;
       const START_Y = 430;
@@ -243,8 +249,8 @@ export function DraftSuratProvider({ children }: { children: ReactNode }) {
       URL.revokeObjectURL(state.generatedPdfUrl);
     }
     const url = URL.createObjectURL(blob);
-    setState(prev => ({ 
-      ...prev, 
+    setState(prev => ({
+      ...prev,
       generatedPdfBlob: blob,
       generatedPdfUrl: url,
     }));
