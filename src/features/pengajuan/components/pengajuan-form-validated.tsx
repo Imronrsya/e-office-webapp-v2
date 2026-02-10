@@ -134,8 +134,15 @@ export function PengajuanFormValidated() {
     fetchTypes();
   }, [toast]);
 
-  // 2. Auto-fill data from user profile
-  // PENTING: Harus menunggu departemenList loaded agar Select bisa menampilkan value dengan benar
+  // 2. Auto-fill data from user profile (stage 1: basic info + departemen)
+  // PENTING: Set departemen dulu, programStudi di-set di effect terpisah setelah prodiList loaded
+  const userProgramStudiId = (() => {
+    if (!user?.profile) return "";
+    if (isMahasiswaProfile(user.profile)) return user.profile.programStudiId || "";
+    if (isPegawaiProfile(user.profile)) return user.profile.programStudiId || "";
+    return "";
+  })();
+
   useEffect(() => {
     // Hanya jalankan jika user ada DAN departemenList sudah loaded
     if (!user || isDeptLoading || !departemenList || departemenList.length === 0) {
@@ -144,17 +151,14 @@ export function PengajuanFormValidated() {
 
     let nimNip = "";
     let departemenId = "";
-    let programStudiId = "";
 
     if (user.profile) {
       if (isMahasiswaProfile(user.profile)) {
         nimNip = user.profile.nim || "";
         departemenId = user.profile.departemenId || "";
-        programStudiId = user.profile.programStudiId || "";
       } else if (isPegawaiProfile(user.profile)) {
         nimNip = user.profile.nip || "";
         departemenId = user.profile.departemenId || "";
-        programStudiId = user.profile.programStudiId || "";
       }
     }
 
@@ -166,23 +170,43 @@ export function PengajuanFormValidated() {
       namaLengkap: user.name || "",
       nimNip: nimNip,
       departemen: deptExists ? departemenId : "",
-      programStudi: programStudiId,
+      // programStudi TIDAK di-set di sini, akan di-set setelah prodiList loaded
     });
 
-    console.log("[PengajuanForm] Auto-filled form data:", {
+    console.log("[PengajuanForm] Auto-filled form data (stage 1):", {
       namaLengkap: user.name,
       nimNip,
       departemenId,
-      programStudiId,
       deptExists,
     });
   }, [user, isDeptLoading, departemenList, form]);
 
-  // 3. Fetch prodi details
+  // 2b. Auto-fill programStudi SETELAH prodiList loaded
+  // Ini memastikan Select sudah punya items sebelum value di-set
   useEffect(() => {
-    const prodiId = form.watch("programStudi");
-    if (prodiId) {
-      getProdiDetail(prodiId)
+    if (
+      !userProgramStudiId ||
+      isProdiLoading ||
+      !prodiList ||
+      prodiList.length === 0
+    ) {
+      return;
+    }
+
+    const prodiExists = prodiList.some((p) => p.id === userProgramStudiId);
+    if (prodiExists && form.getValues("programStudi") !== userProgramStudiId) {
+      form.setValue("programStudi", userProgramStudiId, {
+        shouldValidate: true,
+      });
+      console.log("[PengajuanForm] Auto-filled programStudi (stage 2):", userProgramStudiId);
+    }
+  }, [userProgramStudiId, isProdiLoading, prodiList, form]);
+
+  // 3. Fetch prodi details
+  const programStudiValue = form.watch("programStudi");
+  useEffect(() => {
+    if (programStudiValue) {
+      getProdiDetail(programStudiValue)
         .then(setSelectedProdiDetail)
         .catch((err) => {
           console.error("Failed to fetch prodi details:", err);
@@ -191,7 +215,7 @@ export function PengajuanFormValidated() {
     } else {
       setSelectedProdiDetail(null);
     }
-  }, [form.watch("programStudi")]);
+  }, [programStudiValue]);
 
   // 4. Handle file changes
   useEffect(() => {
@@ -526,16 +550,28 @@ export function PengajuanFormValidated() {
                     <FormLabel>
                       Program Studi <span className="text-red-500">*</span>
                     </FormLabel>
-                    <FormControl>
-                      <ProdiSelect
-                        value={field.value}
-                        onChange={field.onChange}
-                        filterDepartemen={form.watch("departemen")}
-                        disabled={true}
-                        placeholder="Program Studi"
-                        className="bg-gray-50"
-                      />
-                    </FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={true}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="bg-gray-50 cursor-not-allowed">
+                          <SelectValue
+                            placeholder={
+                              isProdiLoading ? "Memuat..." : "Pilih Program Studi"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {prodiList?.map((prodi) => (
+                          <SelectItem key={prodi.id} value={prodi.id}>
+                            {prodi.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormDescription>
                       Program Studi diambil otomatis dari akun Anda dan tidak
                       dapat diubah.
