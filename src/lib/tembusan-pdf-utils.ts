@@ -69,7 +69,7 @@ export function buildHtmlFromTemplate(detail: TembusanDetail): string | null {
             "",
           judulSurat: (content.judulSurat as string) || detail.perihal || "",
           tanggalSurat: detail.tanggalSurat
-            ? formatDate(detail.tanggalSurat)
+            ? `Semarang, ${formatDate(detail.tanggalSurat)}`
             : undefined,
           signatures: signatureBlocks,
           stempelUrl,
@@ -108,7 +108,7 @@ export function buildHtmlFromTemplate(detail: TembusanDetail): string | null {
           tanggalMulai: (content.tanggalMulai as string) || "",
           tanggalSelesai: (content.tanggalSelesai as string) || "",
           tanggalSurat: detail.tanggalSurat
-            ? formatDate(detail.tanggalSurat)
+            ? `Semarang, ${formatDate(detail.tanggalSurat)}`
             : undefined,
           signatures: signatureBlocks,
           stempelUrl,
