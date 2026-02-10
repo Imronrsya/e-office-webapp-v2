@@ -187,16 +187,50 @@ export function PDFPreview({
             let currentY = 0;
             let pageNum = 0;
 
-            while (currentY < totalHeight) {
-                if (pageNum > 0) {
-                    pdf.addPage();
+            // Helper to check if remaining content has actual text/graphics (not just whitespace)
+            const hasSignificantContent = (fromY: number): boolean => {
+                if (fromY >= totalHeight) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return true; // If we can't check, assume content exists
+
+                const checkHeight = Math.min(100, totalHeight - fromY); // Check first 100px
+                const imageData = ctx.getImageData(0, fromY, canvas.width, checkHeight);
+                const data = imageData.data;
+
+                let nonWhitePixels = 0;
+                const totalPixels = data.length / 4;
+
+                // Count non-white pixels
+                for (let i = 0; i < data.length; i += 4) {
+                    // Check if pixel is NOT white (< 250 for any RGB channel means it's not pure white)
+                    if (data[i] < 250 || data[i + 1] < 250 || data[i + 2] < 250) {
+                        nonWhitePixels++;
+                    }
                 }
 
+                // If more than 0.5% of pixels are non-white, consider it as significant content
+                return (nonWhitePixels / totalPixels) > 0.005;
+            };
+
+            while (currentY < totalHeight) {
                 // Calculate usable height for this specific page
                 // Page 1: 297mm - 30mm bottom = 267mm
                 // Page 2+: 297mm - 30mm bottom - 15mm top = 252mm
                 const pageUsableHeightMm = pageNum === 0 ? usableHeight : (usableHeight - 15);
                 const pageUsableHeightPx = Math.floor(pageUsableHeightMm * pxPerMm);
+
+                // Calculate how much content is left
+                const remainingHeight = totalHeight - currentY;
+
+                // If this is not the first page, check if remaining content is significant
+                // Don't create a new page for just whitespace
+                if (pageNum > 0) {
+                    if (remainingHeight < 50 || !hasSignificantContent(currentY)) {
+                        break;
+                    }
+                    pdf.addPage();
+                }
 
                 // Calculate target end position for this page
                 const targetEndY = currentY + pageUsableHeightPx;
@@ -344,14 +378,48 @@ export function PDFPreview({
         document.body.appendChild(iframe);
 
         iframe.onload = () => {
+            // Wait for iframe content to be fully loaded
             setTimeout(() => {
-                iframe.contentWindow?.focus();
-                iframe.contentWindow?.print();
-                // Clean up after print dialog is closed
-                setTimeout(() => {
+                const iframeWindow = iframe.contentWindow;
+                if (!iframeWindow) {
                     document.body.removeChild(iframe);
-                }, 1000);
-            }, 100);
+                    return;
+                }
+
+                // Listen for afterprint event to know when user is done
+                const cleanupIframe = () => {
+                    // Give a small delay to ensure print dialog is fully closed
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                    }, 100);
+                };
+
+                // Add event listeners for when print dialog closes
+                iframeWindow.addEventListener('afterprint', cleanupIframe);
+
+                // Fallback: also clean up if user navigates away or closes window
+                // This handles edge cases where afterprint might not fire
+                const fallbackCleanup = setTimeout(() => {
+                    cleanupIframe();
+                }, 60000); // 60 seconds fallback
+
+                // Focus and trigger print
+                iframeWindow.focus();
+                iframeWindow.print();
+
+                // If print() returns immediately (some browsers), clean up the timeout
+                // The afterprint event will handle the actual cleanup
+            }, 250); // Increased timeout to ensure PDF is fully rendered
+        };
+
+        // Fallback error handler
+        iframe.onerror = () => {
+            console.error('Failed to load PDF for printing');
+            if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+            }
         };
     };
 
