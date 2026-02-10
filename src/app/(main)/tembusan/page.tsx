@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { tembusanService, TembusanInboxItem } from "@/services/tembusan.service";
+import { buildHtmlFromTemplate, generatePdfBlobFromHtml } from "@/lib/tembusan-pdf-utils";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -118,16 +119,31 @@ export default function TembusanInboxPage() {
     router.push(`/tembusan/${item.documentId}`);
   };
 
-  // Handle download
+  // Handle download — generate PDF client-side (same as detail page)
   const handleDownload = async (item: TembusanInboxItem) => {
-    if (!item.fileUrl) {
-      toast.error("File tidak tersedia");
-      return;
-    }
-
     try {
+      const response = await tembusanService.getDetail(item.documentId);
+      if (!response.success || !response.data) {
+        toast.error(response.error || "Gagal memuat detail dokumen");
+        return;
+      }
+
+      const htmlContent = buildHtmlFromTemplate(response.data);
+      if (!htmlContent) {
+        toast.error("Template dokumen tidak tersedia");
+        return;
+      }
+
+      const pdfBlob = await generatePdfBlobFromHtml(htmlContent);
       const fileName = `${item.jenisDocument.replace(/\s+/g, "-")}_${item.nomorSurat?.replace(/\//g, "-") || "dokumen"}.pdf`;
-      await tembusanService.downloadDocument(item.fileUrl, fileName);
+      const downloadUrl = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
       toast.success("Dokumen berhasil diunduh");
     } catch {
       toast.error("Gagal mengunduh dokumen");
