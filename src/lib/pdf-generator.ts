@@ -81,7 +81,7 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
 
         // Inject CSS for proper pagination into the HTML
         const paginatedHtml = injectPaginationStyles(html);
-        
+
         iframeDoc.open();
         iframeDoc.write(paginatedHtml);
         iframeDoc.close();
@@ -128,7 +128,7 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
                     }
                 `;
                 clonedDoc.head.appendChild(style);
-                
+
                 // Wait for fonts in cloned doc
                 if (clonedDoc.fonts && clonedDoc.fonts.ready) {
                     return clonedDoc.fonts.ready;
@@ -146,10 +146,10 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
 
         const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
         const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
-        
+
         // Calculate pixels per mm
         const pixelsPerMm = canvas.width / a4WidthMm;
-        
+
         // First page: content area = 297mm - 10mm top margin - 30mm bottom margin = 257mm
         // Page 2+: content area = 297mm - 30mm top margin - 30mm bottom margin = 237mm
         const firstPageHeightPx = (a4HeightMm - marginTopFirstPageMm - marginBottomMm) * pixelsPerMm;
@@ -173,13 +173,13 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
             // Multi-page - slice the canvas for each page
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
-            
+
             if (!tempCtx) {
                 throw new Error('Could not get canvas context');
             }
 
             let sourceY = 0;
-            
+
             for (let pageNum = 0; pageNum < numPages; pageNum++) {
                 if (pageNum > 0) {
                     pdf.addPage();
@@ -188,7 +188,7 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
                 // Determine content height for this page
                 const pageContentHeightPx = pageNum === 0 ? firstPageHeightPx : subsequentPageHeightPx;
                 const sourceHeight = Math.min(pageContentHeightPx, canvas.height - sourceY);
-                
+
                 if (sourceHeight <= 0) break;
 
                 // Set temp canvas size for this page's content
@@ -207,16 +207,16 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
                 );
 
                 const pageImgData = tempCanvas.toDataURL('image/jpeg', 0.95);
-                
+
                 // Calculate height in mm for this page content
                 const pageContentHeightMm = (sourceHeight / canvas.width) * pdfWidth;
-                
+
                 // First page: y = marginTopFirstPageMm (1cm top margin)
                 // Page 2+: y = marginTopMm (3cm top margin)
                 const yPosition = pageNum === 0 ? marginTopFirstPageMm : marginTopMm;
-                
+
                 pdf.addImage(pageImgData, 'JPEG', 0, yPosition, pdfWidth, pageContentHeightMm);
-                
+
                 sourceY += sourceHeight;
             }
         }
@@ -234,7 +234,7 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
 async function waitForImages(doc: Document): Promise<void> {
     const images = doc.querySelectorAll('img');
     const imagePromises: Promise<void>[] = [];
-    
+
     images.forEach((img) => {
         if (!img.complete) {
             imagePromises.push(
@@ -250,17 +250,17 @@ async function waitForImages(doc: Document): Promise<void> {
             );
         }
     });
-    
+
     // Also add a minimum wait time for rendering
     imagePromises.push(new Promise(resolve => setTimeout(resolve, 500)));
-    
+
     await Promise.all(imagePromises);
-    
+
     // Wait for fonts to be loaded
     if (doc.fonts && doc.fonts.ready) {
         await doc.fonts.ready;
     }
-    
+
     // Additional wait for font rendering
     await new Promise(resolve => setTimeout(resolve, 300));
 }
@@ -339,7 +339,7 @@ function injectPaginationStyles(html: string): string {
             }
         </style>
     `;
-    
+
     // Insert before </head> or at the start of the document
     if (html.includes('</head>')) {
         return html.replace('</head>', `${paginationCSS}</head>`);
@@ -360,7 +360,7 @@ export async function generatePdfDataUrl(
 ): Promise<string> {
     const html = generateSuratHTML(type, data);
     const blob = await htmlToPdfBlob(html);
-    
+
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
@@ -395,7 +395,7 @@ export async function embedSignaturePlaceholders(
     renderedWidth: number = 600 // The width at which the PDF was rendered in the positioner
 ): Promise<Blob> {
     const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
-    
+
     // Load the existing PDF
     const pdfBytes = await pdfBlob.arrayBuffer();
     const pdfDoc = await PDFDocument.load(pdfBytes);
@@ -477,21 +477,21 @@ export async function embedSignaturePlaceholders(
                     if (signatureResponse.ok) {
                         const signatureBytes = await signatureResponse.arrayBuffer();
                         const signatureUint8 = new Uint8Array(signatureBytes);
-                        
+
                         // Determine image type from URL or response
                         const contentType = signatureResponse.headers.get('content-type') || '';
                         let signatureImage;
-                        
+
                         if (contentType.includes('png') || signer.signatureUrl.includes('.png')) {
                             signatureImage = await pdfDoc.embedPng(signatureUint8);
                         } else {
                             signatureImage = await pdfDoc.embedJpg(signatureUint8);
                         }
-                        
+
                         // Draw the signature image
                         const sigWidth = 80; // Fixed width for signature
                         const sigHeight = (signatureImage.height / signatureImage.width) * sigWidth;
-                        
+
                         page.drawImage(signatureImage, {
                             x: x + 10,
                             y: currentY - sigHeight + 10,
@@ -639,10 +639,10 @@ export async function embedQRCodeToAllPages(
     position: Partial<QRCodePosition> = {}
 ): Promise<Blob> {
     const { PDFDocument } = await import('pdf-lib');
-    
+
     // Merge with default position
     const qrPosition = { ...DEFAULT_QR_POSITION, ...position };
-    
+
     // Load the existing PDF
     const pdfBytes = await pdfBlob.arrayBuffer();
     const pdfDoc = await PDFDocument.load(pdfBytes);

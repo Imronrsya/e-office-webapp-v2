@@ -35,16 +35,13 @@ export const pagedStyles = `
 }
 
 .qr-running img {
-    width: 50px;
-    height: 50px;
+    width: 70px;
+    height: 70px;
     display: inline-block;
 }
 
 .qr-running .qr-label {
-    font-size: 5pt;
-    color: #666666;
-    margin-top: 1mm;
-    text-align: right;
+    display: none;
 }
 
 /* QR Placeholder ketika belum di-generate */
@@ -131,7 +128,6 @@ export const generateQRRunningFooter = (qrCodeDataUrl?: string): string => {
         return `
             <div class="qr-running">
                 <img src="${qrCodeDataUrl}" alt="QR Code Verifikasi" crossorigin="anonymous" />
-                <p class="qr-label">Scan untuk verifikasi</p>
             </div>
         `;
     }

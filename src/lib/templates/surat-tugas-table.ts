@@ -194,7 +194,6 @@ const renderQRRunningFooter = (qrCodeDataUrl?: string): string => {
     return `
       <div class="qr-running">
         <img src="${qrCodeDataUrl}" alt="QR Code Verifikasi" crossorigin="anonymous" />
-        <p class="qr-label">Scan untuk verifikasi</p>
       </div>
     `;
   }
