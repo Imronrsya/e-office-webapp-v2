@@ -622,6 +622,128 @@ function BuatSuratContent() {
     };
 
     // ========================================================================
+    // VALIDASI SURAT TUGAS TABEL
+    // ========================================================================
+
+    // Fungsi validasi Judul Surat (perihalInput) untuk ST Tabel - Required, Min 10, Max 255, not only symbols
+    const getJudulSuratTabelError = (judul: string): string => {
+        if (!judul || judul.trim() === '') {
+            return 'Judul Surat harus diisi!';
+        }
+        
+        if (judul.trim().length < 10) {
+            return `Judul Surat minimal 10 karakter (saat ini: ${judul.trim().length} karakter)`;
+        }
+        
+        if (judul.length > 255) {
+            return `Judul Surat maksimal 255 karakter (saat ini: ${judul.length} karakter)`;
+        }
+        
+        // Tidak boleh hanya berisi simbol (harus ada huruf/angka)
+        if (!/[a-zA-Z0-9]/.test(judul)) {
+            return 'Judul Surat tidak boleh hanya berisi simbol!';
+        }
+        
+        return '';
+    };
+
+    // Hitung error Judul Surat Tabel secara langsung dari state
+    const judulSuratTabelError = suratType === "SURAT_TUGAS_TABEL" ? getJudulSuratTabelError(perihalInput) : '';
+
+    // Fungsi validasi Keperluan untuk ST Tabel - Required, Min 5, Max 150, not only numbers
+    const getKeperluanTabelError = (keperluan: string): string => {
+        if (!keperluan || keperluan.trim() === '') {
+            return 'Keperluan harus diisi!';
+        }
+        
+        if (keperluan.trim().length < 5) {
+            return `Keperluan minimal 5 karakter (saat ini: ${keperluan.trim().length} karakter)`;
+        }
+        
+        if (keperluan.length > 150) {
+            return `Keperluan maksimal 150 karakter (saat ini: ${keperluan.length} karakter)`;
+        }
+        
+        // Tidak boleh hanya berisi angka
+        if (/^\d+$/.test(keperluan.trim())) {
+            return 'Keperluan tidak boleh hanya berisi angka!';
+        }
+        
+        return '';
+    };
+
+    // Hitung error Keperluan Tabel secara langsung dari state
+    const keperluanTabelError = suratType === "SURAT_TUGAS_TABEL" ? getKeperluanTabelError(suratTugasTabelForm.keperluan) : '';
+
+    // Hitung error Tanggal untuk ST Tabel (menggunakan Date object)
+    const tanggalMulaiTabelError = suratType === "SURAT_TUGAS_TABEL" && !tanggalMulaiDate ? 'Tanggal Mulai harus diisi!' : '';
+    const tanggalSelesaiTabelError = suratType === "SURAT_TUGAS_TABEL" && !tanggalSelesaiDate 
+        ? 'Tanggal Selesai harus diisi!' 
+        : (suratType === "SURAT_TUGAS_TABEL" && tanggalMulaiDate && tanggalSelesaiDate && tanggalSelesaiDate < tanggalMulaiDate 
+            ? 'Tanggal Selesai tidak boleh sebelum Tanggal Mulai!' 
+            : '');
+
+    // ========================================================================
+    // VALIDASI DATA PELAKSANA (ST TABEL)
+    // ========================================================================
+
+    // Fungsi validasi Nama Pelaksana - Min 2, Max 100, tidak boleh ada angka
+    const getNamaPelaksanaError = (nama: string): string => {
+        if (!nama || nama.trim() === '') {
+            return 'Nama harus diisi!';
+        }
+        if (nama.trim().length < 2) {
+            return `Nama minimal 2 karakter`;
+        }
+        if (nama.length > 100) {
+            return `Nama maksimal 100 karakter`;
+        }
+        // Tidak boleh ada angka
+        if (/\d/.test(nama)) {
+            return 'Nama tidak boleh mengandung angka!';
+        }
+        return '';
+    };
+
+    // Fungsi validasi NIM Pelaksana - harus 14 digit angka
+    const getNimPelaksanaError = (nim: string): string => {
+        if (!nim || nim.trim() === '') {
+            return 'NIM harus diisi!';
+        }
+        if (!/^\d{14}$/.test(nim.trim())) {
+            return 'NIM harus 14 digit angka!';
+        }
+        return '';
+    };
+
+    // Fungsi validasi Prodi Pelaksana - Min 5 karakter
+    const getProdiPelaksanaError = (prodi: string): string => {
+        if (!prodi || prodi.trim() === '') {
+            return 'Prodi harus diisi!';
+        }
+        if (prodi.trim().length < 5) {
+            return `Prodi minimal 5 karakter`;
+        }
+        return '';
+    };
+
+    // Fungsi untuk mendapatkan semua error pelaksana
+    const getPelaksanaErrors = (pelaksana: typeof suratTugasTabelForm.pelaksana) => {
+        return pelaksana.map(p => ({
+            key: p.key,
+            namaError: getNamaPelaksanaError(p.nama),
+            nimError: getNimPelaksanaError(p.nim),
+            prodiError: getProdiPelaksanaError(p.prodi)
+        }));
+    };
+
+    // Hitung error pelaksana
+    const pelaksanaErrors = suratType === "SURAT_TUGAS_TABEL" ? getPelaksanaErrors(suratTugasTabelForm.pelaksana) : [];
+
+    // Cek apakah ada error di pelaksana
+    const hasPelaksanaError = pelaksanaErrors.some(e => e.namaError || e.nimError || e.prodiError);
+
+    // ========================================================================
     // VALIDATION
     // ========================================================================
 
@@ -634,21 +756,37 @@ function BuatSuratContent() {
                 return false;
             }
         } else if (suratType === "SURAT_TUGAS_TABEL") {
-            if (!suratTugasTabelForm.keperluan) {
-                toast.error("Lengkapi keperluan surat");
+            // Validate judul surat
+            if (judulSuratTabelError) {
+                toast.error(judulSuratTabelError);
                 return false;
             }
-            if (!suratTugasTabelForm.tanggalMulai || !suratTugasTabelForm.tanggalSelesai) {
-                toast.error("Lengkapi tanggal mulai dan selesai tugas");
+            // Validate keperluan
+            if (keperluanTabelError) {
+                toast.error(keperluanTabelError);
+                return false;
+            }
+            // Validate tanggal
+            if (tanggalMulaiTabelError) {
+                toast.error(tanggalMulaiTabelError);
+                return false;
+            }
+            if (tanggalSelesaiTabelError) {
+                toast.error(tanggalSelesaiTabelError);
                 return false;
             }
             if (suratTugasTabelForm.pelaksana.length === 0) {
                 toast.error("Tambahkan minimal 1 pelaksana");
                 return false;
             }
-            const emptyPelaksana = suratTugasTabelForm.pelaksana.some(p => !p.nama.trim() || !p.nim.trim() || !p.prodi.trim());
-            if (emptyPelaksana) {
-                toast.error("Lengkapi data nama, NIM, dan prodi untuk setiap pelaksana");
+            // Validate each pelaksana dengan detail
+            if (hasPelaksanaError) {
+                // Cari error pertama untuk ditampilkan
+                const firstError = pelaksanaErrors.find(e => e.namaError || e.nimError || e.prodiError);
+                if (firstError) {
+                    const errorMsg = firstError.namaError || firstError.nimError || firstError.prodiError;
+                    toast.error(`Data Pelaksana: ${errorMsg}`);
+                }
                 return false;
             }
         } else if (suratType === "SURAT_KEPUTUSAN") {
@@ -1005,7 +1143,18 @@ function BuatSuratContent() {
                                                 value={perihalInput}
                                                 onChange={(e) => setPerihalInput(e.target.value)}
                                                 placeholder="Masukkan judul surat"
+                                                className={judulSuratTabelError ? 'border-red-500' : ''}
                                             />
+                                            {judulSuratTabelError && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {judulSuratTabelError}
+                                                </p>
+                                            )}
+                                            {!judulSuratTabelError && perihalInput && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Judul Surat valid
+                                                </p>
+                                            )}
                                         </div>
                                         <Separator />
                                         <div className="space-y-2">
@@ -1016,7 +1165,18 @@ function BuatSuratContent() {
                                                 onChange={(e) => updateSuratTugasTabel("keperluan", e.target.value)}
                                                 placeholder="Jelaskan keperluan surat ini"
                                                 rows={3}
+                                                className={keperluanTabelError ? 'border-red-500' : ''}
                                             />
+                                            {keperluanTabelError && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {keperluanTabelError}
+                                                </p>
+                                            )}
+                                            {!keperluanTabelError && suratTugasTabelForm.keperluan && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Keperluan valid
+                                                </p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="judulSurat">Judul/Topik Kegiatan</Label>
@@ -1044,6 +1204,16 @@ function BuatSuratContent() {
                                                     }}
                                                     placeholder="Pilih tanggal mulai"
                                                 />
+                                                {tanggalMulaiTabelError && (
+                                                    <p className="text-sm text-red-500 flex items-center gap-1">
+                                                        <span className="font-medium">⚠</span> {tanggalMulaiTabelError}
+                                                    </p>
+                                                )}
+                                                {!tanggalMulaiTabelError && tanggalMulaiDate && (
+                                                    <p className="text-sm text-green-600 flex items-center gap-1">
+                                                        <span>✓</span> Tanggal Mulai valid
+                                                    </p>
+                                                )}
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="tanggalSelesai">Tanggal Selesai <span className="text-red-500">*</span></Label>
@@ -1056,6 +1226,16 @@ function BuatSuratContent() {
                                                     placeholder="Pilih tanggal selesai"
                                                     fromDate={tanggalMulaiDate}
                                                 />
+                                                {tanggalSelesaiTabelError && (
+                                                    <p className="text-sm text-red-500 flex items-center gap-1">
+                                                        <span className="font-medium">⚠</span> {tanggalSelesaiTabelError}
+                                                    </p>
+                                                )}
+                                                {!tanggalSelesaiTabelError && tanggalSelesaiDate && (
+                                                    <p className="text-sm text-green-600 flex items-center gap-1">
+                                                        <span>✓</span> Tanggal Selesai valid
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     </CardContent>
@@ -1147,7 +1327,9 @@ function BuatSuratContent() {
 
                                             {/* Table Body */}
                                             <div className="divide-y">
-                                                {suratTugasTabelForm.pelaksana.map((p, index) => (
+                                                {suratTugasTabelForm.pelaksana.map((p, index) => {
+                                                    const errors = pelaksanaErrors.find(e => e.key === p.key);
+                                                    return (
                                                     <div key={p.key} className="p-3 bg-white hover:bg-muted/30">
                                                         <div className="grid gap-2 items-center" style={{
                                                             gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px`
@@ -1155,24 +1337,39 @@ function BuatSuratContent() {
                                                             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium text-sm">
                                                                 {index + 1}
                                                             </div>
-                                                            <Input
-                                                                value={p.nama}
-                                                                onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
-                                                                placeholder={suratTugasTabelForm.namaLabel || "Nama"}
-                                                                className="h-9"
-                                                            />
-                                                            <Input
-                                                                value={p.nim}
-                                                                onChange={(e) => updatePelaksana(p.key, "nim", e.target.value)}
-                                                                placeholder={suratTugasTabelForm.nimLabel || "NIM"}
-                                                                className="h-9"
-                                                            />
-                                                            <Input
-                                                                value={p.prodi}
-                                                                onChange={(e) => updatePelaksana(p.key, "prodi", e.target.value)}
-                                                                placeholder={suratTugasTabelForm.prodiLabel || "Prodi"}
-                                                                className="h-9"
-                                                            />
+                                                            <div className="space-y-1">
+                                                                <Input
+                                                                    value={p.nama}
+                                                                    onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
+                                                                    placeholder={suratTugasTabelForm.namaLabel || "Nama"}
+                                                                    className={`h-9 ${errors?.namaError ? 'border-red-500' : ''}`}
+                                                                />
+                                                                {errors?.namaError && (
+                                                                    <p className="text-xs text-red-500">{errors.namaError}</p>
+                                                                )}
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <Input
+                                                                    value={p.nim}
+                                                                    onChange={(e) => updatePelaksana(p.key, "nim", e.target.value)}
+                                                                    placeholder={suratTugasTabelForm.nimLabel || "NIM"}
+                                                                    className={`h-9 ${errors?.nimError ? 'border-red-500' : ''}`}
+                                                                />
+                                                                {errors?.nimError && (
+                                                                    <p className="text-xs text-red-500">{errors.nimError}</p>
+                                                                )}
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <Input
+                                                                    value={p.prodi}
+                                                                    onChange={(e) => updatePelaksana(p.key, "prodi", e.target.value)}
+                                                                    placeholder={suratTugasTabelForm.prodiLabel || "Prodi"}
+                                                                    className={`h-9 ${errors?.prodiError ? 'border-red-500' : ''}`}
+                                                                />
+                                                                {errors?.prodiError && (
+                                                                    <p className="text-xs text-red-500">{errors.prodiError}</p>
+                                                                )}
+                                                            </div>
                                                             {suratTugasTabelForm.customColumns.map((col) => (
                                                                 <Input
                                                                     key={col.key}
@@ -1195,7 +1392,8 @@ function BuatSuratContent() {
                                                             {suratTugasTabelForm.pelaksana.length <= 1 && <div></div>}
                                                         </div>
                                                     </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
 

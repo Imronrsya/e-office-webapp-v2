@@ -967,6 +967,361 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         setSuratPengantarForm(prev => ({ ...prev, [field]: value }));
     };
 
+    // Fungsi validasi NIP - mengembalikan pesan error atau string kosong jika valid
+    const getNIPError = (nip: string): string => {
+        if (!nip || nip.trim() === '') {
+            return 'NIP harus diisi!';
+        }
+        
+        if (!/^\d+$/.test(nip)) {
+            return 'NIP harus berupa angka!';
+        }
+        
+        if (nip.length !== 18) {
+            return `NIP harus tepat 18 karakter (saat ini: ${nip.length} karakter)`;
+        }
+        
+        return '';
+    };
+
+    // Fungsi validasi NIM - mengembalikan pesan error atau string kosong jika valid
+    const getNIMError = (nim: string): string => {
+        if (!nim || nim.trim() === '') {
+            return 'NIM harus diisi!';
+        }
+        
+        if (!/^\d+$/.test(nim)) {
+            return 'NIM harus berupa angka!';
+        }
+        
+        if (nim.length !== 14) {
+            return `NIM harus tepat 14 karakter (saat ini: ${nim.length} karakter)`;
+        }
+        
+        return '';
+    };
+
+    // Fungsi validasi Nama - mengembalikan pesan error atau string kosong jika valid
+    const getNamaError = (nama: string, label: string = 'Nama'): string => {
+        if (!nama || nama.trim() === '') {
+            return `${label} harus diisi!`;
+        }
+        
+        if (nama.length > 100) {
+            return `${label} maksimal 100 karakter (saat ini: ${nama.length} karakter)`;
+        }
+        
+        // Tidak boleh mengandung angka
+        if (/\d/.test(nama)) {
+            return `${label} tidak boleh mengandung angka!`;
+        }
+        
+        // Hanya huruf, spasi, dan tanda baca , . - ' yang diperbolehkan
+        if (!/^[a-zA-Z\s,.'-]+$/.test(nama)) {
+            return `${label} hanya boleh berisi huruf dan tanda baca (, . - ')`;
+        }
+        
+        // Tidak boleh spasi ganda
+        if (/\s{2,}/.test(nama)) {
+            return `${label} tidak boleh memiliki spasi ganda!`;
+        }
+        
+        return '';
+    };
+
+    // Hitung error NIP/NIM secara langsung dari state
+    const nipError = !isPengajuMahasiswa ? getNIPError(suratPengantarForm.nimMahasiswa) : '';
+    const nimError = isPengajuMahasiswa ? getNIMError(suratPengantarForm.nimMahasiswa) : '';
+    const nipErrorSuratTugas = !isPengajuMahasiswa ? getNIPError(suratTugasForm.nimNip) : '';
+    const nimErrorSuratTugas = isPengajuMahasiswa ? getNIMError(suratTugasForm.nimNip) : '';
+
+    // Hitung error Nama secara langsung dari state
+    const namaError = getNamaError(suratPengantarForm.namaMahasiswa, isPengajuMahasiswa ? 'Nama Mahasiswa' : 'Nama Dosen');
+    const namaErrorSuratTugas = getNamaError(suratTugasForm.namaLengkap, 'Nama Lengkap');
+    const namaTujuanError = getNamaError(suratPengantarForm.namaTujuan, 'Nama Tujuan');
+
+    // Fungsi validasi Keperluan - mengembalikan pesan error atau string kosong jika valid
+    const getKeperluanError = (keperluan: string): string => {
+        if (!keperluan || keperluan.trim() === '') {
+            return 'Keperluan harus diisi!';
+        }
+        
+        if (keperluan.trim().length < 5) {
+            return `Keperluan minimal 5 karakter (saat ini: ${keperluan.trim().length} karakter)`;
+        }
+        
+        if (keperluan.length > 150) {
+            return `Keperluan maksimal 150 karakter (saat ini: ${keperluan.length} karakter)`;
+        }
+        
+        // Tidak boleh hanya berisi angka
+        if (/^\d+$/.test(keperluan.trim())) {
+            return 'Keperluan tidak boleh hanya berisi angka!';
+        }
+        
+        return '';
+    };
+
+    // Hitung error Keperluan secara langsung dari state
+    const keperluanError = getKeperluanError(suratPengantarForm.keperluan);
+    const keperluanErrorSuratTugas = getKeperluanError(suratTugasForm.keperluan);
+
+    // Fungsi validasi Judul Kegiatan/Proposal - OPTIONAL, tapi jika diisi harus valid
+    const getJudulKegiatanError = (judul: string): string => {
+        // Boleh kosong (optional)
+        if (!judul || judul.trim() === '') {
+            return '';
+        }
+        
+        if (judul.trim().length < 5) {
+            return `Judul minimal 5 karakter (saat ini: ${judul.trim().length} karakter)`;
+        }
+        
+        if (judul.length > 150) {
+            return `Judul maksimal 150 karakter (saat ini: ${judul.length} karakter)`;
+        }
+        
+        // Tidak boleh hanya berisi angka
+        if (/^\d+$/.test(judul.trim())) {
+            return 'Judul tidak boleh hanya berisi angka!';
+        }
+        
+        // Tidak boleh ada enter (newline)
+        if (/[\r\n]/.test(judul)) {
+            return 'Judul tidak boleh mengandung enter/baris baru!';
+        }
+        
+        return '';
+    };
+
+    // Hitung error Judul Kegiatan secara langsung dari state
+    const judulAcaraError = getJudulKegiatanError(suratPengantarForm.judulAcara);
+    const judulSuratError = getJudulKegiatanError(suratTugasForm.judulSurat);
+
+    // Fungsi validasi Lokasi Kegiatan - OPTIONAL, tapi jika diisi harus valid
+    const getLokasiKegiatanError = (lokasi: string): string => {
+        // Boleh kosong (optional)
+        if (!lokasi || lokasi.trim() === '') {
+            return '';
+        }
+        
+        if (lokasi.trim().length < 5) {
+            return `Lokasi minimal 5 karakter (saat ini: ${lokasi.trim().length} karakter)`;
+        }
+        
+        if (lokasi.length > 150) {
+            return `Lokasi maksimal 150 karakter (saat ini: ${lokasi.length} karakter)`;
+        }
+        
+        // Tidak boleh hanya berisi angka
+        if (/^\d+$/.test(lokasi.trim())) {
+            return 'Lokasi tidak boleh hanya berisi angka!';
+        }
+        
+        // Tidak boleh ada enter (newline)
+        if (/[\r\n]/.test(lokasi)) {
+            return 'Lokasi tidak boleh mengandung enter/baris baru!';
+        }
+        
+        return '';
+    };
+
+    // Hitung error Lokasi Kegiatan secara langsung dari state
+    const lokasiAcaraError = getLokasiKegiatanError(suratPengantarForm.lokasiAcara);
+
+    // Fungsi validasi Perihal - sama seperti Keperluan (required, 5-150 chars, not numbers only)
+    const getPerihalError = (perihal: string): string => {
+        if (!perihal || perihal.trim() === '') {
+            return 'Perihal harus diisi!';
+        }
+        
+        if (perihal.trim().length < 5) {
+            return `Perihal minimal 5 karakter (saat ini: ${perihal.trim().length} karakter)`;
+        }
+        
+        if (perihal.length > 150) {
+            return `Perihal maksimal 150 karakter (saat ini: ${perihal.length} karakter)`;
+        }
+        
+        // Tidak boleh hanya berisi angka
+        if (/^\d+$/.test(perihal.trim())) {
+            return 'Perihal tidak boleh hanya berisi angka!';
+        }
+        
+        return '';
+    };
+
+    // Hitung error Perihal secara langsung dari state
+    const perihalError = getPerihalError(suratPengantarForm.perihal);
+
+    // Fungsi validasi Nomor Surat - required, max 50 chars, unik di database
+    const getNomorSuratError = (nomorSurat: string): string => {
+        if (!nomorSurat || nomorSurat.trim() === '') {
+            return 'Nomor Surat harus diisi!';
+        }
+        
+        if (nomorSurat.length > 50) {
+            return `Nomor Surat maksimal 50 karakter (saat ini: ${nomorSurat.length} karakter)`;
+        }
+        
+        return '';
+    };
+
+    // Hitung error Nomor Surat secara langsung dari state
+    // Juga cek ketersediaan di database (via nomorSuratStatus)
+    const nomorSuratError = getNomorSuratError(suratPengantarForm.nomorSurat);
+
+    // Fungsi validasi Tanggal Surat - required (harus diisi)
+    const getTanggalSuratError = (): string => {
+        if (!tanggalSuratDate) {
+            return 'Tanggal Surat harus diisi!';
+        }
+        
+        return '';
+    };
+
+    // Hitung error Tanggal Surat secara langsung dari state
+    const tanggalSuratError = getTanggalSuratError();
+
+    // ========================================================================
+    // VALIDASI SURAT TUGAS TABEL
+    // ========================================================================
+
+    // Fungsi validasi Judul Surat (perihalInput) untuk ST Tabel - Required, Min 10, Max 255, not only symbols
+    const getJudulSuratTabelError = (judul: string): string => {
+        if (!judul || judul.trim() === '') {
+            return 'Judul Surat harus diisi!';
+        }
+        
+        if (judul.trim().length < 10) {
+            return `Judul Surat minimal 10 karakter (saat ini: ${judul.trim().length} karakter)`;
+        }
+        
+        if (judul.length > 255) {
+            return `Judul Surat maksimal 255 karakter (saat ini: ${judul.length} karakter)`;
+        }
+        
+        // Tidak boleh hanya berisi simbol (harus ada huruf/angka)
+        if (!/[a-zA-Z0-9]/.test(judul)) {
+            return 'Judul Surat tidak boleh hanya berisi simbol!';
+        }
+        
+        return '';
+    };
+
+    // Hitung error Judul Surat Tabel secara langsung dari state
+    const judulSuratTabelError = suratType === "SURAT_TUGAS_TABEL" ? getJudulSuratTabelError(perihalInput) : '';
+
+    // Fungsi validasi Keperluan untuk ST Tabel - Required, Min 5, Max 150, not only numbers
+    const getKeperluanTabelError = (keperluan: string): string => {
+        if (!keperluan || keperluan.trim() === '') {
+            return 'Keperluan harus diisi!';
+        }
+        
+        if (keperluan.trim().length < 5) {
+            return `Keperluan minimal 5 karakter (saat ini: ${keperluan.trim().length} karakter)`;
+        }
+        
+        if (keperluan.length > 150) {
+            return `Keperluan maksimal 150 karakter (saat ini: ${keperluan.length} karakter)`;
+        }
+        
+        // Tidak boleh hanya berisi angka
+        if (/^\d+$/.test(keperluan.trim())) {
+            return 'Keperluan tidak boleh hanya berisi angka!';
+        }
+        
+        return '';
+    };
+
+    // Hitung error Keperluan Tabel secara langsung dari state
+    const keperluanTabelError = suratType === "SURAT_TUGAS_TABEL" ? getKeperluanTabelError(suratTugasTabelForm.keperluan) : '';
+
+    // Fungsi validasi Tanggal Selesai - tidak boleh sebelum Tanggal Mulai
+    const getTanggalSelesaiError = (tanggalMulai: string, tanggalSelesai: string): string => {
+        if (!tanggalSelesai) {
+            return 'Tanggal Selesai harus diisi!';
+        }
+        
+        if (!tanggalMulai) {
+            return ''; // Tanggal mulai belum diisi, skip perbandingan
+        }
+        
+        // Bandingkan tanggal (format: YYYY-MM-DD dari input type date)
+        const startDate = new Date(tanggalMulai);
+        const endDate = new Date(tanggalSelesai);
+        
+        if (endDate < startDate) {
+            return 'Tanggal Selesai tidak boleh sebelum Tanggal Mulai!';
+        }
+        
+        return '';
+    };
+
+    // Hitung error Tanggal untuk ST Tabel
+    const tanggalMulaiTabelError = suratType === "SURAT_TUGAS_TABEL" && !suratTugasTabelForm.tanggalMulai ? 'Tanggal Mulai harus diisi!' : '';
+    const tanggalSelesaiTabelError = suratType === "SURAT_TUGAS_TABEL" ? getTanggalSelesaiError(suratTugasTabelForm.tanggalMulai, suratTugasTabelForm.tanggalSelesai) : '';
+
+    // ========================================================================
+    // VALIDASI DATA PELAKSANA (ST TABEL)
+    // ========================================================================
+
+    // Fungsi validasi Nama Pelaksana - Min 2, Max 100, tidak boleh ada angka
+    const getNamaPelaksanaError = (nama: string): string => {
+        if (!nama || nama.trim() === '') {
+            return 'Nama harus diisi!';
+        }
+        if (nama.trim().length < 2) {
+            return `Nama minimal 2 karakter`;
+        }
+        if (nama.length > 100) {
+            return `Nama maksimal 100 karakter`;
+        }
+        // Tidak boleh ada angka
+        if (/\d/.test(nama)) {
+            return 'Nama tidak boleh mengandung angka!';
+        }
+        return '';
+    };
+
+    // Fungsi validasi NIM Pelaksana - harus 14 digit angka
+    const getNimPelaksanaError = (nim: string): string => {
+        if (!nim || nim.trim() === '') {
+            return 'NIM harus diisi!';
+        }
+        if (!/^\d{14}$/.test(nim.trim())) {
+            return 'NIM harus 14 digit angka!';
+        }
+        return '';
+    };
+
+    // Fungsi validasi Prodi Pelaksana - Min 5 karakter
+    const getProdiPelaksanaError = (prodi: string): string => {
+        if (!prodi || prodi.trim() === '') {
+            return 'Prodi harus diisi!';
+        }
+        if (prodi.trim().length < 5) {
+            return `Prodi minimal 5 karakter`;
+        }
+        return '';
+    };
+
+    // Fungsi untuk mendapatkan semua error pelaksana
+    const getPelaksanaErrors = (pelaksana: typeof suratTugasTabelForm.pelaksana) => {
+        return pelaksana.map(p => ({
+            key: p.key,
+            namaError: getNamaPelaksanaError(p.nama),
+            nimError: getNimPelaksanaError(p.nim),
+            prodiError: getProdiPelaksanaError(p.prodi)
+        }));
+    };
+
+    // Hitung error pelaksana
+    const pelaksanaErrors = suratType === "SURAT_TUGAS_TABEL" ? getPelaksanaErrors(suratTugasTabelForm.pelaksana) : [];
+
+    // Cek apakah ada error di pelaksana
+    const hasPelaksanaError = pelaksanaErrors.some(e => e.namaError || e.nimError || e.prodiError);
+
     // Debounced check for nomor surat availability
     useEffect(() => {
         if (suratType !== "SURAT_PENGANTAR") return;
@@ -1336,23 +1691,37 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 return false;
             }
         } else if (suratType === "SURAT_TUGAS_TABEL") {
-            // Validate required fields
-            if (!suratTugasTabelForm.keperluan) {
-                toast.error("Lengkapi keperluan surat");
+            // Validate judul surat
+            if (judulSuratTabelError) {
+                toast.error(judulSuratTabelError);
                 return false;
             }
-            if (!suratTugasTabelForm.tanggalMulai || !suratTugasTabelForm.tanggalSelesai) {
-                toast.error("Lengkapi tanggal mulai dan selesai tugas");
+            // Validate keperluan
+            if (keperluanTabelError) {
+                toast.error(keperluanTabelError);
+                return false;
+            }
+            // Validate tanggal
+            if (tanggalMulaiTabelError) {
+                toast.error(tanggalMulaiTabelError);
+                return false;
+            }
+            if (tanggalSelesaiTabelError) {
+                toast.error(tanggalSelesaiTabelError);
                 return false;
             }
             if (suratTugasTabelForm.pelaksana.length === 0) {
                 toast.error("Tambahkan minimal 1 pelaksana");
                 return false;
             }
-            // Validate each pelaksana has required fields (nama, nim, prodi)
-            const invalidPelaksana = suratTugasTabelForm.pelaksana.find(p => !p.nama || !p.nim || !p.prodi);
-            if (invalidPelaksana) {
-                toast.error("Lengkapi data nama, NIM, dan prodi untuk setiap pelaksana");
+            // Validate each pelaksana dengan detail
+            if (hasPelaksanaError) {
+                // Cari error pertama untuk ditampilkan
+                const firstError = pelaksanaErrors.find(e => e.namaError || e.nimError || e.prodiError);
+                if (firstError) {
+                    const errorMsg = firstError.namaError || firstError.nimError || firstError.prodiError;
+                    toast.error(`Data Pelaksana: ${errorMsg}`);
+                }
                 return false;
             }
         } else if (suratType === "SURAT_KEPUTUSAN") {
@@ -1868,24 +2237,31 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     onChange={(e) => updateSuratPengantar("nomorSurat", e.target.value)}
                                                     placeholder="963/UN7.F8.1/AK/2025"
                                                     className={
-                                                        nomorSuratStatus.isAvailable === false
+                                                        nomorSuratError || nomorSuratStatus.isAvailable === false
                                                             ? "border-red-500 focus-visible:ring-red-500"
-                                                            : nomorSuratStatus.isAvailable === true
+                                                            : nomorSuratStatus.isAvailable === true && !nomorSuratError
                                                                 ? "border-green-500 focus-visible:ring-green-500"
                                                                 : ""
                                                     }
                                                 />
-                                                {nomorSuratStatus.message && (
+                                                {nomorSuratError && (
+                                                    <p className="text-sm text-red-500 flex items-center gap-1">
+                                                        <span className="font-medium">⚠</span> {nomorSuratError}
+                                                    </p>
+                                                )}
+                                                {!nomorSuratError && nomorSuratStatus.message && (
                                                     <p
-                                                        className={`text-xs ${nomorSuratStatus.isChecking
+                                                        className={`text-sm ${nomorSuratStatus.isChecking
                                                             ? "text-muted-foreground"
                                                             : nomorSuratStatus.isAvailable === false
-                                                                ? "text-red-500 font-medium"
+                                                                ? "text-red-500 flex items-center gap-1"
                                                                 : nomorSuratStatus.isAvailable === true
-                                                                    ? "text-green-600 font-medium"
+                                                                    ? "text-green-600 flex items-center gap-1"
                                                                     : "text-muted-foreground"
                                                             }`}
                                                     >
+                                                        {nomorSuratStatus.isAvailable === false && <span className="font-medium">⚠</span>}
+                                                        {nomorSuratStatus.isAvailable === true && <span>✓</span>}
                                                         {nomorSuratStatus.message}
                                                     </p>
                                                 )}
@@ -1900,6 +2276,16 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     }}
                                                     placeholder="Pilih tanggal surat"
                                                 />
+                                                {tanggalSuratError && (
+                                                    <p className="text-sm text-red-500 flex items-center gap-1">
+                                                        <span className="font-medium">⚠</span> {tanggalSuratError}
+                                                    </p>
+                                                )}
+                                                {!tanggalSuratError && tanggalSuratDate && (
+                                                    <p className="text-sm text-green-600 flex items-center gap-1">
+                                                        <span>✓</span> Tanggal Surat valid
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="space-y-2">
@@ -1909,7 +2295,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 value={suratPengantarForm.perihal}
                                                 onChange={(e) => updateSuratPengantar("perihal", e.target.value)}
                                                 placeholder="Permohonan Izin Magang Mandiri"
+                                                className={perihalError ? 'border-red-500' : ''}
                                             />
+                                            {perihalError && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {perihalError}
+                                                </p>
+                                            )}
+                                            {!perihalError && suratPengantarForm.perihal && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Perihal valid
+                                                </p>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -1926,7 +2323,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 value={suratPengantarForm.namaTujuan}
                                                 onChange={(e) => updateSuratPengantar("namaTujuan", e.target.value)}
                                                 placeholder="Nama penerima surat"
+                                                className={namaTujuanError ? 'border-red-500' : ''}
                                             />
+                                            {namaTujuanError && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {namaTujuanError}
+                                                </p>
+                                            )}
+                                            {!namaTujuanError && suratPengantarForm.namaTujuan && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Nama Tujuan valid
+                                                </p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="jabatanTujuan">Jabatan Tujuan</Label>
@@ -1963,7 +2371,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     value={suratPengantarForm.namaMahasiswa}
                                                     onChange={(e) => updateSuratPengantar("namaMahasiswa", e.target.value)}
                                                     placeholder={isPengajuMahasiswa ? "Nama lengkap mahasiswa" : "Nama lengkap dosen"}
+                                                    className={namaError ? "border-red-500 focus-visible:ring-red-500" : ""}
                                                 />
+                                                {namaError && (
+                                                    <p className="text-sm text-red-500 flex items-center gap-1">
+                                                        <span className="font-medium">⚠</span> {namaError}
+                                                    </p>
+                                                )}
+                                                {!namaError && suratPengantarForm.namaMahasiswa && (
+                                                    <p className="text-sm text-green-600 flex items-center gap-1">
+                                                        <span>✓</span> {isPengajuMahasiswa ? 'Nama Mahasiswa' : 'Nama Dosen'} valid
+                                                    </p>
+                                                )}
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="nimMahasiswa">{isPengajuMahasiswa ? "NIM" : "NIP"} <span className="text-red-500">*</span></Label>
@@ -1972,7 +2391,30 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     value={suratPengantarForm.nimMahasiswa}
                                                     onChange={(e) => updateSuratPengantar("nimMahasiswa", e.target.value)}
                                                     placeholder={isPengajuMahasiswa ? "24060122xxxxxx" : "198501152010121001"}
+                                                    className={(isPengajuMahasiswa && nimError) || (!isPengajuMahasiswa && nipError) ? "border-red-500 focus-visible:ring-red-500" : ""}
                                                 />
+                                                {/* Validasi NIM untuk Mahasiswa */}
+                                                {isPengajuMahasiswa && nimError && (
+                                                    <p className="text-sm text-red-500 flex items-center gap-1">
+                                                        <span className="font-medium">⚠</span> {nimError}
+                                                    </p>
+                                                )}
+                                                {isPengajuMahasiswa && !nimError && suratPengantarForm.nimMahasiswa && (
+                                                    <p className="text-sm text-green-600 flex items-center gap-1">
+                                                        <span>✓</span> NIM valid
+                                                    </p>
+                                                )}
+                                                {/* Validasi NIP untuk Dosen */}
+                                                {!isPengajuMahasiswa && nipError && (
+                                                    <p className="text-sm text-red-500 flex items-center gap-1">
+                                                        <span className="font-medium">⚠</span> {nipError}
+                                                    </p>
+                                                )}
+                                                {!isPengajuMahasiswa && !nipError && suratPengantarForm.nimMahasiswa && (
+                                                    <p className="text-sm text-green-600 flex items-center gap-1">
+                                                        <span>✓</span> NIP valid
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
@@ -2012,27 +2454,67 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 value={suratPengantarForm.keperluan}
                                                 onChange={(e) => updateSuratPengantar("keperluan", e.target.value)}
                                                 placeholder="Magang Mandiri"
+                                                className={keperluanError ? "border-red-500 focus-visible:ring-red-500" : ""}
                                             />
+                                            {keperluanError && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {keperluanError}
+                                                </p>
+                                            )}
+                                            {!keperluanError && suratPengantarForm.keperluan && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Keperluan valid
+                                                </p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="judulAcara">Judul Kegiatan/Proposal</Label>
-                                            <Textarea
+                                            <Label htmlFor="judulAcara">Judul Kegiatan/Proposal <span className="text-gray-400 font-normal text-xs">(Opsional)</span></Label>
+                                            <Input
                                                 id="judulAcara"
                                                 value={suratPengantarForm.judulAcara}
-                                                onChange={(e) => updateSuratPengantar("judulAcara", e.target.value)}
+                                                onChange={(e) => {
+                                                    // Filter out newlines
+                                                    const filtered = e.target.value.replace(/[\r\n]/g, '');
+                                                    updateSuratPengantar("judulAcara", filtered);
+                                                }}
                                                 placeholder="Judul lengkap kegiatan atau proposal"
-                                                rows={2}
+                                                className={judulAcaraError ? 'border-red-500' : ''}
                                             />
+                                            {judulAcaraError && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {judulAcaraError}
+                                                </p>
+                                            )}
+                                            {!judulAcaraError && suratPengantarForm.judulAcara && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Judul valid
+                                                </p>
+                                            )}
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <Label htmlFor="lokasiAcara">Lokasi Kegiatan</Label>
+                                                <Label htmlFor="lokasiAcara">Lokasi Kegiatan <span className="text-gray-400 font-normal text-xs">(Opsional)</span></Label>
                                                 <Input
                                                     id="lokasiAcara"
                                                     value={suratPengantarForm.lokasiAcara}
-                                                    onChange={(e) => updateSuratPengantar("lokasiAcara", e.target.value)}
+                                                    onChange={(e) => {
+                                                        // Filter out newlines
+                                                        const filtered = e.target.value.replace(/[\r\n]/g, '');
+                                                        updateSuratPengantar("lokasiAcara", filtered);
+                                                    }}
                                                     placeholder="PT. XYZ, Jakarta"
+                                                    className={lokasiAcaraError ? 'border-red-500' : ''}
                                                 />
+                                                {lokasiAcaraError && (
+                                                    <p className="text-sm text-red-500 flex items-center gap-1">
+                                                        <span className="font-medium">⚠</span> {lokasiAcaraError}
+                                                    </p>
+                                                )}
+                                                {!lokasiAcaraError && suratPengantarForm.lokasiAcara && (
+                                                    <p className="text-sm text-green-600 flex items-center gap-1">
+                                                        <span>✓</span> Lokasi valid
+                                                    </p>
+                                                )}
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="tanggalMulai">Tanggal Mulai</Label>
@@ -2088,7 +2570,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 value={suratTugasForm.namaLengkap}
                                                 onChange={(e) => updateSuratTugas("namaLengkap", e.target.value)}
                                                 placeholder="Nama lengkap"
+                                                className={namaErrorSuratTugas ? "border-red-500 focus-visible:ring-red-500" : ""}
                                             />
+                                            {namaErrorSuratTugas && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {namaErrorSuratTugas}
+                                                </p>
+                                            )}
+                                            {!namaErrorSuratTugas && suratTugasForm.namaLengkap && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Nama Lengkap valid
+                                                </p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="nimNip">{isPengajuMahasiswa ? "NIM" : "NIP"} <span className="text-red-500">*</span></Label>
@@ -2097,7 +2590,30 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 value={suratTugasForm.nimNip}
                                                 onChange={(e) => updateSuratTugas("nimNip", e.target.value)}
                                                 placeholder={isPengajuMahasiswa ? "24060122xxxxxx" : "198501152010121001"}
+                                                className={(isPengajuMahasiswa && nimErrorSuratTugas) || (!isPengajuMahasiswa && nipErrorSuratTugas) ? "border-red-500 focus-visible:ring-red-500" : ""}
                                             />
+                                            {/* Validasi NIM untuk Mahasiswa */}
+                                            {isPengajuMahasiswa && nimErrorSuratTugas && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {nimErrorSuratTugas}
+                                                </p>
+                                            )}
+                                            {isPengajuMahasiswa && !nimErrorSuratTugas && suratTugasForm.nimNip && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> NIM valid
+                                                </p>
+                                            )}
+                                            {/* Validasi NIP untuk Dosen */}
+                                            {!isPengajuMahasiswa && nipErrorSuratTugas && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {nipErrorSuratTugas}
+                                                </p>
+                                            )}
+                                            {!isPengajuMahasiswa && !nipErrorSuratTugas && suratTugasForm.nimNip && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> NIP valid
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="space-y-2">
@@ -2117,17 +2633,42 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             onChange={(e) => updateSuratTugas("keperluan", e.target.value)}
                                             placeholder="Jelaskan keperluan surat ini"
                                             rows={3}
+                                            className={keperluanErrorSuratTugas ? "border-red-500 focus-visible:ring-red-500" : ""}
                                         />
+                                        {keperluanErrorSuratTugas && (
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {keperluanErrorSuratTugas}
+                                            </p>
+                                        )}
+                                        {!keperluanErrorSuratTugas && suratTugasForm.keperluan && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Keperluan valid
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="judulSurat">Judul/Topik Kegiatan</Label>
-                                        <Textarea
+                                        <Label htmlFor="judulSurat">Judul/Topik Kegiatan <span className="text-gray-400 font-normal text-xs">(Opsional)</span></Label>
+                                        <Input
                                             id="judulSurat"
                                             value={suratTugasForm.judulSurat}
-                                            onChange={(e) => updateSuratTugas("judulSurat", e.target.value)}
+                                            onChange={(e) => {
+                                                // Filter out newlines
+                                                const filtered = e.target.value.replace(/[\r\n]/g, '');
+                                                updateSuratTugas("judulSurat", filtered);
+                                            }}
                                             placeholder="Jelaskan judul atau topik kegiatan"
-                                            rows={2}
+                                            className={judulSuratError ? 'border-red-500' : ''}
                                         />
+                                        {judulSuratError && (
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {judulSuratError}
+                                            </p>
+                                        )}
+                                        {!judulSuratError && suratTugasForm.judulSurat && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Judul valid
+                                            </p>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -2148,7 +2689,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 value={perihalInput}
                                                 onChange={(e) => setPerihalInput(e.target.value)}
                                                 placeholder="Masukkan judul surat untuk ditampilkan di dashboard"
+                                                className={judulSuratTabelError ? 'border-red-500' : ''}
                                             />
+                                            {judulSuratTabelError && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {judulSuratTabelError}
+                                                </p>
+                                            )}
+                                            {!judulSuratTabelError && perihalInput && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Judul Surat valid
+                                                </p>
+                                            )}
                                         </div>
                                         <Separator />
                                         <div className="space-y-2">
@@ -2159,7 +2711,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 onChange={(e) => updateSuratTugasTabel("keperluan", e.target.value)}
                                                 placeholder="Jelaskan keperluan surat ini"
                                                 rows={3}
+                                                className={keperluanTabelError ? 'border-red-500' : ''}
                                             />
+                                            {keperluanTabelError && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {keperluanTabelError}
+                                                </p>
+                                            )}
+                                            {!keperluanTabelError && suratTugasTabelForm.keperluan && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Keperluan valid
+                                                </p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="judulSurat">Judul/Topik Kegiatan</Label>
@@ -2179,7 +2742,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     type="date"
                                                     value={suratTugasTabelForm.tanggalMulai}
                                                     onChange={(e) => updateSuratTugasTabel("tanggalMulai", e.target.value)}
+                                                    className={tanggalMulaiTabelError ? 'border-red-500' : ''}
                                                 />
+                                                {tanggalMulaiTabelError && (
+                                                    <p className="text-sm text-red-500 flex items-center gap-1">
+                                                        <span className="font-medium">⚠</span> {tanggalMulaiTabelError}
+                                                    </p>
+                                                )}
+                                                {!tanggalMulaiTabelError && suratTugasTabelForm.tanggalMulai && (
+                                                    <p className="text-sm text-green-600 flex items-center gap-1">
+                                                        <span>✓</span> Tanggal Mulai valid
+                                                    </p>
+                                                )}
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="tanggalSelesai">Tanggal Selesai <span className="text-red-500">*</span></Label>
@@ -2188,7 +2762,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     type="date"
                                                     value={suratTugasTabelForm.tanggalSelesai}
                                                     onChange={(e) => updateSuratTugasTabel("tanggalSelesai", e.target.value)}
+                                                    className={tanggalSelesaiTabelError ? 'border-red-500' : ''}
                                                 />
+                                                {tanggalSelesaiTabelError && (
+                                                    <p className="text-sm text-red-500 flex items-center gap-1">
+                                                        <span className="font-medium">⚠</span> {tanggalSelesaiTabelError}
+                                                    </p>
+                                                )}
+                                                {!tanggalSelesaiTabelError && suratTugasTabelForm.tanggalSelesai && (
+                                                    <p className="text-sm text-green-600 flex items-center gap-1">
+                                                        <span>✓</span> Tanggal Selesai valid
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     </CardContent>
@@ -2256,7 +2841,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                             {/* Table Body */}
                                             <div className="divide-y">
-                                                {suratTugasTabelForm.pelaksana.map((p, index) => (
+                                                {suratTugasTabelForm.pelaksana.map((p, index) => {
+                                                    const errors = pelaksanaErrors.find(e => e.key === p.key);
+                                                    return (
                                                     <div key={p.key} className="p-3 bg-white hover:bg-muted/30">
                                                         <div className="grid gap-2 items-center" style={{
                                                             gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px`
@@ -2264,24 +2851,39 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium text-sm">
                                                                 {index + 1}
                                                             </div>
-                                                            <Input
-                                                                value={p.nama}
-                                                                onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
-                                                                placeholder="Nama"
-                                                                className="h-9"
-                                                            />
-                                                            <Input
-                                                                value={p.nim}
-                                                                onChange={(e) => updatePelaksana(p.key, "nim", e.target.value)}
-                                                                placeholder="NIM"
-                                                                className="h-9"
-                                                            />
-                                                            <Input
-                                                                value={p.prodi}
-                                                                onChange={(e) => updatePelaksana(p.key, "prodi", e.target.value)}
-                                                                placeholder="Prodi"
-                                                                className="h-9"
-                                                            />
+                                                            <div className="space-y-1">
+                                                                <Input
+                                                                    value={p.nama}
+                                                                    onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
+                                                                    placeholder="Nama"
+                                                                    className={`h-9 ${errors?.namaError ? 'border-red-500' : ''}`}
+                                                                />
+                                                                {errors?.namaError && (
+                                                                    <p className="text-xs text-red-500">{errors.namaError}</p>
+                                                                )}
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <Input
+                                                                    value={p.nim}
+                                                                    onChange={(e) => updatePelaksana(p.key, "nim", e.target.value)}
+                                                                    placeholder="NIM"
+                                                                    className={`h-9 ${errors?.nimError ? 'border-red-500' : ''}`}
+                                                                />
+                                                                {errors?.nimError && (
+                                                                    <p className="text-xs text-red-500">{errors.nimError}</p>
+                                                                )}
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <Input
+                                                                    value={p.prodi}
+                                                                    onChange={(e) => updatePelaksana(p.key, "prodi", e.target.value)}
+                                                                    placeholder="Prodi"
+                                                                    className={`h-9 ${errors?.prodiError ? 'border-red-500' : ''}`}
+                                                                />
+                                                                {errors?.prodiError && (
+                                                                    <p className="text-xs text-red-500">{errors.prodiError}</p>
+                                                                )}
+                                                            </div>
                                                             {suratTugasTabelForm.customColumns.map((col) => (
                                                                 <Input
                                                                     key={col.key}
@@ -2301,7 +2903,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                             </Button>
                                                         </div>
                                                     </div>
-                                                ))}
+                                                    );
+                                                })}
 
                                                 {suratTugasTabelForm.pelaksana.length === 0 && (
                                                     <div className="p-8 text-center text-muted-foreground">
