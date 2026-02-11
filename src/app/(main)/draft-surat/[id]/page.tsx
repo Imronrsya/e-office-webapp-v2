@@ -2726,12 +2726,15 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="judulSurat">Judul/Topik Kegiatan</Label>
-                                            <Textarea
+                                            <Input
                                                 id="judulSurat"
                                                 value={suratTugasTabelForm.judulSurat}
-                                                onChange={(e) => updateSuratTugasTabel("judulSurat", e.target.value)}
+                                                onChange={(e) => {
+                                                    // Filter out newlines
+                                                    const filtered = e.target.value.replace(/[\r\n]/g, '');
+                                                    updateSuratTugasTabel("judulSurat", filtered);
+                                                }}
                                                 placeholder="Jelaskan judul atau topik kegiatan"
-                                                rows={2}
                                             />
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
