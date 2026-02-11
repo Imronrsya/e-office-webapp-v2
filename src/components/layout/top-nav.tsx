@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronDown, LogOut } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ChevronDown, LogOut, Users, Settings, BarChart3 } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -28,6 +30,9 @@ export default function TopNav() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isSuperAdmin = user?.role === "SUPERADMIN";
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -63,6 +68,45 @@ export default function TopNav() {
               </span>
             </div>
           </div>
+
+          {/* Tengah: Navigation links (SUPERADMIN only) */}
+          {isSuperAdmin && (
+            <nav className="hidden md:flex items-center gap-1">
+              <Link
+                href="/dashboard"
+                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === "/dashboard"
+                    ? "bg-gray-200 text-black"
+                    : "text-gray-600 hover:bg-gray-200 hover:text-black"
+                }`}
+              >
+                <BarChart3 className="size-4" />
+                Dashboard
+              </Link>
+              <Link
+                href="/pengguna"
+                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === "/pengguna"
+                    ? "bg-gray-200 text-black"
+                    : "text-gray-600 hover:bg-gray-200 hover:text-black"
+                }`}
+              >
+                <Users className="size-4" />
+                Pengguna
+              </Link>
+              <Link
+                href="/pengaturan"
+                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === "/pengaturan"
+                    ? "bg-gray-200 text-black"
+                    : "text-gray-600 hover:bg-gray-200 hover:text-black"
+                }`}
+              >
+                <Settings className="size-4" />
+                Pengaturan Departemen
+              </Link>
+            </nav>
+          )}
 
           {/* Kanan: Tembusan Badge & User Profile Dropdown */}
           <div className="flex items-center gap-3">

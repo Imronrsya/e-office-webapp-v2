@@ -1,15 +1,171 @@
-import UserTable from "@/features/users/components/user-table";
+"use client";
+
+import { useState } from "react";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { Plus, ShieldAlert } from "lucide-react";
+import { useAdminUsers } from "@/features/admin-users/hooks/useAdminUsers";
+import { UserToolbar } from "@/features/admin-users/components/user-toolbar";
+import { AdminUserTable } from "@/features/admin-users/components/admin-user-table";
+import { UserFormDialog } from "@/features/admin-users/components/user-form-dialog";
+import { ResetPasswordDialog } from "@/features/admin-users/components/reset-password-dialog";
+import { DeleteUserDialog } from "@/features/admin-users/components/delete-user-dialog";
+import type {
+  AdminUserDetail,
+  CreateUserPayload,
+  UpdateUserPayload,
+} from "@/services/adminUser.service";
 
 export default function PenggunaPage() {
+  const { user } = useAuth();
+
+  // ── SUPERADMIN guard ──
+  if (user && user.role !== "SUPERADMIN") {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <ShieldAlert className="size-12 text-destructive" />
+        <h2 className="text-xl font-semibold">Akses Ditolak</h2>
+        <p className="text-muted-foreground">
+          Halaman ini hanya dapat diakses oleh Super Admin.
+        </p>
+      </div>
+    );
+  }
+
+  return <PenggunaContent />;
+}
+
+// ── Separated so hooks are called only for SUPERADMIN ──
+function PenggunaContent() {
+  const {
+    users,
+    meta,
+    isLoading,
+    roles,
+    search,
+    setSearch,
+    roleFilter,
+    setRoleFilter,
+    page,
+    setPage,
+    handleCreate,
+    handleUpdate,
+    handleDelete,
+    handleResetPassword,
+    handleGetDetail,
+  } = useAdminUsers();
+
+  // ── Dialog state ──
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [editData, setEditData] = useState<AdminUserDetail | null>(null);
+
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  // ── Handlers ──
+  const openCreateDialog = () => {
+    setFormMode("create");
+    setEditData(null);
+    setFormOpen(true);
+  };
+
+  const openEditDialog = async (userId: string) => {
+    const detail = await handleGetDetail(userId);
+    if (detail) {
+      setFormMode("edit");
+      setEditData(detail);
+      setFormOpen(true);
+    }
+  };
+
+  const openResetDialog = (id: string, name: string) => {
+    setResetTarget({ id, name });
+    setResetOpen(true);
+  };
+
+  const openDeleteDialog = (id: string, name: string) => {
+    setDeleteTarget({ id, name });
+    setDeleteOpen(true);
+  };
+
+  const handleFormSubmit = async (
+    payload: CreateUserPayload | UpdateUserPayload
+  ) => {
+    if (formMode === "create") {
+      await handleCreate(payload as CreateUserPayload);
+    } else if (editData) {
+      await handleUpdate(editData.id, payload as UpdateUserPayload);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Pengguna</h1>
-        <Button>+ Tambah Pengguna</Button>
+        <h1 className="text-2xl font-bold">Manajemen Pengguna</h1>
+        <Button onClick={openCreateDialog}>
+          <Plus className="mr-2 size-4" />
+          Tambah Pengguna
+        </Button>
       </div>
 
-      <UserTable />
+      <UserToolbar
+        search={search}
+        onSearchChange={setSearch}
+        roleFilter={roleFilter}
+        onRoleFilterChange={setRoleFilter}
+        roles={roles}
+      />
+
+      <AdminUserTable
+        users={users}
+        meta={meta}
+        page={page}
+        onPageChange={setPage}
+        isLoading={isLoading}
+        onEdit={(id) => openEditDialog(id)}
+        onResetPassword={(id, name) => openResetDialog(id, name)}
+        onDelete={(id, name) => openDeleteDialog(id, name)}
+      />
+
+      {/* ── Smart Form Dialog ── */}
+      <UserFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        mode={formMode}
+        roles={roles}
+        editData={editData}
+        onSubmit={handleFormSubmit}
+      />
+
+      {/* ── Reset Password Dialog ── */}
+      {resetTarget && (
+        <ResetPasswordDialog
+          open={resetOpen}
+          onOpenChange={setResetOpen}
+          userName={resetTarget.name}
+          onConfirm={() => handleResetPassword(resetTarget.id)}
+        />
+      )}
+
+      {/* ── Delete Dialog ── */}
+      {deleteTarget && (
+        <DeleteUserDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          userName={deleteTarget.name}
+          onConfirm={() => handleDelete(deleteTarget.id)}
+        />
+      )}
     </div>
   );
 }

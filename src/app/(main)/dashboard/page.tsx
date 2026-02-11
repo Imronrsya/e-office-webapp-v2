@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { SuperAdminDashboard } from "@/features/dashboard/components/superadmin-dashboard";
 import PengajuDashboard from "@/features/dashboard/roles/pengaju-dashboard";
 import KaprodiDashboard from "@/features/dashboard/roles/kaprodi-dashboard";
 import AdminProdiDashboard from "@/features/dashboard/roles/admin-prodi-dashboard";
@@ -31,6 +32,10 @@ export default function DashboardPage() {
 
   // Routing berdasarkan role dari API backend
   switch (userRole) {
+    // Super Admin
+    case "SUPERADMIN":
+      return <SuperAdminDashboard />;
+
     // Lingkup Departemen (Tidak ada Surat Masuk/Keluar)
     case "MAHASISWA":
     case "DOSEN":

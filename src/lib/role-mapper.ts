@@ -1,5 +1,8 @@
 // Role constants sesuai dengan API backend
 export const ROLES = {
+    // Super Admin
+    SUPERADMIN: "SUPERADMIN",
+
     // Lingkup Departemen
     MAHASISWA: "MAHASISWA",
     DOSEN: "DOSEN",
@@ -64,6 +67,7 @@ export function getRoleByEmail(email: string): string {
 
 // Role labels untuk display
 export const ROLE_LABELS: Record<string, string> = {
+    SUPERADMIN: "Super Admin",
     MAHASISWA: "Mahasiswa",
     DOSEN: "Dosen",
     KAPRODI: "Ketua Program Studi",
