@@ -84,7 +84,7 @@ const userFormSchema = baseSchema.superRefine((data, ctx) => {
     }
   }
 
-  if (["KAPRODI", "ADMIN_PRODI", "DOSEN"].includes(data.role)) {
+  if (["KAPRODI", "ADMIN_PRODI", "DOSEN", "KADEP"].includes(data.role)) {
     if (!data.programStudiId) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Program Studi wajib dipilih", path: ["programStudiId"] });
     }
@@ -202,7 +202,7 @@ export function UserFormDialog({
   const showNim = isMahasiswa;
   const showNip = !isMahasiswa && watchedRole !== "" && watchedRole !== "SUPERADMIN";
   const showDepartemen = isDeptLevel;
-  const showProdi = ["MAHASISWA", "DOSEN", "KAPRODI", "ADMIN_PRODI"].includes(watchedRole);
+  const showProdi = ["MAHASISWA", "DOSEN", "KAPRODI", "ADMIN_PRODI", "KADEP"].includes(watchedRole);
 
   const handleSubmit = async (values: UserFormValues) => {
     setIsSubmitting(true);
