@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDraftSurat, SuratTugasTableFormData } from '../../context/draft-surat-context';
 import { ChevronLeft, ChevronRight, Eye, Plus, Trash2 } from 'lucide-react';
 import { suratTugasTableTemplate } from '@/lib/templates/surat-tugas-table';
+import { DatePicker } from "@/components/ui/date-picker";
+import { format as formatDate, parse } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 
 interface SuratTugasTableFormProps {
   initialData?: Partial<SuratTugasTableFormData>;
@@ -26,11 +29,39 @@ export function SuratTugasTableForm({ initialData }: SuratTugasTableFormProps) {
     keterangan: existingData?.keterangan || initialData?.keterangan || '',
     tanggalMulai: existingData?.tanggalMulai || initialData?.tanggalMulai || '',
     tanggalSelesai: existingData?.tanggalSelesai || initialData?.tanggalSelesai || '',
-    namaLabel: existingData?.namaLabel || initialData?.namaLabel || '',
-    nimLabel: existingData?.nimLabel || initialData?.nimLabel || '',
-    prodiLabel: existingData?.prodiLabel || initialData?.prodiLabel || '',
+    namaLabel: existingData?.namaLabel || initialData?.namaLabel || 'Nama',
+    nimLabel: existingData?.nimLabel || initialData?.nimLabel || 'NIM',
+    prodiLabel: existingData?.prodiLabel || initialData?.prodiLabel || 'Prodi',
     customColumns: existingData?.customColumns || initialData?.customColumns || [],
   });
+
+  // Date state for DatePicker components
+  const [tanggalMulaiDate, setTanggalMulaiDate] = useState<Date | undefined>(undefined);
+  const [tanggalSelesaiDate, setTanggalSelesaiDate] = useState<Date | undefined>(undefined);
+
+  // Parse initial dates if available
+  useEffect(() => {
+    if (formValues.tanggalMulai && !tanggalMulaiDate) {
+      try {
+        const parsed = parse(formValues.tanggalMulai, "dd MMMM yyyy", new Date(), { locale: idLocale });
+        if (!isNaN(parsed.getTime())) {
+          setTanggalMulaiDate(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to parse start date:", e);
+      }
+    }
+    if (formValues.tanggalSelesai && !tanggalSelesaiDate) {
+      try {
+        const parsed = parse(formValues.tanggalSelesai, "dd MMMM yyyy", new Date(), { locale: idLocale });
+        if (!isNaN(parsed.getTime())) {
+          setTanggalSelesaiDate(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to parse end date:", e);
+      }
+    }
+  }, []); // Run once on mount
 
   const handleChange = (field: keyof SuratTugasTableFormData, value: string) => {
     setFormValues(prev => ({ ...prev, [field]: value }));
@@ -311,23 +342,31 @@ export function SuratTugasTableForm({ initialData }: SuratTugasTableFormProps) {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="tanggalMulai">Tanggal Mulai</Label>
-                      <Input
-                        id="tanggalMulai"
-                        value={formValues.tanggalMulai}
-                        onChange={(e) => handleChange('tanggalMulai', e.target.value)}
-                        placeholder="1 Agustus 2025"
-                        required
+                      <Label htmlFor="tanggalMulai">Tanggal Mulai <span className="text-red-500">*</span></Label>
+                      <DatePicker
+                        value={tanggalMulaiDate}
+                        onChange={(date) => {
+                          setTanggalMulaiDate(date);
+                          handleChange('tanggalMulai', date ? formatDate(date, "dd MMMM yyyy", { locale: idLocale }) : "");
+                          // Reset tanggal selesai if it's before the new tanggal mulai
+                          if (date && tanggalSelesaiDate && tanggalSelesaiDate < date) {
+                            setTanggalSelesaiDate(undefined);
+                            handleChange("tanggalSelesai", "");
+                          }
+                        }}
+                        placeholder="Pilih tanggal mulai"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="tanggalSelesai">Tanggal Selesai</Label>
-                      <Input
-                        id="tanggalSelesai"
-                        value={formValues.tanggalSelesai}
-                        onChange={(e) => handleChange('tanggalSelesai', e.target.value)}
-                        placeholder="31 Desember 2025"
-                        required
+                      <Label htmlFor="tanggalSelesai">Tanggal Selesai <span className="text-red-500">*</span></Label>
+                      <DatePicker
+                        value={tanggalSelesaiDate}
+                        onChange={(date) => {
+                          setTanggalSelesaiDate(date);
+                          handleChange('tanggalSelesai', date ? formatDate(date, "dd MMMM yyyy", { locale: idLocale }) : "");
+                        }}
+                        placeholder="Pilih tanggal selesai"
+                        fromDate={tanggalMulaiDate}
                       />
                     </div>
                   </div>
