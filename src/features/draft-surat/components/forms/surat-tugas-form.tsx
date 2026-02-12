@@ -1,14 +1,28 @@
 'use client';
 
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { useDraftSurat, SuratTugasFormData } from '../../context/draft-surat-context';
 import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { suratTugasTemplate } from '@/lib/templates/surat-tugas';
+import {
+  suratTugasStaffSchema,
+  type SuratTugasStaffFormData,
+} from '@/lib/validators/surat-tugas-schema';
 
 interface SuratTugasFormProps {
   initialData?: Partial<SuratTugasFormData>;
@@ -21,36 +35,38 @@ export function SuratTugasForm({ initialData }: SuratTugasFormProps) {
   // Use stored form data from context if available, otherwise use initialData prop
   const existingData = state.formData as SuratTugasFormData | null;
 
-  const [formValues, setFormValues] = useState<SuratTugasFormData>({
-    jenisSurat: existingData?.jenisSurat || initialData?.jenisSurat || 'tugas',
-    jenisSuratText: existingData?.jenisSuratText || initialData?.jenisSuratText || 'SURAT TUGAS',
-    nomorSurat: existingData?.nomorSurat || initialData?.nomorSurat || '',
-    namaLengkap: existingData?.namaLengkap || initialData?.namaLengkap || '',
-    nimNip: existingData?.nimNip || initialData?.nimNip || '',
-    programStudi: existingData?.programStudi || initialData?.programStudi || '',
-    keperluan: existingData?.keperluan || initialData?.keperluan || '',
-    judulSurat: existingData?.judulSurat || initialData?.judulSurat || '',
+  // Initialize React Hook Form with Zod validation
+  const form = useForm<SuratTugasStaffFormData>({
+    resolver: zodResolver(suratTugasStaffSchema),
+    mode: 'onChange',
+    defaultValues: {
+      jenisSurat: existingData?.jenisSurat || initialData?.jenisSurat || 'tugas',
+      jenisSuratText: existingData?.jenisSuratText || initialData?.jenisSuratText || 'SURAT TUGAS',
+      nomorSurat: existingData?.nomorSurat || initialData?.nomorSurat || '',
+      namaLengkap: existingData?.namaLengkap || initialData?.namaLengkap || '',
+      nimNip: existingData?.nimNip || initialData?.nimNip || '',
+      programStudi: existingData?.programStudi || initialData?.programStudi || '',
+      keperluan: existingData?.keperluan || initialData?.keperluan || '',
+      judulSurat: existingData?.judulSurat || initialData?.judulSurat || '',
+    },
   });
 
-  const handleChange = (field: keyof SuratTugasFormData, value: string) => {
-    setFormValues(prev => ({ ...prev, [field]: value }));
-  };
+  const formValues = form.watch();
 
   const handleJenisChange = (value: 'tugas' | 'keputusan') => {
-    setFormValues(prev => ({
-      ...prev,
-      jenisSurat: value,
-      jenisSuratText: value === 'tugas' ? 'SURAT TUGAS' : 'SURAT KEPUTUSAN',
-    }));
+    form.setValue('jenisSurat', value);
+    form.setValue(
+      'jenisSuratText',
+      value === 'tugas' ? 'SURAT TUGAS' : 'SURAT KEPUTUSAN'
+    );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormData(formValues);
+  const onSubmit = (data: SuratTugasStaffFormData) => {
+    setFormData(data as SuratTugasFormData);
     nextStep();
   };
 
-  const previewHtml = suratTugasTemplate(formValues);
+  const previewHtml = suratTugasTemplate(formValues as SuratTugasFormData);
 
   return (
     <div className="space-y-6">
@@ -74,113 +90,152 @@ export function SuratTugasForm({ initialData }: SuratTugasFormProps) {
         {/* Form Section */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Data Surat Tugas</CardTitle>
+            <CardTitle className="text-lg">Form Surat Tugas</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="jenisSurat">Jenis Surat</Label>
-                  <Select
-                    value={formValues.jenisSurat}
-                    onValueChange={(value) => handleJenisChange(value as 'tugas' | 'keputusan')}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih jenis surat" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="tugas">Surat Tugas</SelectItem>
-                      <SelectItem value="keputusan">Surat Keputusan</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nomorSurat">Nomor Surat</Label>
-                  <Input
-                    id="nomorSurat"
-                    value={formValues.nomorSurat}
-                    onChange={(e) => handleChange('nomorSurat', e.target.value)}
-                    placeholder="xxx/UN7.F8/TU/2025"
-                    required
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {/* Judul Surat */}
+                <FormField
+                  control={form.control}
+                  name="judulSurat"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Judul Surat <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Masukkan judul surat"
+                          className="bg-white"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Nama Lengkap */}
+                  <FormField
+                    control={form.control}
+                    name="namaLengkap"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Nama Lengkap <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Nama lengkap"
+                            className="bg-white"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* NIM/NIP */}
+                  <FormField
+                    control={form.control}
+                    name="nimNip"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          NIM/NIP <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="NIM (14 digit) atau NIP (18 digit)"
+                            className="bg-white"
+                            maxLength={18}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
-              </div>
 
-              <div className="border-t pt-4 mt-4">
-                <h4 className="font-medium mb-3">Data Yang Ditugaskan</h4>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="namaLengkap">Nama Lengkap</Label>
-                    <Input
-                      id="namaLengkap"
-                      value={formValues.namaLengkap}
-                      onChange={(e) => handleChange('namaLengkap', e.target.value)}
-                      placeholder="Nama lengkap mahasiswa/dosen"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="nimNip">NIM/NIP</Label>
-                      <Input
-                        id="nimNip"
-                        value={formValues.nimNip}
-                        onChange={(e) => handleChange('nimNip', e.target.value)}
-                        placeholder="NIM atau NIP"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="programStudi">Program Studi/Jabatan</Label>
-                      <Input
-                        id="programStudi"
-                        value={formValues.programStudi}
-                        onChange={(e) => handleChange('programStudi', e.target.value)}
-                        placeholder="Informatika/Dosen Departemen..."
-                        required
-                      />
-                    </div>
-                  </div>
+                {/* Program Studi */}
+                <FormField
+                  control={form.control}
+                  name="programStudi"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Program Studi</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Informatika/Dosen Departemen..."
+                          className="bg-white"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Keperluan */}
+                <FormField
+                  control={form.control}
+                  name="keperluan"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Keperluan <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Jelaskan keperluan surat ini"
+                          className="bg-white min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Judul/Topik Kegiatan (opsional) */}
+                <FormField
+                  control={form.control}
+                  name="nomorSurat"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Judul/Topik Kegiatan</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Jelaskan judul atau topik kegiatan"
+                          className="bg-white"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Hidden fields for jenisSurat */}
+                <input type="hidden" {...form.register('jenisSurat')} />
+                <input type="hidden" {...form.register('jenisSuratText')} />
+
+                <div className="flex justify-between pt-4 border-t">
+                  <Button type="button" variant="outline" onClick={prevStep}>
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    Kembali
+                  </Button>
+                  <Button type="submit">
+                    Lanjut
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
                 </div>
-              </div>
-
-              <div className="border-t pt-4 mt-4">
-                <h4 className="font-medium mb-3">Detail Penugasan</h4>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="keperluan">Keperluan Tugas</Label>
-                    <Input
-                      id="keperluan"
-                      value={formValues.keperluan}
-                      onChange={(e) => handleChange('keperluan', e.target.value)}
-                      placeholder="Mengikuti Lomba/Menjadi Panitia/dll"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="judulSurat">Judul/Nama Kegiatan</Label>
-                    <Input
-                      id="judulSurat"
-                      value={formValues.judulSurat}
-                      onChange={(e) => handleChange('judulSurat', e.target.value)}
-                      placeholder="Nama kegiatan atau acara"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-between pt-4 border-t">
-                <Button type="button" variant="outline" onClick={prevStep}>
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  Kembali
-                </Button>
-                <Button type="submit">
-                  Lanjut
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </form>
+              </form>
+            </Form>
           </CardContent>
         </Card>
 

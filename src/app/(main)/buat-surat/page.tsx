@@ -282,6 +282,31 @@ function BuatSuratContent() {
     // This maps to LetterDocument.perihal for dashboard/detail display
     const [perihalInput, setPerihalInput] = useState("");
 
+    // Track which fields have been touched (for showing inline errors)
+    const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+    const markTouched = (field: string) => {
+        setTouchedFields(prev => ({ ...prev, [field]: true }));
+    };
+    const markAllTouched = () => {
+        setTouchedFields({
+            perihalInput: true,
+            namaLengkap: true,
+            nimNip: true,
+            keperluan: true,
+        });
+    };
+    const markAllSKTouched = () => {
+        setTouchedFields({
+            skPerihal: true,
+            skTentang: true,
+            skTanggal: true,
+            skMenimbang: true,
+            skMengingat: true,
+            skMenetapkan: true,
+            skKeputusan: true,
+        });
+    };
+
     // Date state for Surat Tugas Tabel DatePicker components
     const [tanggalMulaiDate, setTanggalMulaiDate] = useState<Date | undefined>(undefined);
     const [tanggalSelesaiDate, setTanggalSelesaiDate] = useState<Date | undefined>(undefined);
@@ -622,6 +647,103 @@ function BuatSuratContent() {
     };
 
     // ========================================================================
+    // VALIDASI SURAT TUGAS (Single)
+    // ========================================================================
+
+    // Validasi Judul Surat (perihalInput) untuk ST - Required
+    const getJudulSuratError = (judul: string): string => {
+        if (!judul || judul.trim() === '') {
+            return 'Judul Surat wajib diisi.';
+        }
+        return '';
+    };
+
+    // Validasi Nama Lengkap - Required
+    const getNamaLengkapError = (nama: string): string => {
+        if (!nama || nama.trim() === '') {
+            return 'Nama Lengkap wajib diisi.';
+        }
+        return '';
+    };
+
+    // Validasi NIM/NIP - Required, hanya angka, harus 14 digit (NIM) atau 18 digit (NIP)
+    const getNimNipError = (nimNip: string): string => {
+        if (!nimNip || nimNip.trim() === '') {
+            return 'NIM/NIP wajib diisi.';
+        }
+        if (!/^\d+$/.test(nimNip.trim())) {
+            return 'NIM/NIP harus berupa angka.';
+        }
+        const len = nimNip.trim().length;
+        if (len !== 14 && len !== 18) {
+            return 'NIM/NIP harus 14 digit (NIM) atau 18 digit (NIP).';
+        }
+        return '';
+    };
+
+    // Validasi Keperluan - Required
+    const getKeperluanError = (keperluan: string): string => {
+        if (!keperluan || keperluan.trim() === '') {
+            return 'Keperluan wajib diisi.';
+        }
+        return '';
+    };
+
+    // Hitung error ST secara langsung dari state
+    const judulSuratError = suratType === "SURAT_TUGAS" ? getJudulSuratError(perihalInput) : '';
+    const namaLengkapError = suratType === "SURAT_TUGAS" ? getNamaLengkapError(suratTugasForm.namaLengkap) : '';
+    const nimNipError = suratType === "SURAT_TUGAS" ? getNimNipError(suratTugasForm.nimNip) : '';
+    const keperluanSTError = suratType === "SURAT_TUGAS" ? getKeperluanError(suratTugasForm.keperluan) : '';
+
+    // ========================================================================
+    // VALIDASI SURAT KEPUTUSAN
+    // ========================================================================
+
+    const getSKPerihalError = (val: string): string => {
+        if (!val || val.trim() === '') return 'Judul Surat wajib diisi.';
+        return '';
+    };
+    const getSKTentangError = (val: string): string => {
+        if (!val || val.trim() === '') return 'Tentang wajib diisi.';
+        return '';
+    };
+    const getSKTanggalError = (val: Date | undefined): string => {
+        if (!val) return 'Tanggal Ditetapkan wajib diisi.';
+        return '';
+    };
+    const getSKMenimbangError = (items: string[]): string => {
+        if (items.filter(m => m.trim()).length === 0) return 'Menimbang wajib diisi (minimal 1 item).';
+        const emptyIdx = items.findIndex(m => !m.trim());
+        if (emptyIdx !== -1 && items.length > 1) return `Item menimbang ${emptyIdx + 1} kosong. Isi atau hapus item tersebut.`;
+        return '';
+    };
+    const getSKMengingatError = (items: string[]): string => {
+        if (items.filter(m => m.trim()).length === 0) return 'Mengingat wajib diisi (minimal 1 item).';
+        const emptyIdx = items.findIndex(m => !m.trim());
+        if (emptyIdx !== -1 && items.length > 1) return `Item mengingat ${emptyIdx + 1} kosong. Isi atau hapus item tersebut.`;
+        return '';
+    };
+    const getSKMenetapkanError = (val: string): string => {
+        if (!val || val.trim() === '') return 'Menetapkan wajib diisi.';
+        return '';
+    };
+    const getSKKeputusanError = (items: KeputusanItem[]): string => {
+        if (items.filter(k => k.content.trim()).length === 0) return 'Keputusan wajib diisi (minimal 1 item).';
+        const emptyItem = items.find(k => !k.content.trim());
+        if (emptyItem && items.length > 1) return `Keputusan ${emptyItem.label || 'item'} kosong. Isi atau hapus item tersebut.`;
+        return '';
+    };
+
+    // Hitung error SK secara langsung dari state
+    const skPerihalError = suratType === "SURAT_KEPUTUSAN" ? getSKPerihalError(perihalInput) : '';
+    const skTentangError = suratType === "SURAT_KEPUTUSAN" ? getSKTentangError(suratKeputusanForm.tentang) : '';
+    const skTanggalError = suratType === "SURAT_KEPUTUSAN" ? getSKTanggalError(suratKeputusanForm.tanggalDitetapkan) : '';
+    const skMenimbangError = suratType === "SURAT_KEPUTUSAN" ? getSKMenimbangError(suratKeputusanForm.menimbang) : '';
+    const skMengingatError = suratType === "SURAT_KEPUTUSAN" ? getSKMengingatError(suratKeputusanForm.mengingat) : '';
+    const skMenetapkanError = suratType === "SURAT_KEPUTUSAN" ? getSKMenetapkanError(suratKeputusanForm.menetapkan) : '';
+    const skKeputusanError = suratType === "SURAT_KEPUTUSAN" ? getSKKeputusanError(suratKeputusanForm.keputusan) : '';
+
+    // ========================================================================
     // VALIDASI SURAT TUGAS TABEL
     // ========================================================================
 
@@ -749,10 +871,26 @@ function BuatSuratContent() {
 
     const validateFormStep = (): boolean => {
         if (suratType === "SURAT_TUGAS") {
-            const required = ["namaLengkap", "nimNip", "keperluan"] as const;
-            const missing = required.filter(field => !suratTugasForm[field].trim());
-            if (missing.length > 0) {
-                toast.error("Lengkapi semua field yang wajib diisi");
+            // Mark all fields as touched to show inline errors
+            markAllTouched();
+            // Validate judul surat
+            if (judulSuratError) {
+                toast.error(judulSuratError);
+                return false;
+            }
+            // Validate nama lengkap
+            if (namaLengkapError) {
+                toast.error(namaLengkapError);
+                return false;
+            }
+            // Validate NIM/NIP
+            if (nimNipError) {
+                toast.error(nimNipError);
+                return false;
+            }
+            // Validate keperluan
+            if (keperluanSTError) {
+                toast.error(keperluanSTError);
                 return false;
             }
         } else if (suratType === "SURAT_TUGAS_TABEL") {
@@ -790,18 +928,14 @@ function BuatSuratContent() {
                 return false;
             }
         } else if (suratType === "SURAT_KEPUTUSAN") {
-            if (!suratKeputusanForm.tentang || !suratKeputusanForm.tanggalDitetapkan) {
-                toast.error("Lengkapi semua field yang wajib diisi");
-                return false;
-            }
-            if (suratKeputusanForm.menimbang.filter(m => m.trim()).length === 0) {
-                toast.error("Tambahkan minimal 1 item menimbang");
-                return false;
-            }
-            if (suratKeputusanForm.keputusan.filter(k => k.content.trim()).length === 0) {
-                toast.error("Tambahkan minimal 1 keputusan");
-                return false;
-            }
+            markAllSKTouched();
+            if (skPerihalError) { toast.error(skPerihalError); return false; }
+            if (skTentangError) { toast.error(skTentangError); return false; }
+            if (skTanggalError) { toast.error(skTanggalError); return false; }
+            if (skMenimbangError) { toast.error(skMenimbangError); return false; }
+            if (skMengingatError) { toast.error(skMengingatError); return false; }
+            if (skMenetapkanError) { toast.error(skMenetapkanError); return false; }
+            if (skKeputusanError) { toast.error(skKeputusanError); return false; }
         }
         return true;
     };
@@ -1071,8 +1205,13 @@ function BuatSuratContent() {
                                             id="perihalInput"
                                             value={perihalInput}
                                             onChange={(e) => setPerihalInput(e.target.value)}
+                                            onBlur={() => markTouched('perihalInput')}
                                             placeholder="Masukkan judul surat"
+                                            className={judulSuratError && touchedFields.perihalInput ? 'border-red-500' : ''}
                                         />
+                                        {judulSuratError && touchedFields.perihalInput && (
+                                            <p className="text-sm text-red-500">{judulSuratError}</p>
+                                        )}
                                     </div>
                                     <Separator />
                                     <div className="grid grid-cols-2 gap-4">
@@ -1082,17 +1221,32 @@ function BuatSuratContent() {
                                                 id="namaLengkap"
                                                 value={suratTugasForm.namaLengkap}
                                                 onChange={(e) => updateSuratTugas("namaLengkap", e.target.value)}
+                                                onBlur={() => markTouched('namaLengkap')}
                                                 placeholder="Nama lengkap"
+                                                className={namaLengkapError && touchedFields.namaLengkap ? 'border-red-500' : ''}
                                             />
+                                            {namaLengkapError && touchedFields.namaLengkap && (
+                                                <p className="text-sm text-red-500">{namaLengkapError}</p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="nimNip">NIM/NIP <span className="text-red-500">*</span></Label>
                                             <Input
                                                 id="nimNip"
                                                 value={suratTugasForm.nimNip}
-                                                onChange={(e) => updateSuratTugas("nimNip", e.target.value)}
-                                                placeholder="NIM atau NIP"
+                                                onChange={(e) => {
+                                                    // Only allow digits
+                                                    const filtered = e.target.value.replace(/\D/g, '');
+                                                    updateSuratTugas("nimNip", filtered);
+                                                }}
+                                                onBlur={() => markTouched('nimNip')}
+                                                placeholder="NIM (14 digit) atau NIP (18 digit)"
+                                                maxLength={18}
+                                                className={nimNipError && touchedFields.nimNip ? 'border-red-500' : ''}
                                             />
+                                            {nimNipError && touchedFields.nimNip && (
+                                                <p className="text-sm text-red-500">{nimNipError}</p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="space-y-2">
@@ -1110,9 +1264,14 @@ function BuatSuratContent() {
                                             id="keperluan"
                                             value={suratTugasForm.keperluan}
                                             onChange={(e) => updateSuratTugas("keperluan", e.target.value)}
+                                            onBlur={() => markTouched('keperluan')}
                                             placeholder="Jelaskan keperluan surat ini"
                                             rows={3}
+                                            className={keperluanSTError && touchedFields.keperluan ? 'border-red-500' : ''}
                                         />
+                                        {keperluanSTError && touchedFields.keperluan && (
+                                            <p className="text-sm text-red-500">{keperluanSTError}</p>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="judulSurat">Judul/Topik Kegiatan</Label>
@@ -1421,38 +1580,51 @@ function BuatSuratContent() {
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="perihalInput">Judul Surat <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="perihalInput" className={touchedFields.skPerihal && skPerihalError ? 'text-red-500' : ''}>Judul Surat <span className="text-red-500">*</span></Label>
                                             <Input
                                                 id="perihalInput"
                                                 value={perihalInput}
                                                 onChange={(e) => setPerihalInput(e.target.value)}
+                                                onBlur={() => markTouched('skPerihal')}
                                                 placeholder="Masukkan judul surat"
+                                                className={touchedFields.skPerihal && skPerihalError ? 'border-red-500' : ''}
                                             />
+                                            {touchedFields.skPerihal && skPerihalError && (
+                                                <p className="text-sm text-red-500">{skPerihalError}</p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="tentang">Tentang <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="tentang" className={touchedFields.skTentang && skTentangError ? 'text-red-500' : ''}>Tentang <span className="text-red-500">*</span></Label>
                                             <Textarea
                                                 id="tentang"
                                                 value={suratKeputusanForm.tentang}
                                                 onChange={(e) => updateSuratKeputusan("tentang", e.target.value)}
+                                                onBlur={() => markTouched('skTentang')}
                                                 placeholder="Isi perihal/tentang keputusan"
                                                 rows={2}
+                                                className={touchedFields.skTentang && skTentangError ? 'border-red-500' : ''}
                                             />
+                                            {touchedFields.skTentang && skTentangError && (
+                                                <p className="text-sm text-red-500">{skTentangError}</p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="tanggalDitetapkan">Tanggal Ditetapkan <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="tanggalDitetapkan" className={touchedFields.skTanggal && skTanggalError ? 'text-red-500' : ''}>Tanggal Ditetapkan <span className="text-red-500">*</span></Label>
                                             <DatePicker
                                                 value={suratKeputusanForm.tanggalDitetapkan}
-                                                onChange={(date) => updateSuratKeputusan("tanggalDitetapkan", date)}
+                                                onChange={(date) => { updateSuratKeputusan("tanggalDitetapkan", date); markTouched('skTanggal'); }}
                                                 placeholder="Pilih tanggal ditetapkan"
                                             />
+                                            {touchedFields.skTanggal && skTanggalError && (
+                                                <p className="text-sm text-red-500">{skTanggalError}</p>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Menimbang</CardTitle>
+                                        <CardTitle className={`text-lg ${touchedFields.skMenimbang && skMenimbangError ? 'text-red-500' : ''}`}>Menimbang <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.menimbang.map((item, index) => (
@@ -1460,9 +1632,10 @@ function BuatSuratContent() {
                                                 <Textarea
                                                     value={item}
                                                     onChange={(e) => updateMenimbang(index, e.target.value)}
+                                                    onBlur={() => markTouched('skMenimbang')}
                                                     placeholder={`Item menimbang ${index + 1}`}
                                                     rows={2}
-                                                    className="flex-1"
+                                                    className={`flex-1 ${touchedFields.skMenimbang && !item.trim() ? 'border-red-500' : ''}`}
                                                 />
                                                 {suratKeputusanForm.menimbang.length > 1 && (
                                                     <Button
@@ -1476,6 +1649,9 @@ function BuatSuratContent() {
                                                 )}
                                             </div>
                                         ))}
+                                        {touchedFields.skMenimbang && skMenimbangError && (
+                                            <p className="text-sm text-red-500">{skMenimbangError}</p>
+                                        )}
                                         <Button variant="outline" onClick={addMenimbang} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah Item Menimbang
@@ -1485,7 +1661,7 @@ function BuatSuratContent() {
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Mengingat</CardTitle>
+                                        <CardTitle className={`text-lg ${touchedFields.skMengingat && skMengingatError ? 'text-red-500' : ''}`}>Mengingat <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.mengingat.map((item, index) => (
@@ -1493,9 +1669,10 @@ function BuatSuratContent() {
                                                 <Textarea
                                                     value={item}
                                                     onChange={(e) => updateMengingat(index, e.target.value)}
+                                                    onBlur={() => markTouched('skMengingat')}
                                                     placeholder={`Item mengingat ${index + 1}`}
                                                     rows={2}
-                                                    className="flex-1"
+                                                    className={`flex-1 ${touchedFields.skMengingat && !item.trim() ? 'border-red-500' : ''}`}
                                                 />
                                                 {suratKeputusanForm.mengingat.length > 1 && (
                                                     <Button
@@ -1509,6 +1686,9 @@ function BuatSuratContent() {
                                                 )}
                                             </div>
                                         ))}
+                                        {touchedFields.skMengingat && skMengingatError && (
+                                            <p className="text-sm text-red-500">{skMengingatError}</p>
+                                        )}
                                         <Button variant="outline" onClick={addMengingat} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah Item Mengingat
@@ -1518,21 +1698,26 @@ function BuatSuratContent() {
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Menetapkan</CardTitle>
+                                        <CardTitle className={`text-lg ${touchedFields.skMenetapkan && skMenetapkanError ? 'text-red-500' : ''}`}>Menetapkan <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <Textarea
                                             value={suratKeputusanForm.menetapkan}
                                             onChange={(e) => updateSuratKeputusan("menetapkan", e.target.value)}
+                                            onBlur={() => markTouched('skMenetapkan')}
                                             placeholder="Isi bagian menetapkan"
                                             rows={3}
+                                            className={touchedFields.skMenetapkan && skMenetapkanError ? 'border-red-500' : ''}
                                         />
+                                        {touchedFields.skMenetapkan && skMenetapkanError && (
+                                            <p className="text-sm text-red-500 mt-2">{skMenetapkanError}</p>
+                                        )}
                                     </CardContent>
                                 </Card>
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Keputusan</CardTitle>
+                                        <CardTitle className={`text-lg ${touchedFields.skKeputusan && skKeputusanError ? 'text-red-500' : ''}`}>Keputusan <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         {suratKeputusanForm.keputusan.map((k) => (
@@ -1558,11 +1743,16 @@ function BuatSuratContent() {
                                                 <Textarea
                                                     value={k.content}
                                                     onChange={(e) => updateKeputusan(k.key, "content", e.target.value)}
+                                                    onBlur={() => markTouched('skKeputusan')}
                                                     placeholder="Isi keputusan"
                                                     rows={3}
+                                                    className={touchedFields.skKeputusan && !k.content.trim() ? 'border-red-500' : ''}
                                                 />
                                             </div>
                                         ))}
+                                        {touchedFields.skKeputusan && skKeputusanError && (
+                                            <p className="text-sm text-red-500">{skKeputusanError}</p>
+                                        )}
                                         <Button variant="outline" onClick={addKeputusan} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah Keputusan

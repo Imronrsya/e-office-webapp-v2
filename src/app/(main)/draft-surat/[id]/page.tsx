@@ -375,6 +375,31 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // This maps to LetterDocument.perihal for dashboard/detail display
     const [perihalInput, setPerihalInput] = useState("");
 
+    // Track which Surat Tugas fields have been touched (for showing inline errors)
+    const [stTouchedFields, setStTouchedFields] = useState<Record<string, boolean>>({});
+    const markStTouched = (field: string) => {
+        setStTouchedFields(prev => ({ ...prev, [field]: true }));
+    };
+    const markAllStTouched = () => {
+        setStTouchedFields({
+            perihalInput: true,
+            namaLengkap: true,
+            nimNip: true,
+            keperluan: true,
+        });
+    };
+    const markAllSKTouched = () => {
+        setStTouchedFields({
+            skPerihal: true,
+            skTentang: true,
+            skTanggal: true,
+            skMenimbang: true,
+            skMengingat: true,
+            skMenetapkan: true,
+            skKeputusan: true,
+        });
+    };
+
     // Date picker state for Surat Pengantar (separate from form string state)
     const [tanggalSuratDate, setTanggalSuratDate] = useState<Date | undefined>(undefined);
     const [tanggalMulaiDate, setTanggalMulaiDate] = useState<Date | undefined>(undefined);
@@ -1034,6 +1059,65 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const nimError = isPengajuMahasiswa ? getNIMError(suratPengantarForm.nimMahasiswa) : '';
     const nipErrorSuratTugas = !isPengajuMahasiswa ? getNIPError(suratTugasForm.nimNip) : '';
     const nimErrorSuratTugas = isPengajuMahasiswa ? getNIMError(suratTugasForm.nimNip) : '';
+    // Error NIM/NIP Surat Tugas berdasarkan role pengaju
+    const nimNipSTError = isPengajuMahasiswa ? nimErrorSuratTugas : nipErrorSuratTugas;
+
+    // Validasi perihalInput (Judul Surat) untuk Surat Tugas — Required
+    const getPerihalSTError = (val: string): string => {
+        if (!val || val.trim() === '') {
+            return 'Judul Surat wajib diisi.';
+        }
+        return '';
+    };
+    const perihalSTError = suratType === "SURAT_TUGAS" ? getPerihalSTError(perihalInput) : '';
+
+    // ========================================================================
+    // VALIDASI SURAT KEPUTUSAN
+    // ========================================================================
+
+    const getSKPerihalError = (val: string): string => {
+        if (!val || val.trim() === '') return 'Judul Surat wajib diisi.';
+        return '';
+    };
+    const getSKTentangError = (val: string): string => {
+        if (!val || val.trim() === '') return 'Tentang wajib diisi.';
+        return '';
+    };
+    const getSKTanggalError = (val: Date | undefined): string => {
+        if (!val) return 'Tanggal Ditetapkan wajib diisi.';
+        return '';
+    };
+    const getSKMenimbangError = (items: string[]): string => {
+        if (items.filter(m => m.trim()).length === 0) return 'Menimbang wajib diisi (minimal 1 item).';
+        const emptyIdx = items.findIndex(m => !m.trim());
+        if (emptyIdx !== -1 && items.length > 1) return `Item menimbang ${emptyIdx + 1} kosong. Isi atau hapus item tersebut.`;
+        return '';
+    };
+    const getSKMengingatError = (items: string[]): string => {
+        if (items.filter(m => m.trim()).length === 0) return 'Mengingat wajib diisi (minimal 1 item).';
+        const emptyIdx = items.findIndex(m => !m.trim());
+        if (emptyIdx !== -1 && items.length > 1) return `Item mengingat ${emptyIdx + 1} kosong. Isi atau hapus item tersebut.`;
+        return '';
+    };
+    const getSKMenetapkanError = (val: string): string => {
+        if (!val || val.trim() === '') return 'Menetapkan wajib diisi.';
+        return '';
+    };
+    const getSKKeputusanError = (items: KeputusanItem[]): string => {
+        if (items.filter(k => k.content.trim()).length === 0) return 'Keputusan wajib diisi (minimal 1 item).';
+        const emptyItem = items.find(k => !k.content.trim());
+        if (emptyItem && items.length > 1) return `Keputusan ${emptyItem.label || 'item'} kosong. Isi atau hapus item tersebut.`;
+        return '';
+    };
+
+    // Hitung error SK secara langsung dari state
+    const skPerihalError = suratType === "SURAT_KEPUTUSAN" ? getSKPerihalError(perihalInput) : '';
+    const skTentangError = suratType === "SURAT_KEPUTUSAN" ? getSKTentangError(suratKeputusanForm.tentang) : '';
+    const skTanggalError = suratType === "SURAT_KEPUTUSAN" ? getSKTanggalError(suratKeputusanForm.tanggalDitetapkan) : '';
+    const skMenimbangError = suratType === "SURAT_KEPUTUSAN" ? getSKMenimbangError(suratKeputusanForm.menimbang) : '';
+    const skMengingatError = suratType === "SURAT_KEPUTUSAN" ? getSKMengingatError(suratKeputusanForm.mengingat) : '';
+    const skMenetapkanError = suratType === "SURAT_KEPUTUSAN" ? getSKMenetapkanError(suratKeputusanForm.menetapkan) : '';
+    const skKeputusanError = suratType === "SURAT_KEPUTUSAN" ? getSKKeputusanError(suratKeputusanForm.keputusan) : '';
 
     // Hitung error Nama secara langsung dari state
     const namaError = getNamaError(suratPengantarForm.namaMahasiswa, isPengajuMahasiswa ? 'Nama Mahasiswa' : 'Nama Dosen');
@@ -1683,11 +1767,26 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 return false;
             }
         } else if (suratType === "SURAT_TUGAS") {
-            // Removed tanggalSurat from required - will be assigned by UPA
-            const required = ["namaLengkap", "nimNip", "keperluan"] as const;
-            const missing = required.filter(field => !suratTugasForm[field].trim());
-            if (missing.length > 0) {
-                toast.error("Lengkapi semua field yang wajib diisi");
+            // Mark all ST fields as touched to show inline errors
+            markAllStTouched();
+            // Validate judul surat (perihalInput)
+            if (perihalSTError) {
+                toast.error(perihalSTError);
+                return false;
+            }
+            // Validate nama lengkap
+            if (namaErrorSuratTugas) {
+                toast.error(namaErrorSuratTugas);
+                return false;
+            }
+            // Validate NIM/NIP
+            if (nimNipSTError) {
+                toast.error(nimNipSTError);
+                return false;
+            }
+            // Validate keperluan
+            if (keperluanErrorSuratTugas) {
+                toast.error(keperluanErrorSuratTugas);
                 return false;
             }
         } else if (suratType === "SURAT_TUGAS_TABEL") {
@@ -1725,18 +1824,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 return false;
             }
         } else if (suratType === "SURAT_KEPUTUSAN") {
-            if (!suratKeputusanForm.tentang || !suratKeputusanForm.tanggalDitetapkan) {
-                toast.error("Lengkapi semua field yang wajib diisi");
-                return false;
-            }
-            if (suratKeputusanForm.menimbang.filter(m => m.trim()).length === 0) {
-                toast.error("Tambahkan minimal 1 item menimbang");
-                return false;
-            }
-            if (suratKeputusanForm.keputusan.filter(k => k.content.trim()).length === 0) {
-                toast.error("Tambahkan minimal 1 keputusan");
-                return false;
-            }
+            markAllSKTouched();
+            if (skPerihalError) { toast.error(skPerihalError); return false; }
+            if (skTentangError) { toast.error(skTentangError); return false; }
+            if (skTanggalError) { toast.error(skTanggalError); return false; }
+            if (skMenimbangError) { toast.error(skMenimbangError); return false; }
+            if (skMengingatError) { toast.error(skMengingatError); return false; }
+            if (skMenetapkanError) { toast.error(skMenetapkanError); return false; }
+            if (skKeputusanError) { toast.error(skKeputusanError); return false; }
         }
         return true;
     };
@@ -2558,8 +2653,20 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             id="perihalInput"
                                             value={perihalInput}
                                             onChange={(e) => setPerihalInput(e.target.value)}
+                                            onBlur={() => markStTouched('perihalInput')}
                                             placeholder="Masukkan judul surat untuk ditampilkan di dashboard"
+                                            className={perihalSTError && stTouchedFields.perihalInput ? "border-red-500 focus-visible:ring-red-500" : ""}
                                         />
+                                        {perihalSTError && stTouchedFields.perihalInput && (
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {perihalSTError}
+                                            </p>
+                                        )}
+                                        {!perihalSTError && perihalInput && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Judul Surat valid
+                                            </p>
+                                        )}
                                     </div>
                                     <Separator />
                                     <div className="grid grid-cols-2 gap-4">
@@ -2569,10 +2676,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 id="namaLengkap"
                                                 value={suratTugasForm.namaLengkap}
                                                 onChange={(e) => updateSuratTugas("namaLengkap", e.target.value)}
+                                                onBlur={() => markStTouched('namaLengkap')}
                                                 placeholder="Nama lengkap"
-                                                className={namaErrorSuratTugas ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                                className={namaErrorSuratTugas && stTouchedFields.namaLengkap ? "border-red-500 focus-visible:ring-red-500" : ""}
                                             />
-                                            {namaErrorSuratTugas && (
+                                            {namaErrorSuratTugas && stTouchedFields.namaLengkap && (
                                                 <p className="text-sm text-red-500 flex items-center gap-1">
                                                     <span className="font-medium">⚠</span> {namaErrorSuratTugas}
                                                 </p>
@@ -2588,30 +2696,24 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             <Input
                                                 id="nimNip"
                                                 value={suratTugasForm.nimNip}
-                                                onChange={(e) => updateSuratTugas("nimNip", e.target.value)}
-                                                placeholder={isPengajuMahasiswa ? "24060122xxxxxx" : "198501152010121001"}
-                                                className={(isPengajuMahasiswa && nimErrorSuratTugas) || (!isPengajuMahasiswa && nipErrorSuratTugas) ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                                onChange={(e) => {
+                                                    // Only allow digits
+                                                    const filtered = e.target.value.replace(/\D/g, '');
+                                                    updateSuratTugas("nimNip", filtered);
+                                                }}
+                                                onBlur={() => markStTouched('nimNip')}
+                                                placeholder={isPengajuMahasiswa ? "14 digit angka" : "18 digit angka"}
+                                                maxLength={isPengajuMahasiswa ? 14 : 18}
+                                                className={nimNipSTError && stTouchedFields.nimNip ? "border-red-500 focus-visible:ring-red-500" : ""}
                                             />
-                                            {/* Validasi NIM untuk Mahasiswa */}
-                                            {isPengajuMahasiswa && nimErrorSuratTugas && (
+                                            {nimNipSTError && stTouchedFields.nimNip && (
                                                 <p className="text-sm text-red-500 flex items-center gap-1">
-                                                    <span className="font-medium">⚠</span> {nimErrorSuratTugas}
+                                                    <span className="font-medium">⚠</span> {nimNipSTError}
                                                 </p>
                                             )}
-                                            {isPengajuMahasiswa && !nimErrorSuratTugas && suratTugasForm.nimNip && (
+                                            {!nimNipSTError && suratTugasForm.nimNip && (
                                                 <p className="text-sm text-green-600 flex items-center gap-1">
-                                                    <span>✓</span> NIM valid
-                                                </p>
-                                            )}
-                                            {/* Validasi NIP untuk Dosen */}
-                                            {!isPengajuMahasiswa && nipErrorSuratTugas && (
-                                                <p className="text-sm text-red-500 flex items-center gap-1">
-                                                    <span className="font-medium">⚠</span> {nipErrorSuratTugas}
-                                                </p>
-                                            )}
-                                            {!isPengajuMahasiswa && !nipErrorSuratTugas && suratTugasForm.nimNip && (
-                                                <p className="text-sm text-green-600 flex items-center gap-1">
-                                                    <span>✓</span> NIP valid
+                                                    <span>✓</span> {isPengajuMahasiswa ? 'NIM' : 'NIP'} valid
                                                 </p>
                                             )}
                                         </div>
@@ -2631,11 +2733,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             id="keperluan"
                                             value={suratTugasForm.keperluan}
                                             onChange={(e) => updateSuratTugas("keperluan", e.target.value)}
+                                            onBlur={() => markStTouched('keperluan')}
                                             placeholder="Jelaskan keperluan surat ini"
                                             rows={3}
-                                            className={keperluanErrorSuratTugas ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                            className={keperluanErrorSuratTugas && stTouchedFields.keperluan ? "border-red-500 focus-visible:ring-red-500" : ""}
                                         />
-                                        {keperluanErrorSuratTugas && (
+                                        {keperluanErrorSuratTugas && stTouchedFields.keperluan && (
                                             <p className="text-sm text-red-500 flex items-center gap-1">
                                                 <span className="font-medium">⚠</span> {keperluanErrorSuratTugas}
                                             </p>
@@ -2935,38 +3038,51 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="perihalInput">Judul Surat <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="perihalInput" className={stTouchedFields.skPerihal && skPerihalError ? 'text-red-500' : ''}>Judul Surat <span className="text-red-500">*</span></Label>
                                             <Input
                                                 id="perihalInput"
                                                 value={perihalInput}
                                                 onChange={(e) => setPerihalInput(e.target.value)}
+                                                onBlur={() => markStTouched('skPerihal')}
                                                 placeholder="Masukkan judul surat untuk ditampilkan di dashboard"
+                                                className={stTouchedFields.skPerihal && skPerihalError ? 'border-red-500' : ''}
                                             />
+                                            {stTouchedFields.skPerihal && skPerihalError && (
+                                                <p className="text-sm text-red-500">{skPerihalError}</p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="tentang">Tentang <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="tentang" className={stTouchedFields.skTentang && skTentangError ? 'text-red-500' : ''}>Tentang <span className="text-red-500">*</span></Label>
                                             <Textarea
                                                 id="tentang"
                                                 value={suratKeputusanForm.tentang}
                                                 onChange={(e) => updateSuratKeputusan("tentang", e.target.value)}
+                                                onBlur={() => markStTouched('skTentang')}
                                                 placeholder="Isi perihal/tentang keputusan"
                                                 rows={2}
+                                                className={stTouchedFields.skTentang && skTentangError ? 'border-red-500' : ''}
                                             />
+                                            {stTouchedFields.skTentang && skTentangError && (
+                                                <p className="text-sm text-red-500">{skTentangError}</p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="tanggalDitetapkan">Tanggal Ditetapkan <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="tanggalDitetapkan" className={stTouchedFields.skTanggal && skTanggalError ? 'text-red-500' : ''}>Tanggal Ditetapkan <span className="text-red-500">*</span></Label>
                                             <DatePicker
                                                 value={suratKeputusanForm.tanggalDitetapkan}
-                                                onChange={(date) => setSuratKeputusanForm(prev => ({ ...prev, tanggalDitetapkan: date }))}
+                                                onChange={(date) => { setSuratKeputusanForm(prev => ({ ...prev, tanggalDitetapkan: date })); markStTouched('skTanggal'); }}
                                                 placeholder="Pilih tanggal ditetapkan"
                                             />
+                                            {stTouchedFields.skTanggal && skTanggalError && (
+                                                <p className="text-sm text-red-500">{skTanggalError}</p>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Menimbang</CardTitle>
+                                        <CardTitle className={`text-lg ${stTouchedFields.skMenimbang && skMenimbangError ? 'text-red-500' : ''}`}>Menimbang <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.menimbang.map((item, index) => (
@@ -2974,9 +3090,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 <Textarea
                                                     value={item}
                                                     onChange={(e) => updateMenimbang(index, e.target.value)}
+                                                    onBlur={() => markStTouched('skMenimbang')}
                                                     placeholder={`Item menimbang ${index + 1}`}
                                                     rows={2}
-                                                    className="flex-1"
+                                                    className={`flex-1 ${stTouchedFields.skMenimbang && !item.trim() ? 'border-red-500' : ''}`}
                                                 />
                                                 {suratKeputusanForm.menimbang.length > 1 && (
                                                     <Button
@@ -2990,6 +3107,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 )}
                                             </div>
                                         ))}
+                                        {stTouchedFields.skMenimbang && skMenimbangError && (
+                                            <p className="text-sm text-red-500">{skMenimbangError}</p>
+                                        )}
                                         <Button variant="outline" onClick={addMenimbang} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah Item Menimbang
@@ -2999,7 +3119,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Mengingat</CardTitle>
+                                        <CardTitle className={`text-lg ${stTouchedFields.skMengingat && skMengingatError ? 'text-red-500' : ''}`}>Mengingat <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.mengingat.map((item, index) => (
@@ -3007,9 +3127,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 <Textarea
                                                     value={item}
                                                     onChange={(e) => updateMengingat(index, e.target.value)}
+                                                    onBlur={() => markStTouched('skMengingat')}
                                                     placeholder={`Item mengingat ${index + 1}`}
                                                     rows={2}
-                                                    className="flex-1"
+                                                    className={`flex-1 ${stTouchedFields.skMengingat && !item.trim() ? 'border-red-500' : ''}`}
                                                 />
                                                 {suratKeputusanForm.mengingat.length > 1 && (
                                                     <Button
@@ -3023,6 +3144,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 )}
                                             </div>
                                         ))}
+                                        {stTouchedFields.skMengingat && skMengingatError && (
+                                            <p className="text-sm text-red-500">{skMengingatError}</p>
+                                        )}
                                         <Button variant="outline" onClick={addMengingat} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah Item Mengingat
@@ -3032,21 +3156,26 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Menetapkan</CardTitle>
+                                        <CardTitle className={`text-lg ${stTouchedFields.skMenetapkan && skMenetapkanError ? 'text-red-500' : ''}`}>Menetapkan <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <Textarea
                                             value={suratKeputusanForm.menetapkan}
                                             onChange={(e) => updateSuratKeputusan("menetapkan", e.target.value)}
+                                            onBlur={() => markStTouched('skMenetapkan')}
                                             placeholder="Isi bagian menetapkan"
                                             rows={3}
+                                            className={stTouchedFields.skMenetapkan && skMenetapkanError ? 'border-red-500' : ''}
                                         />
+                                        {stTouchedFields.skMenetapkan && skMenetapkanError && (
+                                            <p className="text-sm text-red-500 mt-2">{skMenetapkanError}</p>
+                                        )}
                                     </CardContent>
                                 </Card>
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Keputusan</CardTitle>
+                                        <CardTitle className={`text-lg ${stTouchedFields.skKeputusan && skKeputusanError ? 'text-red-500' : ''}`}>Keputusan <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         {suratKeputusanForm.keputusan.map((k) => (
@@ -3072,11 +3201,16 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 <Textarea
                                                     value={k.content}
                                                     onChange={(e) => updateKeputusan(k.key, "content", e.target.value)}
+                                                    onBlur={() => markStTouched('skKeputusan')}
                                                     placeholder="Isi keputusan"
                                                     rows={3}
+                                                    className={stTouchedFields.skKeputusan && !k.content.trim() ? 'border-red-500' : ''}
                                                 />
                                             </div>
                                         ))}
+                                        {stTouchedFields.skKeputusan && skKeputusanError && (
+                                            <p className="text-sm text-red-500">{skKeputusanError}</p>
+                                        )}
                                         <Button variant="outline" onClick={addKeputusan} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah Keputusan
