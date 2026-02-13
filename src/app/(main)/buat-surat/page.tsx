@@ -293,6 +293,8 @@ function BuatSuratContent() {
             namaLengkap: true,
             nimNip: true,
             keperluan: true,
+            programStudi: true,
+            judulTopik: true,
         });
     };
     const markAllSKTouched = () => {
@@ -695,6 +697,24 @@ function BuatSuratContent() {
     const nimNipError = suratType === "SURAT_TUGAS" ? getNimNipError(suratTugasForm.nimNip) : '';
     const keperluanSTError = suratType === "SURAT_TUGAS" ? getKeperluanError(suratTugasForm.keperluan) : '';
 
+    // Validasi Program Studi - Required
+    const getProgramStudiSTError = (prodi: string): string => {
+        if (!prodi || prodi.trim() === '') {
+            return 'Program Studi wajib diisi.';
+        }
+        return '';
+    };
+    const programStudiSTError = suratType === "SURAT_TUGAS" ? getProgramStudiSTError(suratTugasForm.programStudi) : '';
+
+    // Validasi Judul/Topik Kegiatan - Required
+    const getJudulTopikError = (judul: string): string => {
+        if (!judul || judul.trim() === '') {
+            return 'Judul/Topik Kegiatan wajib diisi.';
+        }
+        return '';
+    };
+    const judulTopikError = suratType === "SURAT_TUGAS" ? getJudulTopikError(suratTugasForm.judulSurat) : '';
+
     // ========================================================================
     // VALIDASI SURAT KEPUTUSAN
     // ========================================================================
@@ -753,8 +773,8 @@ function BuatSuratContent() {
             return 'Judul Surat harus diisi!';
         }
         
-        if (judul.trim().length < 10) {
-            return `Judul Surat minimal 10 karakter (saat ini: ${judul.trim().length} karakter)`;
+        if (judul.trim().length < 5) {
+            return `Judul Surat minimal 5 karakter (saat ini: ${judul.trim().length} karakter)`;
         }
         
         if (judul.length > 255) {
@@ -796,6 +816,17 @@ function BuatSuratContent() {
 
     // Hitung error Keperluan Tabel secara langsung dari state
     const keperluanTabelError = suratType === "SURAT_TUGAS_TABEL" ? getKeperluanTabelError(suratTugasTabelForm.keperluan) : '';
+
+    // Fungsi validasi Judul/Topik Kegiatan untuk ST Tabel - Required
+    const getJudulTopikTabelError = (judul: string): string => {
+        if (!judul || judul.trim() === '') {
+            return 'Judul/Topik Kegiatan wajib diisi.';
+        }
+        return '';
+    };
+
+    // Hitung error Judul/Topik Kegiatan Tabel
+    const judulTopikTabelError = suratType === "SURAT_TUGAS_TABEL" ? getJudulTopikTabelError(suratTugasTabelForm.judulSurat) : '';
 
     // Hitung error Tanggal untuk ST Tabel (menggunakan Date object)
     const tanggalMulaiTabelError = suratType === "SURAT_TUGAS_TABEL" && !tanggalMulaiDate ? 'Tanggal Mulai harus diisi!' : '';
@@ -888,9 +919,19 @@ function BuatSuratContent() {
                 toast.error(nimNipError);
                 return false;
             }
+            // Validate program studi
+            if (programStudiSTError) {
+                toast.error(programStudiSTError);
+                return false;
+            }
             // Validate keperluan
             if (keperluanSTError) {
                 toast.error(keperluanSTError);
+                return false;
+            }
+            // Validate judul/topik kegiatan
+            if (judulTopikError) {
+                toast.error(judulTopikError);
                 return false;
             }
         } else if (suratType === "SURAT_TUGAS_TABEL") {
@@ -902,6 +943,11 @@ function BuatSuratContent() {
             // Validate keperluan
             if (keperluanTabelError) {
                 toast.error(keperluanTabelError);
+                return false;
+            }
+            // Validate judul/topik kegiatan
+            if (judulTopikTabelError) {
+                toast.error(judulTopikTabelError);
                 return false;
             }
             // Validate tanggal
@@ -1250,13 +1296,18 @@ function BuatSuratContent() {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="programStudi">Program Studi</Label>
+                                        <Label htmlFor="programStudi">Program Studi <span className="text-red-500">*</span></Label>
                                         <Input
                                             id="programStudi"
                                             value={suratTugasForm.programStudi}
                                             onChange={(e) => updateSuratTugas("programStudi", e.target.value)}
+                                            onBlur={() => markTouched('programStudi')}
                                             placeholder="Informatika"
+                                            className={programStudiSTError && touchedFields.programStudi ? 'border-red-500' : ''}
                                         />
+                                        {programStudiSTError && touchedFields.programStudi && (
+                                            <p className="text-sm text-red-500">{programStudiSTError}</p>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="keperluan">Keperluan <span className="text-red-500">*</span></Label>
@@ -1274,7 +1325,7 @@ function BuatSuratContent() {
                                         )}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="judulSurat">Judul/Topik Kegiatan</Label>
+                                        <Label htmlFor="judulSurat">Judul/Topik Kegiatan <span className="text-red-500">*</span></Label>
                                         <Input
                                             id="judulSurat"
                                             value={suratTugasForm.judulSurat}
@@ -1283,8 +1334,13 @@ function BuatSuratContent() {
                                                 const filtered = e.target.value.replace(/[\r\n]/g, '');
                                                 updateSuratTugas("judulSurat", filtered);
                                             }}
+                                            onBlur={() => markTouched('judulTopik')}
                                             placeholder="Jelaskan judul atau topik kegiatan"
+                                            className={judulTopikError && touchedFields.judulTopik ? 'border-red-500' : ''}
                                         />
+                                        {judulTopikError && touchedFields.judulTopik && (
+                                            <p className="text-sm text-red-500">{judulTopikError}</p>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -1341,7 +1397,7 @@ function BuatSuratContent() {
                                             )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="judulSurat">Judul/Topik Kegiatan</Label>
+                                            <Label htmlFor="judulSurat">Judul/Topik Kegiatan <span className="text-red-500">*</span></Label>
                                             <Input
                                                 id="judulSurat"
                                                 value={suratTugasTabelForm.judulSurat}
@@ -1351,7 +1407,18 @@ function BuatSuratContent() {
                                                     updateSuratTugasTabel("judulSurat", filtered);
                                                 }}
                                                 placeholder="Jelaskan judul atau topik kegiatan"
+                                                className={judulTopikTabelError ? 'border-red-500' : ''}
                                             />
+                                            {judulTopikTabelError && (
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {judulTopikTabelError}
+                                                </p>
+                                            )}
+                                            {!judulTopikTabelError && suratTugasTabelForm.judulSurat && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Judul/Topik Kegiatan valid
+                                                </p>
+                                            )}
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
