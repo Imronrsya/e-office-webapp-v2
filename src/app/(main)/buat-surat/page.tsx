@@ -890,19 +890,29 @@ function BuatSuratContent() {
 
     // Fungsi untuk mendapatkan semua error pelaksana
     const getPelaksanaErrors = (pelaksana: typeof suratTugasTabelForm.pelaksana) => {
-        return pelaksana.map(p => ({
-            key: p.key,
-            namaError: getNamaPelaksanaError(p.nama),
-            nimError: getNimPelaksanaError(p.nim),
-            prodiError: getProdiPelaksanaError(p.prodi)
-        }));
+        return pelaksana.map(p => {
+            // Validate custom columns
+            const customErrors: Record<string, string> = {};
+            suratTugasTabelForm.customColumns.forEach(col => {
+                if (!p[col.key] || p[col.key].trim() === '') {
+                    customErrors[col.key] = `${col.label || 'Kolom'} harus diisi!`;
+                }
+            });
+            return {
+                key: p.key,
+                namaError: getNamaPelaksanaError(p.nama),
+                nimError: getNimPelaksanaError(p.nim),
+                prodiError: getProdiPelaksanaError(p.prodi),
+                customErrors,
+            };
+        });
     };
 
     // Hitung error pelaksana
     const pelaksanaErrors = suratType === "SURAT_TUGAS_TABEL" ? getPelaksanaErrors(suratTugasTabelForm.pelaksana) : [];
 
     // Cek apakah ada error di pelaksana
-    const hasPelaksanaError = pelaksanaErrors.some(e => e.namaError || e.nimError || e.prodiError);
+    const hasPelaksanaError = pelaksanaErrors.some(e => e.namaError || e.nimError || e.prodiError || Object.keys(e.customErrors).length > 0);
 
     // ========================================================================
     // VALIDATION
@@ -974,9 +984,9 @@ function BuatSuratContent() {
             // Validate each pelaksana dengan detail
             if (hasPelaksanaError) {
                 // Cari error pertama untuk ditampilkan
-                const firstError = pelaksanaErrors.find(e => e.namaError || e.nimError || e.prodiError);
+                const firstError = pelaksanaErrors.find(e => e.namaError || e.nimError || e.prodiError || Object.keys(e.customErrors).length > 0);
                 if (firstError) {
-                    const errorMsg = firstError.namaError || firstError.nimError || firstError.prodiError;
+                    const errorMsg = firstError.namaError || firstError.nimError || firstError.prodiError || Object.values(firstError.customErrors)[0];
                     toast.error(`Data Pelaksana: ${errorMsg}`);
                 }
                 return false;
@@ -1658,13 +1668,17 @@ function BuatSuratContent() {
                                                                 )}
                                                             </div>
                                                             {suratTugasTabelForm.customColumns.map((col) => (
-                                                                <Input
-                                                                    key={col.key}
-                                                                    value={p[col.key] || ""}
-                                                                    onChange={(e) => updatePelaksana(p.key, col.key, e.target.value)}
-                                                                    placeholder={col.label || "..."}
-                                                                    className="h-9"
-                                                                />
+                                                                <div key={col.key} className="space-y-1">
+                                                                    <Input
+                                                                        value={p[col.key] || ""}
+                                                                        onChange={(e) => updatePelaksana(p.key, col.key, e.target.value)}
+                                                                        placeholder={col.label || "..."}
+                                                                        className={`h-9 ${errors?.customErrors[col.key] ? 'border-red-500' : ''}`}
+                                                                    />
+                                                                    {errors?.customErrors[col.key] && (
+                                                                        <p className="text-xs text-red-500">{errors.customErrors[col.key]}</p>
+                                                                    )}
+                                                                </div>
                                                             ))}
                                                             {suratTugasTabelForm.pelaksana.length > 1 && (
                                                                 <Button
