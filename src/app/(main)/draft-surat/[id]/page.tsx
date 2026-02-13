@@ -172,6 +172,9 @@ interface SuratTugasTabelForm {
     judulSurat: string;
     pelaksana: PelaksanaItem[];
     customColumns: CustomColumn[];  // Custom columns for table
+    namaLabel: string;   // Label kolom Nama
+    nimLabel: string;    // Label kolom NIM/NIP
+    prodiLabel: string;  // Label kolom Prodi
 }
 
 interface SuratKeputusanForm {
@@ -360,6 +363,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         judulSurat: "",
         pelaksana: [],
         customColumns: [],
+        namaLabel: "Nama",
+        nimLabel: "NIM",
+        prodiLabel: "Prodi",
     });
 
     const [suratKeputusanForm, setSuratKeputusanForm] = useState<SuratKeputusanForm>({
@@ -403,6 +409,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Date picker state for Surat Pengantar (separate from form string state)
     const [tanggalSuratDate, setTanggalSuratDate] = useState<Date | undefined>(undefined);
     const [tanggalMulaiDate, setTanggalMulaiDate] = useState<Date | undefined>(undefined);
+    // Date picker state for Surat Tugas Tabel
+    const [tanggalMulaiTabelDate, setTanggalMulaiTabelDate] = useState<Date | undefined>(undefined);
+    const [tanggalSelesaiTabelDate, setTanggalSelesaiTabelDate] = useState<Date | undefined>(undefined);
 
     // Nomor surat validation state for Surat Pengantar
     const [nomorSuratStatus, setNomorSuratStatus] = useState<{
@@ -723,15 +732,26 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     const content = existingDoc.content as Record<string, unknown>;
                     const existingPelaksana = (content.pelaksana as Array<Record<string, string>>) || [];
                     const existingCustomColumns = (content.customColumns as Array<{ key: string; label: string }>) || [];
+                    // Parse tanggal for DatePicker
+                    const tabelTanggalMulai = (content.tanggalMulai as string) || "";
+                    const tabelTanggalSelesai = (content.tanggalSelesai as string) || "";
+                    const parsedTabelMulai = parseToDate(tabelTanggalMulai);
+                    const parsedTabelSelesai = parseToDate(tabelTanggalSelesai);
+                    if (parsedTabelMulai) setTanggalMulaiTabelDate(parsedTabelMulai);
+                    if (parsedTabelSelesai) setTanggalSelesaiTabelDate(parsedTabelSelesai);
+
                     setSuratTugasTabelForm(prev => ({
                         ...prev,
                         jenisSuratText: (content.jenisSuratText as string) || "SURAT TUGAS",
                         tanggalSurat: (content.tanggalSurat as string) || "",
-                        tanggalMulai: (content.tanggalMulai as string) || "",
-                        tanggalSelesai: (content.tanggalSelesai as string) || "",
+                        tanggalMulai: parsedTabelMulai ? formatTanggalIndonesia(parsedTabelMulai) : tabelTanggalMulai,
+                        tanggalSelesai: parsedTabelSelesai ? formatTanggalIndonesia(parsedTabelSelesai) : tabelTanggalSelesai,
                         keperluan: (content.keperluan as string) || detail.submissionValues.keperluan || "",
                         judulSurat: (content.judulSurat as string) || detail.submissionValues.judulAcara || "",
                         customColumns: existingCustomColumns,
+                        namaLabel: (content.namaLabel as string) || "Nama",
+                        nimLabel: (content.nimLabel as string) || (pengajuIsMahasiswa ? "NIM" : "NIP"),
+                        prodiLabel: (content.prodiLabel as string) || "Prodi",
                         pelaksana: existingPelaksana.map((p, index) => ({
                             key: String(index + 1),
                             nama: p.nama || "",
@@ -747,6 +767,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         keperluan: detail.submissionValues.keperluan || "",
                         judulSurat: detail.submissionValues.judulAcara || "",
                         customColumns: [],
+                        namaLabel: "Nama",
+                        nimLabel: pengajuIsMahasiswa ? "NIM" : "NIP",
+                        prodiLabel: "Prodi",
                         pelaksana: [{
                             key: "1",
                             nama: detail.submissionValues.nama || "",
@@ -1367,71 +1390,62 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     };
     const judulTopikTabelError = suratType === "SURAT_TUGAS_TABEL" ? getJudulTopikTabelError(suratTugasTabelForm.judulSurat) : '';
 
-    // Fungsi validasi Tanggal Selesai - tidak boleh sebelum Tanggal Mulai
-    const getTanggalSelesaiError = (tanggalMulai: string, tanggalSelesai: string): string => {
-        if (!tanggalSelesai) {
-            return 'Tanggal Selesai harus diisi!';
-        }
-        
-        if (!tanggalMulai) {
-            return ''; // Tanggal mulai belum diisi, skip perbandingan
-        }
-        
-        // Bandingkan tanggal (format: YYYY-MM-DD dari input type date)
-        const startDate = new Date(tanggalMulai);
-        const endDate = new Date(tanggalSelesai);
-        
-        if (endDate < startDate) {
-            return 'Tanggal Selesai tidak boleh sebelum Tanggal Mulai!';
-        }
-        
-        return '';
-    };
-
-    // Hitung error Tanggal untuk ST Tabel
-    const tanggalMulaiTabelError = suratType === "SURAT_TUGAS_TABEL" && !suratTugasTabelForm.tanggalMulai ? 'Tanggal Mulai harus diisi!' : '';
-    const tanggalSelesaiTabelError = suratType === "SURAT_TUGAS_TABEL" ? getTanggalSelesaiError(suratTugasTabelForm.tanggalMulai, suratTugasTabelForm.tanggalSelesai) : '';
+    // Hitung error Tanggal untuk ST Tabel (menggunakan Date object)
+    const tanggalMulaiTabelError = suratType === "SURAT_TUGAS_TABEL" && !tanggalMulaiTabelDate ? 'Tanggal Mulai harus diisi!' : '';
+    const tanggalSelesaiTabelError = suratType === "SURAT_TUGAS_TABEL" && !tanggalSelesaiTabelDate
+        ? 'Tanggal Selesai harus diisi!'
+        : (suratType === "SURAT_TUGAS_TABEL" && tanggalMulaiTabelDate && tanggalSelesaiTabelDate && tanggalSelesaiTabelDate < tanggalMulaiTabelDate
+            ? 'Tanggal Selesai tidak boleh sebelum Tanggal Mulai!'
+            : '');
 
     // ========================================================================
     // VALIDASI DATA PELAKSANA (ST TABEL)
     // ========================================================================
 
     // Fungsi validasi Nama Pelaksana - Min 2, Max 100, tidak boleh ada angka
-    const getNamaPelaksanaError = (nama: string): string => {
+    const getNamaPelaksanaError = (nama: string, label?: string): string => {
+        const fieldName = label || suratTugasTabelForm.namaLabel || 'Nama';
         if (!nama || nama.trim() === '') {
-            return 'Nama harus diisi!';
+            return `${fieldName} harus diisi!`;
         }
         if (nama.trim().length < 2) {
-            return `Nama minimal 2 karakter`;
+            return `${fieldName} minimal 2 karakter`;
         }
         if (nama.length > 100) {
-            return `Nama maksimal 100 karakter`;
+            return `${fieldName} maksimal 100 karakter`;
         }
         // Tidak boleh ada angka
         if (/\d/.test(nama)) {
-            return 'Nama tidak boleh mengandung angka!';
+            return `${fieldName} tidak boleh mengandung angka!`;
         }
         return '';
     };
 
-    // Fungsi validasi NIM Pelaksana - harus 14 digit angka
-    const getNimPelaksanaError = (nim: string): string => {
+    // Fungsi validasi NIM/NIP Pelaksana - wajib diisi, hanya angka, 14 digit (NIM) / 18 digit (NIP)
+    const getNimPelaksanaError = (nim: string, label?: string): string => {
+        const fieldName = label || suratTugasTabelForm.nimLabel || 'NIM';
+        const isNIP = fieldName.toUpperCase() === 'NIP';
+        const requiredLength = isNIP ? 18 : 14;
         if (!nim || nim.trim() === '') {
-            return 'NIM harus diisi!';
+            return `${fieldName} harus diisi!`;
         }
-        if (!/^\d{14}$/.test(nim.trim())) {
-            return 'NIM harus 14 digit angka!';
+        if (!/^\d+$/.test(nim.trim())) {
+            return `${fieldName} harus berupa angka!`;
+        }
+        if (nim.trim().length !== requiredLength) {
+            return `${fieldName} harus tepat ${requiredLength} karakter (saat ini: ${nim.trim().length} karakter)`;
         }
         return '';
     };
 
     // Fungsi validasi Prodi Pelaksana - Min 5 karakter
-    const getProdiPelaksanaError = (prodi: string): string => {
+    const getProdiPelaksanaError = (prodi: string, label?: string): string => {
+        const fieldName = label || suratTugasTabelForm.prodiLabel || 'Prodi';
         if (!prodi || prodi.trim() === '') {
-            return 'Prodi harus diisi!';
+            return `${fieldName} harus diisi!`;
         }
         if (prodi.trim().length < 5) {
-            return `Prodi minimal 5 karakter`;
+            return `${fieldName} minimal 5 karakter`;
         }
         return '';
     };
@@ -2948,19 +2962,25 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label htmlFor="tanggalMulai">Tanggal Mulai <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    id="tanggalMulai"
-                                                    type="date"
-                                                    value={suratTugasTabelForm.tanggalMulai}
-                                                    onChange={(e) => updateSuratTugasTabel("tanggalMulai", e.target.value)}
-                                                    className={tanggalMulaiTabelError ? 'border-red-500' : ''}
+                                                <DatePicker
+                                                    value={tanggalMulaiTabelDate}
+                                                    onChange={(date) => {
+                                                        setTanggalMulaiTabelDate(date);
+                                                        updateSuratTugasTabel("tanggalMulai", date ? formatDate(date, "dd MMMM yyyy", { locale: idLocale }) : "");
+                                                        // Reset tanggal selesai if it's before the new tanggal mulai
+                                                        if (date && tanggalSelesaiTabelDate && tanggalSelesaiTabelDate < date) {
+                                                            setTanggalSelesaiTabelDate(undefined);
+                                                            updateSuratTugasTabel("tanggalSelesai", "");
+                                                        }
+                                                    }}
+                                                    placeholder="Pilih tanggal mulai"
                                                 />
                                                 {tanggalMulaiTabelError && (
                                                     <p className="text-sm text-red-500 flex items-center gap-1">
                                                         <span className="font-medium">⚠</span> {tanggalMulaiTabelError}
                                                     </p>
                                                 )}
-                                                {!tanggalMulaiTabelError && suratTugasTabelForm.tanggalMulai && (
+                                                {!tanggalMulaiTabelError && tanggalMulaiTabelDate && (
                                                     <p className="text-sm text-green-600 flex items-center gap-1">
                                                         <span>✓</span> Tanggal Mulai valid
                                                     </p>
@@ -2968,19 +2988,22 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="tanggalSelesai">Tanggal Selesai <span className="text-red-500">*</span></Label>
-                                                <Input
-                                                    id="tanggalSelesai"
-                                                    type="date"
-                                                    value={suratTugasTabelForm.tanggalSelesai}
-                                                    onChange={(e) => updateSuratTugasTabel("tanggalSelesai", e.target.value)}
-                                                    className={tanggalSelesaiTabelError ? 'border-red-500' : ''}
+                                                <DatePicker
+                                                    value={tanggalSelesaiTabelDate}
+                                                    onChange={(date) => {
+                                                        setTanggalSelesaiTabelDate(date);
+                                                        updateSuratTugasTabel("tanggalSelesai", date ? formatDate(date, "dd MMMM yyyy", { locale: idLocale }) : "");
+                                                    }}
+                                                    placeholder={tanggalMulaiTabelDate ? "Pilih tanggal selesai" : "Isi tanggal mulai terlebih dahulu"}
+                                                    fromDate={tanggalMulaiTabelDate}
+                                                    disabled={!tanggalMulaiTabelDate}
                                                 />
                                                 {tanggalSelesaiTabelError && (
                                                     <p className="text-sm text-red-500 flex items-center gap-1">
                                                         <span className="font-medium">⚠</span> {tanggalSelesaiTabelError}
                                                     </p>
                                                 )}
-                                                {!tanggalSelesaiTabelError && suratTugasTabelForm.tanggalSelesai && (
+                                                {!tanggalSelesaiTabelError && tanggalSelesaiTabelDate && (
                                                     <p className="text-sm text-green-600 flex items-center gap-1">
                                                         <span>✓</span> Tanggal Selesai valid
                                                     </p>
@@ -3040,9 +3063,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                     gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px`
                                                 }}>
                                                     <div className="text-xs font-medium text-center">No</div>
-                                                    <div className="text-xs font-medium">Nama <span className="text-red-500">*</span></div>
-                                                    <div className="text-xs font-medium">NIM <span className="text-red-500">*</span></div>
-                                                    <div className="text-xs font-medium">Prodi <span className="text-red-500">*</span></div>
+                                                    <div className="text-xs font-medium">{suratTugasTabelForm.namaLabel || 'Nama'} <span className="text-red-500">*</span></div>
+                                                    <div className="text-xs font-medium">{suratTugasTabelForm.nimLabel || 'NIM'} <span className="text-red-500">*</span></div>
+                                                    <div className="text-xs font-medium">{suratTugasTabelForm.prodiLabel || 'Prodi'} <span className="text-red-500">*</span></div>
                                                     {suratTugasTabelForm.customColumns.map((col) => (
                                                         <div key={col.key} className="text-xs font-medium">{col.label || "(Belum diberi nama)"}</div>
                                                     ))}
@@ -3066,7 +3089,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                                 <Input
                                                                     value={p.nama}
                                                                     onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
-                                                                    placeholder="Nama"
+                                                                    placeholder={suratTugasTabelForm.namaLabel || "Nama"}
                                                                     className={`h-9 ${errors?.namaError ? 'border-red-500' : ''}`}
                                                                 />
                                                                 {errors?.namaError && (
@@ -3076,8 +3099,12 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                             <div className="space-y-1">
                                                                 <Input
                                                                     value={p.nim}
-                                                                    onChange={(e) => updatePelaksana(p.key, "nim", e.target.value)}
-                                                                    placeholder="NIM"
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value.replace(/\D/g, '');
+                                                                        updatePelaksana(p.key, "nim", val);
+                                                                    }}
+                                                                    placeholder={suratTugasTabelForm.nimLabel || "NIM"}
+                                                                    maxLength={suratTugasTabelForm.nimLabel?.toUpperCase() === 'NIP' ? 18 : 14}
                                                                     className={`h-9 ${errors?.nimError ? 'border-red-500' : ''}`}
                                                                 />
                                                                 {errors?.nimError && (
@@ -3088,7 +3115,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                                 <Input
                                                                     value={p.prodi}
                                                                     onChange={(e) => updatePelaksana(p.key, "prodi", e.target.value)}
-                                                                    placeholder="Prodi"
+                                                                    placeholder={suratTugasTabelForm.prodiLabel || "Prodi"}
                                                                     className={`h-9 ${errors?.prodiError ? 'border-red-500' : ''}`}
                                                                 />
                                                                 {errors?.prodiError && (
@@ -3143,7 +3170,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="perihalInput" className={stTouchedFields.skPerihal && skPerihalError ? 'text-red-500' : ''}>Judul Surat <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="perihalInput">Judul Surat <span className="text-red-500">*</span></Label>
                                             <Input
                                                 id="perihalInput"
                                                 value={perihalInput}
@@ -3153,11 +3180,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 className={stTouchedFields.skPerihal && skPerihalError ? 'border-red-500' : ''}
                                             />
                                             {stTouchedFields.skPerihal && skPerihalError && (
-                                                <p className="text-sm text-red-500">{skPerihalError}</p>
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {skPerihalError}
+                                                </p>
+                                            )}
+                                            {!skPerihalError && perihalInput && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Judul Surat valid
+                                                </p>
                                             )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="tentang" className={stTouchedFields.skTentang && skTentangError ? 'text-red-500' : ''}>Tentang <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="tentang">Tentang <span className="text-red-500">*</span></Label>
                                             <Textarea
                                                 id="tentang"
                                                 value={suratKeputusanForm.tentang}
@@ -3168,18 +3202,32 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 className={stTouchedFields.skTentang && skTentangError ? 'border-red-500' : ''}
                                             />
                                             {stTouchedFields.skTentang && skTentangError && (
-                                                <p className="text-sm text-red-500">{skTentangError}</p>
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {skTentangError}
+                                                </p>
+                                            )}
+                                            {!skTentangError && suratKeputusanForm.tentang && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Tentang valid
+                                                </p>
                                             )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="tanggalDitetapkan" className={stTouchedFields.skTanggal && skTanggalError ? 'text-red-500' : ''}>Tanggal Ditetapkan <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="tanggalDitetapkan">Tanggal Ditetapkan <span className="text-red-500">*</span></Label>
                                             <DatePicker
                                                 value={suratKeputusanForm.tanggalDitetapkan}
                                                 onChange={(date) => { setSuratKeputusanForm(prev => ({ ...prev, tanggalDitetapkan: date })); markStTouched('skTanggal'); }}
                                                 placeholder="Pilih tanggal ditetapkan"
                                             />
                                             {stTouchedFields.skTanggal && skTanggalError && (
-                                                <p className="text-sm text-red-500">{skTanggalError}</p>
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {skTanggalError}
+                                                </p>
+                                            )}
+                                            {!skTanggalError && suratKeputusanForm.tanggalDitetapkan && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Tanggal Ditetapkan valid
+                                                </p>
                                             )}
                                         </div>
                                     </CardContent>
@@ -3187,7 +3235,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className={`text-lg ${stTouchedFields.skMenimbang && skMenimbangError ? 'text-red-500' : ''}`}>Menimbang <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg">Menimbang <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.menimbang.map((item, index) => (
@@ -3213,7 +3261,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             </div>
                                         ))}
                                         {stTouchedFields.skMenimbang && skMenimbangError && (
-                                            <p className="text-sm text-red-500">{skMenimbangError}</p>
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {skMenimbangError}
+                                            </p>
+                                        )}
+                                        {!skMenimbangError && suratKeputusanForm.menimbang.some(m => m.trim()) && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Menimbang valid
+                                            </p>
                                         )}
                                         <Button variant="outline" onClick={addMenimbang} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
@@ -3224,7 +3279,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className={`text-lg ${stTouchedFields.skMengingat && skMengingatError ? 'text-red-500' : ''}`}>Mengingat <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg">Mengingat <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.mengingat.map((item, index) => (
@@ -3250,7 +3305,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             </div>
                                         ))}
                                         {stTouchedFields.skMengingat && skMengingatError && (
-                                            <p className="text-sm text-red-500">{skMengingatError}</p>
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {skMengingatError}
+                                            </p>
+                                        )}
+                                        {!skMengingatError && suratKeputusanForm.mengingat.some(m => m.trim()) && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Mengingat valid
+                                            </p>
                                         )}
                                         <Button variant="outline" onClick={addMengingat} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
@@ -3261,7 +3323,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className={`text-lg ${stTouchedFields.skMenetapkan && skMenetapkanError ? 'text-red-500' : ''}`}>Menetapkan <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg">Menetapkan <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <Textarea
@@ -3273,14 +3335,21 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             className={stTouchedFields.skMenetapkan && skMenetapkanError ? 'border-red-500' : ''}
                                         />
                                         {stTouchedFields.skMenetapkan && skMenetapkanError && (
-                                            <p className="text-sm text-red-500 mt-2">{skMenetapkanError}</p>
+                                            <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {skMenetapkanError}
+                                            </p>
+                                        )}
+                                        {!skMenetapkanError && suratKeputusanForm.menetapkan && (
+                                            <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                                                <span>✓</span> Menetapkan valid
+                                            </p>
                                         )}
                                     </CardContent>
                                 </Card>
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className={`text-lg ${stTouchedFields.skKeputusan && skKeputusanError ? 'text-red-500' : ''}`}>Keputusan <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg">Keputusan <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         {suratKeputusanForm.keputusan.map((k) => (
@@ -3314,7 +3383,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             </div>
                                         ))}
                                         {stTouchedFields.skKeputusan && skKeputusanError && (
-                                            <p className="text-sm text-red-500">{skKeputusanError}</p>
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {skKeputusanError}
+                                            </p>
+                                        )}
+                                        {!skKeputusanError && suratKeputusanForm.keputusan.some(k => k.content.trim()) && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Keputusan valid
+                                            </p>
                                         )}
                                         <Button variant="outline" onClick={addKeputusan} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />

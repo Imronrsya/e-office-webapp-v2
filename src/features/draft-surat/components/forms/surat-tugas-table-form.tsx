@@ -293,8 +293,12 @@ export function SuratTugasTableForm({ initialData }: SuratTugasTableFormProps) {
                         />
                         <Input
                           value={mhs.nim}
-                          onChange={(e) => handleMahasiswaChange(index, 'nim', e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            handleMahasiswaChange(index, 'nim', val);
+                          }}
                           placeholder={formValues.nimLabel || "NIM"}
+                          maxLength={formValues.nimLabel?.toUpperCase() === 'NIP' ? 18 : 14}
                           required
                         />
                         <Input

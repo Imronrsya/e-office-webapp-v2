@@ -841,41 +841,49 @@ function BuatSuratContent() {
     // ========================================================================
 
     // Fungsi validasi Nama Pelaksana - Min 2, Max 100, tidak boleh ada angka
-    const getNamaPelaksanaError = (nama: string): string => {
+    const getNamaPelaksanaError = (nama: string, label?: string): string => {
+        const fieldName = label || suratTugasTabelForm.namaLabel || 'Nama';
         if (!nama || nama.trim() === '') {
-            return 'Nama harus diisi!';
+            return `${fieldName} harus diisi!`;
         }
         if (nama.trim().length < 2) {
-            return `Nama minimal 2 karakter`;
+            return `${fieldName} minimal 2 karakter`;
         }
         if (nama.length > 100) {
-            return `Nama maksimal 100 karakter`;
+            return `${fieldName} maksimal 100 karakter`;
         }
         // Tidak boleh ada angka
         if (/\d/.test(nama)) {
-            return 'Nama tidak boleh mengandung angka!';
+            return `${fieldName} tidak boleh mengandung angka!`;
         }
         return '';
     };
 
-    // Fungsi validasi NIM Pelaksana - harus 14 digit angka
-    const getNimPelaksanaError = (nim: string): string => {
+    // Fungsi validasi NIM/NIP Pelaksana - wajib diisi, hanya angka, 14 digit (NIM) / 18 digit (NIP)
+    const getNimPelaksanaError = (nim: string, label?: string): string => {
+        const fieldName = label || suratTugasTabelForm.nimLabel || 'NIM';
+        const isNIP = fieldName.toUpperCase() === 'NIP';
+        const requiredLength = isNIP ? 18 : 14;
         if (!nim || nim.trim() === '') {
-            return 'NIM harus diisi!';
+            return `${fieldName} harus diisi!`;
         }
-        if (!/^\d{14}$/.test(nim.trim())) {
-            return 'NIM harus 14 digit angka!';
+        if (!/^\d+$/.test(nim.trim())) {
+            return `${fieldName} harus berupa angka!`;
+        }
+        if (nim.trim().length !== requiredLength) {
+            return `${fieldName} harus tepat ${requiredLength} karakter (saat ini: ${nim.trim().length} karakter)`;
         }
         return '';
     };
 
     // Fungsi validasi Prodi Pelaksana - Min 5 karakter
-    const getProdiPelaksanaError = (prodi: string): string => {
+    const getProdiPelaksanaError = (prodi: string, label?: string): string => {
+        const fieldName = label || suratTugasTabelForm.prodiLabel || 'Prodi';
         if (!prodi || prodi.trim() === '') {
-            return 'Prodi harus diisi!';
+            return `${fieldName} harus diisi!`;
         }
         if (prodi.trim().length < 5) {
-            return `Prodi minimal 5 karakter`;
+            return `${fieldName} minimal 5 karakter`;
         }
         return '';
     };
@@ -1256,7 +1264,14 @@ function BuatSuratContent() {
                                             className={judulSuratError && touchedFields.perihalInput ? 'border-red-500' : ''}
                                         />
                                         {judulSuratError && touchedFields.perihalInput && (
-                                            <p className="text-sm text-red-500">{judulSuratError}</p>
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {judulSuratError}
+                                            </p>
+                                        )}
+                                        {!judulSuratError && perihalInput && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Judul Surat valid
+                                            </p>
                                         )}
                                     </div>
                                     <Separator />
@@ -1272,7 +1287,14 @@ function BuatSuratContent() {
                                                 className={namaLengkapError && touchedFields.namaLengkap ? 'border-red-500' : ''}
                                             />
                                             {namaLengkapError && touchedFields.namaLengkap && (
-                                                <p className="text-sm text-red-500">{namaLengkapError}</p>
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {namaLengkapError}
+                                                </p>
+                                            )}
+                                            {!namaLengkapError && suratTugasForm.namaLengkap && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Nama Lengkap valid
+                                                </p>
                                             )}
                                         </div>
                                         <div className="space-y-2">
@@ -1291,7 +1313,14 @@ function BuatSuratContent() {
                                                 className={nimNipError && touchedFields.nimNip ? 'border-red-500' : ''}
                                             />
                                             {nimNipError && touchedFields.nimNip && (
-                                                <p className="text-sm text-red-500">{nimNipError}</p>
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {nimNipError}
+                                                </p>
+                                            )}
+                                            {!nimNipError && suratTugasForm.nimNip && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> NIM valid
+                                                </p>
                                             )}
                                         </div>
                                     </div>
@@ -1306,7 +1335,14 @@ function BuatSuratContent() {
                                             className={programStudiSTError && touchedFields.programStudi ? 'border-red-500' : ''}
                                         />
                                         {programStudiSTError && touchedFields.programStudi && (
-                                            <p className="text-sm text-red-500">{programStudiSTError}</p>
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {programStudiSTError}
+                                            </p>
+                                        )}
+                                        {!programStudiSTError && suratTugasForm.programStudi && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Program Studi valid
+                                            </p>
                                         )}
                                     </div>
                                     <div className="space-y-2">
@@ -1321,7 +1357,14 @@ function BuatSuratContent() {
                                             className={keperluanSTError && touchedFields.keperluan ? 'border-red-500' : ''}
                                         />
                                         {keperluanSTError && touchedFields.keperluan && (
-                                            <p className="text-sm text-red-500">{keperluanSTError}</p>
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {keperluanSTError}
+                                            </p>
+                                        )}
+                                        {!keperluanSTError && suratTugasForm.keperluan && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Keperluan valid
+                                            </p>
                                         )}
                                     </div>
                                     <div className="space-y-2">
@@ -1339,7 +1382,14 @@ function BuatSuratContent() {
                                             className={judulTopikError && touchedFields.judulTopik ? 'border-red-500' : ''}
                                         />
                                         {judulTopikError && touchedFields.judulTopik && (
-                                            <p className="text-sm text-red-500">{judulTopikError}</p>
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {judulTopikError}
+                                            </p>
+                                        )}
+                                        {!judulTopikError && suratTugasForm.judulSurat && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Judul/Topik Kegiatan valid
+                                            </p>
                                         )}
                                     </div>
                                 </CardContent>
@@ -1455,8 +1505,9 @@ function BuatSuratContent() {
                                                         setTanggalSelesaiDate(date);
                                                         updateSuratTugasTabel("tanggalSelesai", date ? formatDate(date, "dd MMMM yyyy", { locale: idLocale }) : "");
                                                     }}
-                                                    placeholder="Pilih tanggal selesai"
+                                                    placeholder={tanggalMulaiDate ? "Pilih tanggal selesai" : "Isi tanggal mulai terlebih dahulu"}
                                                     fromDate={tanggalMulaiDate}
+                                                    disabled={!tanggalMulaiDate}
                                                 />
                                                 {tanggalSelesaiTabelError && (
                                                     <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1583,8 +1634,12 @@ function BuatSuratContent() {
                                                             <div className="space-y-1">
                                                                 <Input
                                                                     value={p.nim}
-                                                                    onChange={(e) => updatePelaksana(p.key, "nim", e.target.value)}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value.replace(/\D/g, '');
+                                                                        updatePelaksana(p.key, "nim", val);
+                                                                    }}
                                                                     placeholder={suratTugasTabelForm.nimLabel || "NIM"}
+                                                                    maxLength={suratTugasTabelForm.nimLabel?.toUpperCase() === 'NIP' ? 18 : 14}
                                                                     className={`h-9 ${errors?.nimError ? 'border-red-500' : ''}`}
                                                                 />
                                                                 {errors?.nimError && (
@@ -1647,7 +1702,7 @@ function BuatSuratContent() {
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="perihalInput" className={touchedFields.skPerihal && skPerihalError ? 'text-red-500' : ''}>Judul Surat <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="perihalInput">Judul Surat <span className="text-red-500">*</span></Label>
                                             <Input
                                                 id="perihalInput"
                                                 value={perihalInput}
@@ -1657,11 +1712,18 @@ function BuatSuratContent() {
                                                 className={touchedFields.skPerihal && skPerihalError ? 'border-red-500' : ''}
                                             />
                                             {touchedFields.skPerihal && skPerihalError && (
-                                                <p className="text-sm text-red-500">{skPerihalError}</p>
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {skPerihalError}
+                                                </p>
+                                            )}
+                                            {!skPerihalError && perihalInput && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Judul Surat valid
+                                                </p>
                                             )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="tentang" className={touchedFields.skTentang && skTentangError ? 'text-red-500' : ''}>Tentang <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="tentang">Tentang <span className="text-red-500">*</span></Label>
                                             <Textarea
                                                 id="tentang"
                                                 value={suratKeputusanForm.tentang}
@@ -1672,18 +1734,32 @@ function BuatSuratContent() {
                                                 className={touchedFields.skTentang && skTentangError ? 'border-red-500' : ''}
                                             />
                                             {touchedFields.skTentang && skTentangError && (
-                                                <p className="text-sm text-red-500">{skTentangError}</p>
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {skTentangError}
+                                                </p>
+                                            )}
+                                            {!skTentangError && suratKeputusanForm.tentang && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Tentang valid
+                                                </p>
                                             )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="tanggalDitetapkan" className={touchedFields.skTanggal && skTanggalError ? 'text-red-500' : ''}>Tanggal Ditetapkan <span className="text-red-500">*</span></Label>
+                                            <Label htmlFor="tanggalDitetapkan">Tanggal Ditetapkan <span className="text-red-500">*</span></Label>
                                             <DatePicker
                                                 value={suratKeputusanForm.tanggalDitetapkan}
                                                 onChange={(date) => { updateSuratKeputusan("tanggalDitetapkan", date); markTouched('skTanggal'); }}
                                                 placeholder="Pilih tanggal ditetapkan"
                                             />
                                             {touchedFields.skTanggal && skTanggalError && (
-                                                <p className="text-sm text-red-500">{skTanggalError}</p>
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <span className="font-medium">⚠</span> {skTanggalError}
+                                                </p>
+                                            )}
+                                            {!skTanggalError && suratKeputusanForm.tanggalDitetapkan && (
+                                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                                    <span>✓</span> Tanggal Ditetapkan valid
+                                                </p>
                                             )}
                                         </div>
                                     </CardContent>
@@ -1691,7 +1767,7 @@ function BuatSuratContent() {
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className={`text-lg ${touchedFields.skMenimbang && skMenimbangError ? 'text-red-500' : ''}`}>Menimbang <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg">Menimbang <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.menimbang.map((item, index) => (
@@ -1717,7 +1793,14 @@ function BuatSuratContent() {
                                             </div>
                                         ))}
                                         {touchedFields.skMenimbang && skMenimbangError && (
-                                            <p className="text-sm text-red-500">{skMenimbangError}</p>
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {skMenimbangError}
+                                            </p>
+                                        )}
+                                        {!skMenimbangError && suratKeputusanForm.menimbang.some(m => m.trim()) && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Menimbang valid
+                                            </p>
                                         )}
                                         <Button variant="outline" onClick={addMenimbang} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
@@ -1728,7 +1811,7 @@ function BuatSuratContent() {
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className={`text-lg ${touchedFields.skMengingat && skMengingatError ? 'text-red-500' : ''}`}>Mengingat <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg">Mengingat <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.mengingat.map((item, index) => (
@@ -1754,7 +1837,14 @@ function BuatSuratContent() {
                                             </div>
                                         ))}
                                         {touchedFields.skMengingat && skMengingatError && (
-                                            <p className="text-sm text-red-500">{skMengingatError}</p>
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {skMengingatError}
+                                            </p>
+                                        )}
+                                        {!skMengingatError && suratKeputusanForm.mengingat.some(m => m.trim()) && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Mengingat valid
+                                            </p>
                                         )}
                                         <Button variant="outline" onClick={addMengingat} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
@@ -1765,7 +1855,7 @@ function BuatSuratContent() {
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className={`text-lg ${touchedFields.skMenetapkan && skMenetapkanError ? 'text-red-500' : ''}`}>Menetapkan <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg">Menetapkan <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <Textarea
@@ -1777,14 +1867,21 @@ function BuatSuratContent() {
                                             className={touchedFields.skMenetapkan && skMenetapkanError ? 'border-red-500' : ''}
                                         />
                                         {touchedFields.skMenetapkan && skMenetapkanError && (
-                                            <p className="text-sm text-red-500 mt-2">{skMenetapkanError}</p>
+                                            <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {skMenetapkanError}
+                                            </p>
+                                        )}
+                                        {!skMenetapkanError && suratKeputusanForm.menetapkan && (
+                                            <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                                                <span>✓</span> Menetapkan valid
+                                            </p>
                                         )}
                                     </CardContent>
                                 </Card>
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className={`text-lg ${touchedFields.skKeputusan && skKeputusanError ? 'text-red-500' : ''}`}>Keputusan <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg">Keputusan <span className="text-red-500">*</span></CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         {suratKeputusanForm.keputusan.map((k) => (
@@ -1818,7 +1915,14 @@ function BuatSuratContent() {
                                             </div>
                                         ))}
                                         {touchedFields.skKeputusan && skKeputusanError && (
-                                            <p className="text-sm text-red-500">{skKeputusanError}</p>
+                                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                                <span className="font-medium">⚠</span> {skKeputusanError}
+                                            </p>
+                                        )}
+                                        {!skKeputusanError && suratKeputusanForm.keputusan.some(k => k.content.trim()) && (
+                                            <p className="text-sm text-green-600 flex items-center gap-1">
+                                                <span>✓</span> Keputusan valid
+                                            </p>
                                         )}
                                         <Button variant="outline" onClick={addKeputusan} className="w-full">
                                             <Plus className="w-4 h-4 mr-2" />
