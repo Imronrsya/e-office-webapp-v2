@@ -17,15 +17,13 @@ const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/jpg"];
 export function SignatureUpload({ onSignatureChange }: SignatureUploadProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = (file: File) => {
     // Validate file type
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      toast.error("Format file tidak didukung. Gunakan PNG atau JPEG.");
+      toast.error("Format file tidak didukung. Gunakan PNG atau JPG.");
       return;
     }
 
@@ -44,6 +42,28 @@ export function SignatureUpload({ onSignatureChange }: SignatureUploadProps) {
       onSignatureChange(dataUrl);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
   };
 
   const clearFile = () => {
@@ -86,15 +106,21 @@ export function SignatureUpload({ onSignatureChange }: SignatureUploadProps) {
         ) : (
           <label
             htmlFor="signature-upload"
-            className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-zinc-300 rounded-lg cursor-pointer hover:border-zinc-400 hover:bg-zinc-50 transition-colors"
+            className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isDragging
+              ? "border-blue-500 bg-blue-50"
+              : "border-zinc-300 hover:border-zinc-400 hover:bg-zinc-50"
+              }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           >
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <Upload className="w-10 h-10 mb-3 text-zinc-400" />
-              <p className="mb-2 text-sm text-zinc-500">
+            <div className="flex flex-col items-center justify-center pt-5 pb-6 pointer-events-none">
+              <Upload className={`w-10 h-10 mb-3 ${isDragging ? "text-blue-500" : "text-zinc-400"}`} />
+              <p className={`mb-2 text-sm ${isDragging ? "text-blue-600" : "text-zinc-500"}`}>
                 <span className="font-semibold">Klik untuk upload</span> atau
                 drag & drop
               </p>
-              <p className="text-xs text-zinc-400">PNG atau JPEG (Maks. 2MB)</p>
+              <p className="text-xs text-zinc-400">PNG atau JPG (Maks. 2MB)</p>
             </div>
             <Input
               ref={fileInputRef}

@@ -46,7 +46,7 @@ export function SignatureModal({
 }: SignatureModalProps) {
   const [activeTab, setActiveTab] = useState<TabValue>("draw");
   const [saveSignature, setSaveSignature] = useState(false);
-  
+
   // State for each tab's signature
   const [drawnSignature, setDrawnSignature] = useState<string | null>(null);
   const [uploadedSignature, setUploadedSignature] = useState<string | null>(null);
@@ -147,7 +147,7 @@ export function SignatureModal({
             <TabsContent value="upload" className="mt-0">
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Unggah gambar tanda tangan Anda (PNG atau JPEG, maks 2MB)
+                  Unggah gambar tanda tangan Anda (PNG atau JPG, maks 2MB)
                 </p>
                 <SignatureUpload onSignatureChange={setUploadedSignature} />
               </div>
