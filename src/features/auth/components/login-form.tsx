@@ -76,8 +76,8 @@ export default function LoginForm() {
 
       <div className="flex flex-col items-center gap-4 w-full max-w-5xl">
         <div className="text-center space-y-2">
-          <h1 className="text-6xl font-bold tracking-tight text-gray-900 md:text-8xl">
-            SK/ST DEKAN
+          <h1 className="text-6xl font-bold tracking-tight text-gray-900 md:text-6xl">
+            E-Office ST/SK DEKAN
           </h1>
           <p className="text-xl text-gray-500">
             Masukkan kredensial Anda untuk mengakses akun.
