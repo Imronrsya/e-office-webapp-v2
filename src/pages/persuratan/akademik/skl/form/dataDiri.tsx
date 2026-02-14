@@ -55,11 +55,11 @@ const FormDataDiri: React.FC<{
     <Card
       bordered={false}
       className="shadow-sm rounded-xl"
-      style={{ 
-        backgroundColor: "#ffffff", 
+      style={{
+        backgroundColor: "#ffffff",
         padding: "20px",
         borderRadius: "12px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.05)" 
+        boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
       }}
     >
       <ProForm<MahasiswaData>
@@ -239,12 +239,12 @@ export default function DataDiriSKL() {
       <Layout style={{ minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
         {/* --- 1. HEADER BIRU (FIXED STYLE) --- */}
         {/* Menggunakan style inline agar tidak pecah layoutnya */}
-        <Header style={{ 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "space-between", 
-          backgroundColor: "#00509d", 
-          padding: "0 32px", 
+        <Header style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          backgroundColor: "#00509d",
+          padding: "0 32px",
           height: "64px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
           position: "sticky",
@@ -254,11 +254,11 @@ export default function DataDiriSKL() {
         }}>
           {/* Logo Section */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <img 
-              src="https://upload.wikimedia.org/wikipedia/id/2/2d/Undip.png" 
-              alt="Logo Undip" 
+            <img
+              src="https://upload.wikimedia.org/wikipedia/id/2/2d/Undip.png"
+              alt="Logo Undip"
               // Style ini menjamin ukuran logo KECIL dan PAS (40px)
-              style={{ height: "40px", width: "auto", filter: "brightness(0) invert(1)" }} 
+              style={{ height: "40px", width: "auto", filter: "brightness(0) invert(1)" }}
             />
             <div style={{ lineHeight: "1.2", color: "white" }}>
               <div style={{ fontSize: "12px", opacity: 0.9 }}>Fakultas</div>
@@ -274,23 +274,23 @@ export default function DataDiriSKL() {
               <div style={{ textAlign: "right", display: "none", sm: "block" }}>
                 <div style={{ fontSize: "14px", fontWeight: "bold" }}>Ahmad Douglas</div>
               </div>
-              <Avatar size="default" icon={<UserOutlined />} style={{ backgroundColor: "#91caff", color: "#003a8c" }} />
+              <Avatar size="default" src="/default-avatar.svg" style={{ backgroundColor: "#ffffff" }} />
             </div>
           </div>
         </Header>
 
         {/* --- 2. CONTENT WRAPPER --- */}
         <Content style={{ margin: "0 auto", width: "100%", maxWidth: "1200px", padding: "24px 48px" }}>
-          
+
           {/* --- BREADCRUMB --- */}
           <div style={{ marginBottom: "16px" }}>
-             <Breadcrumb
-                items={[
-                  { title: <><HomeOutlined /> Form Pengajuan Surat</> },
-                  { title: 'SKL' },
-                  { title: 'Identitas Pemohon' },
-                ]}
-              />
+            <Breadcrumb
+              items={[
+                { title: <><HomeOutlined /> Form Pengajuan Surat</> },
+                { title: 'SKL' },
+                { title: 'Identitas Pemohon' },
+              ]}
+            />
           </div>
 
           {/* --- JUDUL & DESKRIPSI --- */}
@@ -331,11 +331,11 @@ export default function DataDiriSKL() {
             <Space size={16}>
               <Button
                 size="large"
-                style={{ 
-                  borderRadius: "6px", 
-                  color: "#1890ff", 
-                  borderColor: "#1890ff", 
-                  fontWeight: 600 
+                style={{
+                  borderRadius: "6px",
+                  color: "#1890ff",
+                  borderColor: "#1890ff",
+                  fontWeight: 600
                 }}
               >
                 Simpan Draft
@@ -343,9 +343,9 @@ export default function DataDiriSKL() {
               <Button
                 type="primary"
                 size="large"
-                style={{ 
-                  borderRadius: "6px", 
-                  padding: "0 32px", 
+                style={{
+                  borderRadius: "6px",
+                  padding: "0 32px",
                   fontWeight: 600,
                   backgroundColor: "#d9d9d9", // Disabled look (abu-abu)
                   borderColor: "#d9d9d9",

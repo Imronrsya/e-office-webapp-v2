@@ -74,33 +74,30 @@ export default function TopNav() {
             <nav className="hidden md:flex items-center gap-1">
               <Link
                 href="/dashboard"
-                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  pathname === "/dashboard"
+                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${pathname === "/dashboard"
                     ? "bg-gray-200 text-black"
                     : "text-gray-600 hover:bg-gray-200 hover:text-black"
-                }`}
+                  }`}
               >
                 <BarChart3 className="size-4" />
                 Dashboard
               </Link>
               <Link
                 href="/pengguna"
-                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  pathname === "/pengguna"
+                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${pathname === "/pengguna"
                     ? "bg-gray-200 text-black"
                     : "text-gray-600 hover:bg-gray-200 hover:text-black"
-                }`}
+                  }`}
               >
                 <Users className="size-4" />
                 Pengguna
               </Link>
               <Link
                 href="/pengaturan"
-                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  pathname === "/pengaturan"
+                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${pathname === "/pengaturan"
                     ? "bg-gray-200 text-black"
                     : "text-gray-600 hover:bg-gray-200 hover:text-black"
-                }`}
+                  }`}
               >
                 <Settings className="size-4" />
                 Pengaturan Departemen
@@ -131,9 +128,13 @@ export default function TopNav() {
                     </>
                   ) : (
                     <>
-                      <Avatar className="h-10 w-10 bg-zinc-300">
-                        <AvatarImage src={user?.image || "https://placehold.co/48x48"} />
-                        <AvatarFallback className="bg-base-black text-base-white">
+                      <Avatar className="h-10 w-10 border border-gray-200 bg-white">
+                        <AvatarImage
+                          src={user?.image || "/default-avatar.svg"}
+                          alt={user?.name || "User Avatar"}
+                          className="object-cover"
+                        />
+                        <AvatarFallback className="bg-gray-100 text-gray-600">
                           {user?.name?.charAt(0) || "U"}
                         </AvatarFallback>
                       </Avatar>
