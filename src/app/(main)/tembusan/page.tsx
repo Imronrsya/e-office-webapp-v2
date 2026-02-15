@@ -35,6 +35,7 @@ import {
 import { toast } from "sonner";
 import { tembusanService, TembusanInboxItem } from "@/services/tembusan.service";
 import { buildHtmlFromTemplate, generatePdfBlobFromHtml } from "@/lib/tembusan-pdf-utils";
+import { TablePagination } from "@/features/dashboard/components/table-pagination";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -340,31 +341,16 @@ export default function TembusanInboxPage() {
           )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t">
-              <div className="text-sm text-zinc-500">
-                Halaman {page} dari {totalPages}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage(page - 1)}
-                >
-                  Sebelumnya
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage(page + 1)}
-                >
-                  Selanjutnya
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* Pagination */}
+          <TablePagination
+            pagination={{
+              page,
+              limit: 10,
+              total,
+              totalPages,
+            }}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
     </div>
