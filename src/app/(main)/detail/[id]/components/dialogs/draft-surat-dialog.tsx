@@ -51,10 +51,8 @@ export function DraftSuratDialog({
     // Determine available surat types based on role
     const isAdminProdi = userRole === "ADMIN_PRODI";
     const isStafOrSupervisor = [
-        "STAF_AKADEMIK", 
-        "STAF_SUMBER_DAYA", 
-        "SUPERVISOR_AKADEMIK", 
-        "SUPERVISOR_SUMBER_DAYA"
+        "STAF_AKADEMIK",
+        "STAF_SUMBER_DAYA",
     ].includes(userRole);
 
     // Determine surat hasil type based on letterTypeCode
@@ -116,7 +114,7 @@ export function DraftSuratDialog({
                     <Label className="text-sm font-medium mb-4 block">
                         Jenis Surat <span className="text-destructive">*</span>
                     </Label>
-                    
+
                     {isInitializing ? (
                         // Skeleton loading state
                         <div className="grid grid-cols-1 gap-4">

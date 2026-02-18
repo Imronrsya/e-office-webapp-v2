@@ -102,15 +102,15 @@ export function DashboardToolbar({
           {isStaffRole ? (
             // Staff roles: Show dialog with category/template selection
             <>
-              <Button 
+              <Button
                 onClick={() => setBuatSuratDialogOpen(true)}
                 className="w-[320px] bg-base-black hover:bg-base-black/90 text-white"
               >
                 <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
                 Buat Surat
               </Button>
-              <BuatSuratDialog 
-                open={buatSuratDialogOpen} 
+              <BuatSuratDialog
+                open={buatSuratDialogOpen}
                 onOpenChange={setBuatSuratDialogOpen}
                 userRole={role}
               />

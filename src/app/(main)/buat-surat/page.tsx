@@ -772,20 +772,20 @@ function BuatSuratContent() {
         if (!judul || judul.trim() === '') {
             return 'Judul Surat harus diisi!';
         }
-        
+
         if (judul.trim().length < 5) {
             return `Judul Surat minimal 5 karakter (saat ini: ${judul.trim().length} karakter)`;
         }
-        
+
         if (judul.length > 255) {
             return `Judul Surat maksimal 255 karakter (saat ini: ${judul.length} karakter)`;
         }
-        
+
         // Tidak boleh hanya berisi simbol (harus ada huruf/angka)
         if (!/[a-zA-Z0-9]/.test(judul)) {
             return 'Judul Surat tidak boleh hanya berisi simbol!';
         }
-        
+
         return '';
     };
 
@@ -797,20 +797,20 @@ function BuatSuratContent() {
         if (!keperluan || keperluan.trim() === '') {
             return 'Keperluan harus diisi!';
         }
-        
+
         if (keperluan.trim().length < 5) {
             return `Keperluan minimal 5 karakter (saat ini: ${keperluan.trim().length} karakter)`;
         }
-        
+
         if (keperluan.length > 150) {
             return `Keperluan maksimal 150 karakter (saat ini: ${keperluan.length} karakter)`;
         }
-        
+
         // Tidak boleh hanya berisi angka
         if (/^\d+$/.test(keperluan.trim())) {
             return 'Keperluan tidak boleh hanya berisi angka!';
         }
-        
+
         return '';
     };
 
@@ -830,10 +830,10 @@ function BuatSuratContent() {
 
     // Hitung error Tanggal untuk ST Tabel (menggunakan Date object)
     const tanggalMulaiTabelError = suratType === "SURAT_TUGAS_TABEL" && !tanggalMulaiDate ? 'Tanggal Mulai harus diisi!' : '';
-    const tanggalSelesaiTabelError = suratType === "SURAT_TUGAS_TABEL" && !tanggalSelesaiDate 
-        ? 'Tanggal Selesai harus diisi!' 
-        : (suratType === "SURAT_TUGAS_TABEL" && tanggalMulaiDate && tanggalSelesaiDate && tanggalSelesaiDate < tanggalMulaiDate 
-            ? 'Tanggal Selesai tidak boleh sebelum Tanggal Mulai!' 
+    const tanggalSelesaiTabelError = suratType === "SURAT_TUGAS_TABEL" && !tanggalSelesaiDate
+        ? 'Tanggal Selesai harus diisi!'
+        : (suratType === "SURAT_TUGAS_TABEL" && tanggalMulaiDate && tanggalSelesaiDate && tanggalSelesaiDate < tanggalMulaiDate
+            ? 'Tanggal Selesai tidak boleh sebelum Tanggal Mulai!'
             : '');
 
     // ========================================================================
@@ -1329,7 +1329,7 @@ function BuatSuratContent() {
                                             )}
                                             {!nimNipError && suratTugasForm.nimNip && (
                                                 <p className="text-sm text-green-600 flex items-center gap-1">
-                                                    <span>✓</span> NIM valid
+                                                    <span>✓</span> {suratTugasForm.nimNip.trim().length === 18 ? 'NIP' : 'NIM'} valid
                                                 </p>
                                             )}
                                         </div>
@@ -1623,76 +1623,76 @@ function BuatSuratContent() {
                                                 {suratTugasTabelForm.pelaksana.map((p, index) => {
                                                     const errors = pelaksanaErrors.find(e => e.key === p.key);
                                                     return (
-                                                    <div key={p.key} className="p-3 bg-white hover:bg-muted/30">
-                                                        <div className="grid gap-2 items-center" style={{
-                                                            gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px`
-                                                        }}>
-                                                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium text-sm">
-                                                                {index + 1}
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <Input
-                                                                    value={p.nama}
-                                                                    onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
-                                                                    placeholder={suratTugasTabelForm.namaLabel || "Nama"}
-                                                                    className={`h-9 ${errors?.namaError ? 'border-red-500' : ''}`}
-                                                                />
-                                                                {errors?.namaError && (
-                                                                    <p className="text-xs text-red-500">{errors.namaError}</p>
-                                                                )}
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <Input
-                                                                    value={p.nim}
-                                                                    onChange={(e) => {
-                                                                        const val = e.target.value.replace(/\D/g, '');
-                                                                        updatePelaksana(p.key, "nim", val);
-                                                                    }}
-                                                                    placeholder={suratTugasTabelForm.nimLabel || "NIM"}
-                                                                    maxLength={suratTugasTabelForm.nimLabel?.toUpperCase() === 'NIP' ? 18 : 14}
-                                                                    className={`h-9 ${errors?.nimError ? 'border-red-500' : ''}`}
-                                                                />
-                                                                {errors?.nimError && (
-                                                                    <p className="text-xs text-red-500">{errors.nimError}</p>
-                                                                )}
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <Input
-                                                                    value={p.prodi}
-                                                                    onChange={(e) => updatePelaksana(p.key, "prodi", e.target.value)}
-                                                                    placeholder={suratTugasTabelForm.prodiLabel || "Prodi"}
-                                                                    className={`h-9 ${errors?.prodiError ? 'border-red-500' : ''}`}
-                                                                />
-                                                                {errors?.prodiError && (
-                                                                    <p className="text-xs text-red-500">{errors.prodiError}</p>
-                                                                )}
-                                                            </div>
-                                                            {suratTugasTabelForm.customColumns.map((col) => (
-                                                                <div key={col.key} className="space-y-1">
+                                                        <div key={p.key} className="p-3 bg-white hover:bg-muted/30">
+                                                            <div className="grid gap-2 items-center" style={{
+                                                                gridTemplateColumns: `40px repeat(${3 + suratTugasTabelForm.customColumns.length}, 1fr) 40px`
+                                                            }}>
+                                                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium text-sm">
+                                                                    {index + 1}
+                                                                </div>
+                                                                <div className="space-y-1">
                                                                     <Input
-                                                                        value={p[col.key] || ""}
-                                                                        onChange={(e) => updatePelaksana(p.key, col.key, e.target.value)}
-                                                                        placeholder={col.label || "..."}
-                                                                        className={`h-9 ${errors?.customErrors[col.key] ? 'border-red-500' : ''}`}
+                                                                        value={p.nama}
+                                                                        onChange={(e) => updatePelaksana(p.key, "nama", e.target.value)}
+                                                                        placeholder={suratTugasTabelForm.namaLabel || "Nama"}
+                                                                        className={`h-9 ${errors?.namaError ? 'border-red-500' : ''}`}
                                                                     />
-                                                                    {errors?.customErrors[col.key] && (
-                                                                        <p className="text-xs text-red-500">{errors.customErrors[col.key]}</p>
+                                                                    {errors?.namaError && (
+                                                                        <p className="text-xs text-red-500">{errors.namaError}</p>
                                                                     )}
                                                                 </div>
-                                                            ))}
-                                                            {suratTugasTabelForm.pelaksana.length > 1 && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => removePelaksana(p.key)}
-                                                                    className="text-destructive hover:text-destructive h-8 w-8"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </Button>
-                                                            )}
-                                                            {suratTugasTabelForm.pelaksana.length <= 1 && <div></div>}
+                                                                <div className="space-y-1">
+                                                                    <Input
+                                                                        value={p.nim}
+                                                                        onChange={(e) => {
+                                                                            const val = e.target.value.replace(/\D/g, '');
+                                                                            updatePelaksana(p.key, "nim", val);
+                                                                        }}
+                                                                        placeholder={suratTugasTabelForm.nimLabel || "NIM"}
+                                                                        maxLength={suratTugasTabelForm.nimLabel?.toUpperCase() === 'NIP' ? 18 : 14}
+                                                                        className={`h-9 ${errors?.nimError ? 'border-red-500' : ''}`}
+                                                                    />
+                                                                    {errors?.nimError && (
+                                                                        <p className="text-xs text-red-500">{errors.nimError}</p>
+                                                                    )}
+                                                                </div>
+                                                                <div className="space-y-1">
+                                                                    <Input
+                                                                        value={p.prodi}
+                                                                        onChange={(e) => updatePelaksana(p.key, "prodi", e.target.value)}
+                                                                        placeholder={suratTugasTabelForm.prodiLabel || "Prodi"}
+                                                                        className={`h-9 ${errors?.prodiError ? 'border-red-500' : ''}`}
+                                                                    />
+                                                                    {errors?.prodiError && (
+                                                                        <p className="text-xs text-red-500">{errors.prodiError}</p>
+                                                                    )}
+                                                                </div>
+                                                                {suratTugasTabelForm.customColumns.map((col) => (
+                                                                    <div key={col.key} className="space-y-1">
+                                                                        <Input
+                                                                            value={p[col.key] || ""}
+                                                                            onChange={(e) => updatePelaksana(p.key, col.key, e.target.value)}
+                                                                            placeholder={col.label || "..."}
+                                                                            className={`h-9 ${errors?.customErrors[col.key] ? 'border-red-500' : ''}`}
+                                                                        />
+                                                                        {errors?.customErrors[col.key] && (
+                                                                            <p className="text-xs text-red-500">{errors.customErrors[col.key]}</p>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                                {suratTugasTabelForm.pelaksana.length > 1 && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => removePelaksana(p.key)}
+                                                                        className="text-destructive hover:text-destructive h-8 w-8"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </Button>
+                                                                )}
+                                                                {suratTugasTabelForm.pelaksana.length <= 1 && <div></div>}
+                                                            </div>
                                                         </div>
-                                                    </div>
                                                     );
                                                 })}
                                             </div>

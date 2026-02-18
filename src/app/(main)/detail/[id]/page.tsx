@@ -493,20 +493,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         }
     };
 
-    // Draft Surat Handler (Admin Prodi, Staf, Supervisor - buat SP/SK/ST)
+    // Draft Surat Handler (Admin Prodi, Staf - buat SP/SK/ST)
     const handleDraftSurat = (type: "SURAT_PENGANTAR" | "SURAT_TUGAS" | "SURAT_TUGAS_TABEL" | "SURAT_KEPUTUSAN") => {
         if (!detail) return;
         setDraftSuratDialogOpen(false);
 
-        // Check if supervisor is creating new draft for surat masuk (has submission)
-        // Supervisor should get clean form with overwrite mode
-        const isSupervisor = currentUserRole === "SUPERVISOR_AKADEMIK" || currentUserRole === "SUPERVISOR_SUMBER_DAYA" || currentUserRole === "MANAJER_TU";
-        const hasSuratMasukSubmission = detail.submissionValues !== null;
-        const shouldResetForSupervisor = isSupervisor && hasSuratMasukSubmission;
-
-        // Add reset=true query param for supervisor to trigger overwrite mode
-        const resetParam = shouldResetForSupervisor ? '&reset=true' : '';
-        router.push(`/draft-surat/${detail.id}?type=${type}${resetParam}`);
+        router.push(`/draft-surat/${detail.id}?type=${type}`);
     };
 
     // Edit Draft Handler - navigates to draft page with existing document type
@@ -527,9 +519,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         }
     };
 
-    // Check if user can draft surat (Admin Prodi, Staf, Supervisor)
+    // Check if user can draft surat (Admin Prodi, Staf)
     const isAdminProdi = currentUserRole === "ADMIN_PRODI";
-    const canShowDraftButton = isAdminProdi || isSupervisor || isStaf;
+    const canShowDraftButton = isAdminProdi || isStaf;
 
     // Staf submit draft for verification
     const handleSubmitForVerification = async () => {
@@ -1956,17 +1948,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 </Button>
                             )}
 
-                            {/* Draft Surat Button - Supervisor (buat SK/ST) */}
-                            {(permissions.canDraftSuratHasil || permissions.canVerifySuratHasil) && isSupervisor && (
-                                <Button
-                                    onClick={() => setDraftSuratDialogOpen(true)}
-                                    disabled={actionLoading}
-                                    className="bg-base-black hover:bg-base-black/90 text-white gap-2"
-                                >
-                                    <FilePlus className="w-4 h-4" />
-                                    Draft Surat
-                                </Button>
-                            )}
+
 
                             {/* Draft Surat Button (Staf) - buat SK/ST */}
                             {permissions.canDraftSuratHasil && isStaf && (
