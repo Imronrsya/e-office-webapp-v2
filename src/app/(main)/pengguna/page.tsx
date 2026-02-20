@@ -153,7 +153,7 @@ function PenggunaContent() {
           open={resetOpen}
           onOpenChange={setResetOpen}
           userName={resetTarget.name}
-          onConfirm={() => handleResetPassword(resetTarget.id)}
+          onConfirm={async () => { await handleResetPassword(resetTarget.id); }}
         />
       )}
 
