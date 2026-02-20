@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3079';
 let apiHost = 'localhost';
@@ -9,6 +10,9 @@ try {
 }
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: path.resolve(process.cwd()) 
+  },
   images: {
     remotePatterns: [
       {
