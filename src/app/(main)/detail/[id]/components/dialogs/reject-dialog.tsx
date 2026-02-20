@@ -12,8 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { XCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 // ============================================================================
@@ -54,7 +53,7 @@ export function RejectDialog({
 
     const handleSubmit = async () => {
         setTouched(true);
-        
+
         if (!reason.trim()) {
             toast.error("Alasan penolakan wajib diisi");
             return;
@@ -67,32 +66,21 @@ export function RejectDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    {/* Destructive Icon */}
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-4">
-                        <AlertTriangle className="h-6 w-6 text-destructive" />
-                    </div>
-                    <DialogTitle className="text-center text-destructive">
+            <DialogContent className="sm:max-w-md rounded-2xl">
+                <DialogHeader className="space-y-1">
+                    <DialogTitle className="text-xl font-semibold text-[#2B2B2B]">
                         {title}
                     </DialogTitle>
-                    <DialogDescription className="text-center">
+                    <DialogDescription className="text-sm text-[#6D6D6D]">
                         {description}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4">
-                    <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>
-                            Pengajuan yang ditolak akan dikembalikan ke pemohon dan harus diajukan ulang jika diperlukan.
-                        </AlertDescription>
-                    </Alert>
-                    
+                <div className="space-y-3 pt-2">
                     {/* Alasan Penolakan */}
-                    <div className="space-y-2">
-                        <Label htmlFor="reason" className="flex items-center gap-1">
-                            Alasan Penolakan <span className="text-destructive">*</span>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="reason" className="text-sm font-medium text-[#2B2B2B] flex items-center gap-1">
+                            Alasan Penolakan <span className="text-red-500">*</span>
                         </Label>
                         <Textarea
                             id="reason"
@@ -104,39 +92,36 @@ export function RejectDialog({
                             onBlur={() => setTouched(true)}
                             placeholder="Jelaskan alasan penolakan pengajuan ini..."
                             rows={4}
-                            className={isError ? "border-destructive focus-visible:ring-destructive" : ""}
+                            className={isError ? "border-red-500 focus-visible:ring-red-500" : ""}
                         />
                         {isError && (
-                            <p className="text-sm text-destructive">
+                            <p className="text-sm text-red-500">
                                 Alasan penolakan wajib diisi
                             </p>
                         )}
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-[#6D6D6D]">
                             Alasan ini akan ditampilkan kepada pemohon.
                         </p>
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2 sm:gap-0">
+                <DialogFooter className="gap-2 pt-2">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         disabled={loading}
+                        className="border-[#E1DFE0] text-[#2B2B2B]"
                     >
                         Batal
                     </Button>
                     <Button
                         type="submit"
-                        variant="destructive"
                         onClick={handleSubmit}
                         disabled={loading || !reason.trim()}
+                        className="bg-red-600 hover:bg-red-700 text-white"
                     >
-                        {loading ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                            <XCircle className="w-4 h-4 mr-2" />
-                        )}
+                        {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Tolak Pengajuan
                     </Button>
                 </DialogFooter>

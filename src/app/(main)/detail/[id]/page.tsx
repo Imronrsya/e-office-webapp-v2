@@ -44,6 +44,7 @@ import {
     CheckCircle2,
     Eye,
     AlertCircle,
+    Image as ImageIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -55,6 +56,7 @@ import { RevisionDialog } from "./components/dialogs/revision-dialog";
 import { DraftSuratDialog } from "./components/dialogs/draft-surat-dialog";
 import { ApproveDialog } from "./components/dialogs/approve-dialog";
 import { RejectDialog } from "./components/dialogs/reject-dialog";
+import { VerifyDialog } from "./components/dialogs/verify-dialog";
 // Universal Preview - Single Source of Truth
 import {
     PDFPreview,
@@ -187,7 +189,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const [revisionDialogOpen, setRevisionDialogOpen] = useState(false);
     const [signatureModalOpen, setSignatureModalOpen] = useState(false);
     const [numberingModalOpen, setNumberingModalOpen] = useState(false);
-    const [verifyNotes, setVerifyNotes] = useState("");
     const [attachmentPreviewOpen, setAttachmentPreviewOpen] = useState(false);
     const [previewAttachment, setPreviewAttachment] = useState<{ id: string, fileName: string, fileUrl: string, mimeType: string | null } | null>(null);
 
@@ -571,7 +572,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     };
 
     // Supervisor/Manajer TU/Pejabat verifies surat hasil
-    const handleVerifySuratHasil = async () => {
+    const handleVerifySuratHasil = async (notes?: string) => {
         if (!detail || actionLoading) return;
 
         // Just check if SK/ST document exists (including table version)
@@ -593,16 +594,15 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             // Supervisor/Manajer TU → approveSuratHasil
             if (isDekanWadek) {
                 // Pejabat yang BUKAN penandatangan
-                response = await suratService.pejabatVerifySuratHasil(detail.id, verifyNotes.trim() || undefined);
+                response = await suratService.pejabatVerifySuratHasil(detail.id, notes?.trim() || undefined);
             } else {
                 // Supervisor/Manajer TU
-                response = await suratService.approveSuratHasil(detail.id, verifyNotes.trim() || undefined);
+                response = await suratService.approveSuratHasil(detail.id, notes?.trim() || undefined);
             }
 
             if (response.success) {
                 toast.success("Surat berhasil diverifikasi");
                 setVerifyDialogOpen(false);
-                setVerifyNotes("");
                 await fetchDetail();
             } else {
                 toast.error(response.message || "Gagal memverifikasi surat");
@@ -1221,40 +1221,48 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                     <div className="space-y-3">
                         {/* Lampiran dari Pengaju (Mahasiswa/Dosen) */}
-                        {attachments.map((att) => (
-                            <div
-                                key={att.id}
-                                className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-zinc-400"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                                        <FileText className="w-5 h-5 text-red-600" />
+                        {attachments.map((att) => {
+                            const isPdf = att.mimeType === 'application/pdf' || att.fileName?.toLowerCase().endsWith('.pdf');
+                            return (
+                                <div
+                                    key={att.id}
+                                    className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-[#E1DFE0]"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-lg flex items-center justify-center",
+                                            isPdf ? "bg-red-100" : "bg-blue-100"
+                                        )}>
+                                            {isPdf
+                                                ? <FileText className="w-5 h-5 text-red-600" />
+                                                : <ImageIcon className="w-5 h-5 text-blue-500" />}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-[#2B2B2B]">{att.fileName}</p>
+                                            <p className="text-xs text-[#6D6D6D]">{formatFileSize(att.fileSize)}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-black">{att.fileName}</p>
-                                        <p className="text-sm text-zinc-400">{formatFileSize(att.fileSize)}</p>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handlePreviewAttachment(att.id, att.fileName, att.mimeType, att.fileUrl)}
+                                            title="Preview"
+                                        >
+                                            <Eye className="w-5 h-5" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleDownloadAttachment(att.fileName, att.fileUrl)}
+                                            title="Download"
+                                        >
+                                            <Download className="w-5 h-5" />
+                                        </Button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handlePreviewAttachment(att.id, att.fileName, att.mimeType, att.fileUrl)}
-                                        title="Preview"
-                                    >
-                                        <Eye className="w-5 h-5" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDownloadAttachment(att.fileName, att.fileUrl)}
-                                        title="Download"
-                                    >
-                                        <Download className="w-5 h-5" />
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
 
                         {/* Lampiran dari Admin Prodi (dari SURAT_PENGANTAR document) */}
                         {adminProdiAttachments.map((att, index) => {
@@ -1264,23 +1272,22 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             return (
                                 <div
                                     key={`admin-${index}`}
-                                    className="flex items-center justify-between p-3.5 bg-amber-50 rounded-lg border border-amber-300"
+                                    className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-[#E1DFE0]"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className={cn(
                                             "w-10 h-10 rounded-lg flex items-center justify-center",
-                                            isPdf ? "bg-red-100" : isImage ? "bg-green-100" : "bg-blue-100"
+                                            isPdf ? "bg-red-100" : isImage ? "bg-blue-100" : "bg-blue-100"
                                         )}>
-                                            <FileText className={cn(
-                                                "w-5 h-5",
-                                                isPdf ? "text-red-600" : isImage ? "text-green-600" : "text-blue-600"
-                                            )} />
+                                            {isPdf
+                                                ? <FileText className="w-5 h-5 text-red-600" />
+                                                : <ImageIcon className="w-5 h-5 text-blue-500" />}
                                         </div>
                                         <div>
-                                            <p className="text-sm text-black truncate max-w-[180px]" title={att.name}>
+                                            <p className="text-sm font-medium text-[#2B2B2B] truncate max-w-[180px]" title={att.name}>
                                                 {att.name}
                                             </p>
-                                            <p className="text-xs text-amber-600">Dari Admin Prodi</p>
+                                            <p className="text-xs text-[#6D6D6D]">Dari Admin Prodi</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -1399,23 +1406,22 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             return (
                                 <div
                                     key={index}
-                                    className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-amber-300"
+                                    className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-[#E1DFE0]"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className={cn(
                                             "w-10 h-10 rounded-lg flex items-center justify-center",
-                                            isPdf ? "bg-red-100" : isImage ? "bg-green-100" : "bg-blue-100"
+                                            isPdf ? "bg-red-100" : "bg-blue-100"
                                         )}>
-                                            <FileText className={cn(
-                                                "w-5 h-5",
-                                                isPdf ? "text-red-600" : isImage ? "text-green-600" : "text-blue-600"
-                                            )} />
+                                            {isPdf
+                                                ? <FileText className="w-5 h-5 text-red-600" />
+                                                : <ImageIcon className="w-5 h-5 text-blue-500" />}
                                         </div>
                                         <div>
-                                            <p className="text-sm text-black truncate max-w-[180px]" title={name}>
+                                            <p className="text-sm font-medium text-[#2B2B2B] truncate max-w-[180px]" title={name}>
                                                 {name}
                                             </p>
-                                            <p className="text-xs text-amber-600">
+                                            <p className="text-xs text-[#6D6D6D]">
                                                 {isPdf ? 'PDF Document' : isImage ? 'Image' : 'Attachment'}
                                             </p>
                                         </div>
@@ -1692,42 +1698,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         <LampiranDokumenCard />
 
                         {/* Info untuk user tentang mode ini */}
-                        {isVerificationMode && (
-                            <Card className="bg-blue-50 border-blue-200 rounded-xl">
-                                <CardContent className="p-4">
-                                    <div className="flex items-start gap-3">
-                                        <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                                        <div>
-                                            <p className="text-sm font-medium text-blue-800">
-                                                Mode Verifikasi
-                                            </p>
-                                            <p className="text-xs text-blue-600 mt-1">
-                                                Fokus pada data formulir dan lampiran untuk proses verifikasi.
-                                                Preview surat akan tersedia setelah proses drafting selesai.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-                        {isPreDraftMode && !isVerificationMode && (
-                            <Card className="bg-amber-50 border-amber-200 rounded-xl">
-                                <CardContent className="p-4">
-                                    <div className="flex items-start gap-3">
-                                        <Clock className="w-5 h-5 text-amber-600 mt-0.5" />
-                                        <div>
-                                            <p className="text-sm font-medium text-amber-800">
-                                                Menunggu Proses
-                                            </p>
-                                            <p className="text-xs text-amber-600 mt-1">
-                                                Surat pengantar belum digenerate.
-                                                Dokumen akan tersedia setelah proses drafting oleh Admin Prodi.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
+
+
                     </div>
                 ) : documentViewMode === 'both' ? (
                     /* Lingkup Departemen dengan tabs (jika UPA sudah selesai) */
@@ -2303,50 +2275,14 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             />
 
             {/* Verify Surat Hasil Dialog - for Supervisor/Manajer TU */}
-            <Dialog open={verifyDialogOpen} onOpenChange={setVerifyDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Verifikasi Draft Surat</DialogTitle>
-                        <DialogDescription>
-                            Verifikasi draft surat untuk diteruskan ke tahap berikutnya.
-                            {isSupervisor && " Draft akan diteruskan ke Manajer TU."}
-                            {isManajerTU && " Draft akan diteruskan untuk ditandatangani."}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="verify-notes">Catatan (Opsional)</Label>
-                            <Textarea
-                                id="verify-notes"
-                                placeholder="Tambahkan catatan verifikasi jika diperlukan..."
-                                value={verifyNotes}
-                                onChange={(e) => setVerifyNotes(e.target.value)}
-                                rows={3}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setVerifyDialogOpen(false);
-                                setVerifyNotes("");
-                            }}
-                            disabled={actionLoading}
-                        >
-                            Batal
-                        </Button>
-                        <Button
-                            onClick={handleVerifySuratHasil}
-                            disabled={actionLoading}
-                            className="bg-success text-success-foreground hover:bg-success/90"
-                        >
-                            {actionLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            Verifikasi
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <VerifyDialog
+                open={verifyDialogOpen}
+                onOpenChange={setVerifyDialogOpen}
+                onConfirm={handleVerifySuratHasil}
+                loading={actionLoading}
+                isSupervisor={isSupervisor}
+                isManajerTU={isManajerTU}
+            />
 
             {/* Revision Dialog - for Supervisor/Manajer TU/Dekan/Wadek to return surat keluar for revision */}
             <RevisionDialog

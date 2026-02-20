@@ -19,8 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Send, Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 
 // ============================================================================
@@ -294,8 +293,8 @@ export function DispositionDialog({
             // 1. Role hierarchy (hanya ke bawah)
             // 2. Category surat (UMUM/AKADEMIK/SUMBER_DAYA)
             // Jadi TIDAK perlu filter tambahan lagi
-            return currentUserRole 
-                ? getDispositionTargets(currentUserRole, category) 
+            return currentUserRole
+                ? getDispositionTargets(currentUserRole, category)
                 : [];
         }
     }, [category, isForwardMode, currentUserRole]);
@@ -315,14 +314,14 @@ export function DispositionDialog({
 
     // Title and button text based on mode
     const dialogTitle = isForwardMode ? "Meneruskan Surat" : "Disposisi Surat";
-    const dialogDescription = isForwardMode 
+    const dialogDescription = isForwardMode
         ? "Teruskan surat ke pejabat fakultas untuk diproses lebih lanjut."
         : "Disposisikan surat ke pejabat dengan tingkatan lebih rendah.";
     const submitButtonText = isForwardMode ? "Meneruskan" : "Disposisi";
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md" hideCloseButton>
                 <DialogHeader>
                     <DialogTitle>{dialogTitle}</DialogTitle>
                     <DialogDescription>{dialogDescription}</DialogDescription>
@@ -336,8 +335,8 @@ export function DispositionDialog({
                             <Label htmlFor="category">
                                 Jenis Surat <span className="text-destructive">*</span>
                             </Label>
-                            <Select 
-                                value={category} 
+                            <Select
+                                value={category}
                                 onValueChange={(val) => setCategory(val as LetterCategory)}
                             >
                                 <SelectTrigger id="category" className="w-full">
@@ -362,8 +361,8 @@ export function DispositionDialog({
                             <Label htmlFor="category">
                                 Jenis Surat <span className="text-destructive">*</span>
                             </Label>
-                            <Select 
-                                value={category} 
+                            <Select
+                                value={category}
                                 onValueChange={(val) => setCategory(val as LetterCategory)}
                             >
                                 <SelectTrigger id="category" className="w-full">
@@ -380,12 +379,12 @@ export function DispositionDialog({
 
                     {/* Info Box for disposition mode */}
                     {!isForwardMode && (
-                        <Alert variant="default" className="border-warning/50 bg-warning/10">
-                            <AlertTriangle className="h-4 w-4 text-warning" />
-                            <AlertDescription className="text-foreground">
+                        <div className="flex items-start gap-2.5 rounded-lg border border-[#E1DFE0] bg-neutral-50 px-4 py-3">
+                            <Info className="h-4 w-4 text-[#6D6D6D] mt-0.5 shrink-0" />
+                            <p className="text-sm text-[#6D6D6D]">
                                 Disposisi hanya dapat dilakukan ke pejabat dengan tingkatan lebih rendah.
-                            </AlertDescription>
-                        </Alert>
+                            </p>
+                        </div>
                     )}
 
                     {/* Pilih Pejabat */}
@@ -393,8 +392,8 @@ export function DispositionDialog({
                         <Label htmlFor="target-role">
                             Pejabat Tujuan <span className="text-destructive">*</span>
                         </Label>
-                        <Select 
-                            value={targetRole} 
+                        <Select
+                            value={targetRole}
                             onValueChange={setTargetRole}
                             disabled={!category}
                         >
@@ -410,7 +409,7 @@ export function DispositionDialog({
                                     ))
                                 ) : (
                                     <div className="px-2 py-3 text-sm text-muted-foreground text-center">
-                                        {category 
+                                        {category
                                             ? "Tidak ada pejabat yang tersedia"
                                             : "Pilih jenis surat terlebih dahulu"
                                         }
@@ -447,12 +446,10 @@ export function DispositionDialog({
                         onClick={handleSubmit}
                         disabled={loading || !category || !targetRole}
                         variant="default"
-                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                        className="bg-base-black text-white hover:bg-base-black/90"
                     >
-                        {loading ? (
+                        {loading && (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                            <Send className="w-4 h-4 mr-2" />
                         )}
                         {submitButtonText}
                     </Button>

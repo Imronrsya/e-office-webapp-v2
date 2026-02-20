@@ -631,7 +631,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 }
 
                 // Determine if this is surat masuk (from submission) or surat keluar (staff-created)
-                const hasSuratMasukSubmission = detail.submissionValues !== null && detail.submissionValues !== undefined;
+                // Fix: Check for specific fields (nim/nip) to prevent empty submissionValues from triggering this
+                const hasSuratMasukSubmission = !!(detail.submissionValues && (detail.submissionValues.nim || detail.submissionValues.nip));
                 setIsSuratMasuk(hasSuratMasukSubmission);
 
                 // Determine if pengaju is Mahasiswa or Dosen based on submissionValues
@@ -3442,28 +3443,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {/* Info kategori surat dan filter pejabat */}
-                                {suratType !== "SURAT_PENGANTAR" && suratCategory && (
-                                    <Alert className="bg-blue-50 border-blue-200">
-                                        <Info className="h-4 w-4 text-blue-600" />
-                                        <AlertDescription className="text-blue-900">
-                                            <strong>Kategori Surat: {suratCategory}</strong>
-                                            <br />
-                                            {suratCategory === "AKADEMIK" && "Pejabat yang dapat menandatangani: Wakil Dekan I dan Dekan"}
-                                            {suratCategory === "SUMBER_DAYA" && "Pejabat yang dapat menandatangani: Wakil Dekan II dan Dekan"}
-                                            {suratCategory === "UMUM" && "Pejabat yang dapat menandatangani: Wakil Dekan I, Wakil Dekan II, dan Dekan"}
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
 
-                                <Alert>
-                                    <Info className="h-4 w-4" />
-                                    <AlertDescription>
-                                        {suratType === "SURAT_PENGANTAR"
-                                            ? "Penanda tangan default berdasarkan pilihan pengaju. Anda dapat mengubah konfigurasi jika diperlukan."
-                                            : "Surat akan diverifikasi secara berurutan sebelum ditandatangani."}
-                                    </AlertDescription>
-                                </Alert>
+
 
                                 {signers.map((signer, index) => (
                                     <div key={signer.id} className="space-y-3 p-4 bg-white rounded-lg border">
@@ -3599,18 +3580,17 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                 {/* Step 3: Tembusan Configuration */}
                 {currentStep === "tembusan" && (
-                    <Card className="bg-neutral-50 border-zinc-400">
-                        <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <Users className="w-5 h-5" />
+                    <Card className="bg-neutral-50/50 border-border shadow-sm">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-lg font-semibold text-[#2B2B2B]">
                                 Konfigurasi Tembusan
                             </CardTitle>
-                            <CardDescription>
+                            <CardDescription className="text-muted-foreground">
                                 Tentukan siapa saja yang akan menerima tembusan surat ini.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="flex items-center space-x-3 p-4 bg-white rounded-lg border border-border shadow-sm transition-colors hover:border-gray-300">
                                 <Checkbox
                                     id="pengaju"
                                     checked={includePengaju}
@@ -3632,12 +3612,15 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             {/* Section 1: Akun Pengguna untuk Akses Sistem */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-base-black">
+                                    <Label className="text-sm font-medium text-[#2B2B2B]">
                                         1. Pilih Akun Pengguna (Akses Sistem)
                                     </Label>
-                                    <p className="text-xs text-muted-foreground">
-                                        Akun yang dipilih akan dapat <strong>mengakses dan mendownload</strong> surat setelah selesai.<br />
-                                        <span className="text-amber-600 font-medium">Tidak akan tertulis di PDF surat.</span>
+                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                        Akun yang dipilih akan dapat <strong>mengakses dan mendownload</strong> surat setelah selesai.
+                                        <br />
+                                        <span className="text-muted-foreground/80 font-medium flex items-center gap-1 mt-0.5">
+                                            <Info className="w-3 h-3" /> Tidak akan tertulis di PDF surat.
+                                        </span>
                                     </p>
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -3650,7 +3633,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 setShowUserResults(true);
                                             }}
                                             onFocus={() => setShowUserResults(true)}
-                                            className="pl-9"
+                                            className="pl-9 bg-white border-border focus:border-neutral-400 transition-colors"
                                         />
                                         {isSearchingUsers && (
                                             <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
@@ -3716,7 +3699,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             {tembusanUsers.map((user) => (
                                                 <div
                                                     key={user.userId}
-                                                    className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                                    className="flex items-center gap-3 p-3 bg-white rounded-lg border border-border group hover:border-gray-300 transition-all"
                                                 >
                                                     <div className={cn(
                                                         "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
@@ -3754,23 +3737,35 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             {/* Section 2: Text Manual untuk Tertulis di Surat */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="new-tembusan-text" className="text-sm font-medium text-base-black">
+                                    <Label htmlFor="new-tembusan-text" className="text-sm font-medium text-[#2B2B2B]">
                                         2. Tambah Text Tembusan (Tertulis di Surat)
                                     </Label>
-                                    <p className="text-xs text-muted-foreground">
-                                        Text yang diketik akan <strong>tertulis di bagian "Tembusan:"</strong> di PDF surat.<br />
-                                        <span className="text-amber-600 font-medium">Tidak terkait dengan akun sistem.</span>
+                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                        Text yang diketik akan <strong>tertulis di bagian "Tembusan:"</strong> di PDF surat.
+                                        <br />
+                                        <span className="text-muted-foreground/80 font-medium flex items-center gap-1 mt-0.5">
+                                            <Info className="w-3 h-3" /> Tidak terkait dengan akun sistem.
+                                        </span>
                                     </p>
                                     <div className="flex gap-2 items-center">
-                                        <Textarea
+                                        <Input
                                             id="new-tembusan-text"
                                             placeholder="Contoh: Arsip, Kepala Lab Fisika, Yth. Bapak/Ibu..."
                                             value={newTembusanTextInput}
                                             onChange={(e) => setNewTembusanTextInput(e.target.value)}
-                                            rows={1}
-                                            className="flex-1 min-h-[40px] py-2 resize-none"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    addTembusanText();
+                                                }
+                                            }}
+                                            className="flex-1 bg-white border-border focus:border-neutral-400 transition-colors"
                                         />
-                                        <Button onClick={addTembusanText} disabled={!newTembusanTextInput.trim()}>
+                                        <Button
+                                            onClick={addTembusanText}
+                                            disabled={!newTembusanTextInput.trim()}
+                                            className="bg-[#2B2B2B] text-white hover:bg-[#2B2B2B]/90 shadow-sm"
+                                        >
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah
                                         </Button>
@@ -3809,12 +3804,21 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 )}
                             </div>
 
-                            <Alert className="mt-4 bg-amber-50 border-amber-200">
-                                <Info className="h-4 w-4 text-amber-600" />
-                                <AlertDescription className="text-amber-800 text-sm">
-                                    <strong>Perbedaan:</strong><br />
-                                    • <strong>Akun Sistem (Biru)</strong>: Dapat akses download surat, tidak tertulis di PDF<br />
-                                    • <strong>Text Manual (Hijau)</strong>: Tertulis di PDF surat, tidak dapat akses sistem
+                            <Alert className="mt-4 bg-blue-50/30 border-blue-100 text-[#2B2B2B]">
+                                <Info className="h-4 w-4 text-blue-600/80" />
+                                <AlertDescription className="text-sm ml-2">
+                                    <span className="font-semibold block mb-1">Panduan Pengisian:</span>
+                                    <div className="grid grid-cols-1 gap-1 text-muted-foreground">
+                                        <span className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Pengaju</strong>: Untuk arsip pribadi (tidak di PDF).
+                                        </span>
+                                        <span className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Akun Sistem</strong>: Untuk notifikasi & download (tidak di PDF).
+                                        </span>
+                                        <span className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Text Tertulis</strong>: Hanya text di bagian "Tembusan" PDF.
+                                        </span>
+                                    </div>
                                 </AlertDescription>
                             </Alert>
                         </CardContent>
@@ -3836,13 +3840,14 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         <CardContent className="space-y-4">
                             {/* Info lampiran pengaju jika ada - HANYA untuk Admin Prodi */}
                             {pengajuAttachments.length > 0 && (user?.role || '').toUpperCase() === 'ADMIN_PRODI' && (
-                                <Alert className="bg-blue-50 border-blue-200">
-                                    <Info className="h-4 w-4 text-blue-600" />
-                                    <AlertDescription className="text-blue-800 text-sm">
-                                        <strong>Lampiran dari Pengaju:</strong> Terdapat {pengajuAttachments.length} file lampiran yang diunggah oleh pengaju.
+                                <div className="flex items-start gap-2 rounded-lg border border-[#E1DFE0] bg-white px-4 py-3">
+                                    <Info className="h-4 w-4 text-[#6D6D6D] shrink-0 mt-0.5" />
+                                    <p className="text-[#6D6D6D] text-sm">
+                                        <strong className="text-[#2B2B2B]">Lampiran dari Pengaju:</strong> Terdapat {pengajuAttachments.length} file lampiran yang diunggah oleh pengaju.
                                         Anda dapat menghapus atau menambahkan file baru.
-                                    </AlertDescription>
-                                </Alert>
+                                    </p>
+                                </div>
+
                             )}
 
                             {/* Existing Attachments (pengaju + document) */}
@@ -3871,34 +3876,26 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 return (
                                                     <div
                                                         key={index}
-                                                        className={cn(
-                                                            "flex items-center gap-3 p-3 rounded-lg border",
-                                                            isPengajuAttachment
-                                                                ? "bg-blue-50 border-blue-200"
-                                                                : "bg-amber-50 border-amber-200"
-                                                        )}
+                                                        className="flex items-center gap-3 p-3 rounded-lg border border-[#E1DFE0] bg-white"
                                                     >
                                                         <div className={cn(
                                                             "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-                                                            isPdf ? "bg-red-100" : "bg-green-100"
+                                                            isPdf ? "bg-red-100" : "bg-blue-100"
                                                         )}>
                                                             {isPdf ? (
-                                                                <File className="w-5 h-5 text-red-600" />
+                                                                <FileText className="w-5 h-5 text-red-600" />
                                                             ) : (
-                                                                <Image className="w-5 h-5 text-green-600" />
+                                                                <Image className="w-5 h-5 text-blue-500" />
                                                             )}
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className="font-medium text-sm truncate" title={name}>{name}</p>
-                                                            <p className={cn(
-                                                                "text-xs",
-                                                                isPengajuAttachment ? "text-blue-600" : "text-amber-600"
-                                                            )}>
-                                                                {isPengajuAttachment ? "Dari Pengaju" : "Tersimpan di server"}
+                                                            <p className="text-xs text-[#6D6D6D]">
+                                                                {isPengajuAttachment ? "Dari Pengaju" : "Tersimpan"}
                                                             </p>
                                                         </div>
                                                         {isPengajuAttachment && (
-                                                            <Badge variant="outline" className="text-xs border-blue-300 text-blue-700 shrink-0">
+                                                            <Badge variant="outline" className="text-xs border-[#E1DFE0] text-[#6D6D6D] shrink-0">
                                                                 Pengaju
                                                             </Badge>
                                                         )}
@@ -3911,7 +3908,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                                     setPreviewFileName(name);
                                                                     setPreviewModalOpen(true);
                                                                 }}
-                                                                className="text-blue-600 hover:text-blue-800 h-8 w-8"
+                                                                className="text-[#6D6D6D] hover:text-[#2B2B2B] h-8 w-8"
                                                                 title="Preview"
                                                             >
                                                                 <FileText className="w-4 h-4" />
@@ -3982,12 +3979,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 acceptedTypes={['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']}
                                             />
                                         ) : (
-                                            <Alert className="bg-amber-50 border-amber-200">
-                                                <AlertCircle className="h-4 w-4 text-amber-600" />
-                                                <AlertDescription className="text-amber-800 text-sm">
-                                                    Batas maksimal 5 file tercapai. Hapus file yang ada untuk menambah lampiran baru.
-                                                </AlertDescription>
-                                            </Alert>
+                                            <div className="flex items-start gap-2 rounded-lg border border-[#E1DFE0] bg-white px-4 py-3">
+                                                <AlertCircle className="h-4 w-4 text-[#6D6D6D] shrink-0 mt-0.5" />
+                                                <p className="text-[#6D6D6D] text-sm">Batas maksimal 5 file tercapai. Hapus file yang ada untuk menambah lampiran baru.</p>
+                                            </div>
                                         )}
 
                                         <p className="text-xs text-muted-foreground">
@@ -4005,12 +4000,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     : existingAttachments.filter(att => !pengajuAttachments.some(pa => pa.fileUrl === att.url));
 
                                 return attachmentFiles.length === 0 && filteredExistingAttachments.length === 0 ? (
-                                    <Alert className="bg-blue-50 border-blue-200">
-                                        <Info className="h-4 w-4 text-blue-600" />
-                                        <AlertDescription className="text-blue-800 text-sm">
-                                            Lampiran bersifat opsional. Anda dapat melanjutkan tanpa menambahkan lampiran.
-                                        </AlertDescription>
-                                    </Alert>
+                                    <div className="flex items-center gap-2 rounded-lg border border-[#E1DFE0] bg-white px-4 py-3">
+                                        <Info className="h-4 w-4 text-[#6D6D6D] shrink-0" />
+                                        <p className="text-[#6D6D6D] text-sm">Lampiran bersifat opsional. Anda dapat melanjutkan tanpa menambahkan lampiran.</p>
+                                    </div>
                                 ) : null;
                             })()}
                         </CardContent>
@@ -4142,31 +4135,23 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                             return (
                                                                 <div
                                                                     key={`existing-${index}`}
-                                                                    className={cn(
-                                                                        "flex items-center gap-3 p-3 rounded-lg border",
-                                                                        isPengajuAttachment
-                                                                            ? "bg-blue-50 border-blue-200"
-                                                                            : "bg-amber-50 border-amber-200"
-                                                                    )}
+                                                                    className="flex items-center gap-3 p-3 rounded-lg border border-[#E1DFE0] bg-white"
                                                                 >
                                                                     <div className={cn(
-                                                                        "w-8 h-8 rounded flex items-center justify-center shrink-0",
-                                                                        isPdf ? "bg-red-100" : "bg-green-100"
+                                                                        "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                                                                        isPdf ? "bg-red-100" : "bg-blue-100"
                                                                     )}>
                                                                         {isPdf ? (
-                                                                            <File className="w-4 h-4 text-red-600" />
+                                                                            <FileText className="w-5 h-5 text-red-600" />
                                                                         ) : (
-                                                                            <Image className="w-4 h-4 text-green-600" />
+                                                                            <Image className="w-5 h-5 text-blue-500" />
                                                                         )}
                                                                     </div>
                                                                     <div className="flex-1 min-w-0">
                                                                         <p className="font-medium text-sm truncate" title={name}>{name}</p>
                                                                         <Badge
-                                                                            variant={isPengajuAttachment ? "outline" : "secondary"}
-                                                                            className={cn(
-                                                                                "text-xs",
-                                                                                isPengajuAttachment && "border-blue-300 text-blue-700"
-                                                                            )}
+                                                                            variant="outline"
+                                                                            className="text-xs border-[#E1DFE0] text-[#6D6D6D]"
                                                                         >
                                                                             {isPengajuAttachment ? "Dari Pengaju" : "Tersimpan"}
                                                                         </Badge>
@@ -4178,26 +4163,23 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                         {attachmentFiles.map((file, index) => (
                                                             <div
                                                                 key={`new-${index}`}
-                                                                className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200"
+                                                                className="flex items-center gap-3 p-3 rounded-lg border border-[#E1DFE0] bg-white"
                                                             >
                                                                 <div className={cn(
-                                                                    "w-8 h-8 rounded flex items-center justify-center shrink-0",
+                                                                    "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
                                                                     file.type === 'application/pdf'
                                                                         ? "bg-red-100"
-                                                                        : "bg-green-100"
+                                                                        : "bg-blue-100"
                                                                 )}>
                                                                     {file.type === 'application/pdf' ? (
-                                                                        <File className="w-4 h-4 text-red-600" />
+                                                                        <FileText className="w-5 h-5 text-red-600" />
                                                                     ) : (
-                                                                        <Image className="w-4 h-4 text-green-600" />
+                                                                        <Image className="w-5 h-5 text-blue-500" />
                                                                     )}
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className="font-medium text-sm truncate">{file.name}</p>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(1)} MB</p>
-                                                                        <Badge variant="outline" className="text-xs">Baru</Badge>
-                                                                    </div>
+                                                                    <Badge variant="outline" className="text-xs">Baru</Badge>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -4246,14 +4228,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             </CardContent>
                         </Card>
 
-                        <Alert className="border-blue-200 bg-blue-50">
-                            <Info className="h-4 w-4 text-blue-600" />
-                            <AlertDescription className="text-blue-800">
-                                {isEditMode
-                                    ? "Setelah menyimpan perubahan, Anda bisa tetap di halaman ini untuk review atau kembali ke dashboard."
-                                    : "Setelah draft dibuat, surat akan melalui alur verifikasi sebelum ditandatangani."}
-                            </AlertDescription>
-                        </Alert>
+
                     </div>
                 )}
             </div>

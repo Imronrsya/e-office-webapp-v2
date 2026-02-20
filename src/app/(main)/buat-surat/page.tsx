@@ -37,13 +37,13 @@ import {
     User,
     Info,
     FileText,
+    Image,
     CheckCircle,
     ClipboardList,
     Search,
     Paperclip,
     Upload,
     X,
-    Image,
     File,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -1964,25 +1964,9 @@ function BuatSuratContent() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {/* Info kategori surat dan filter pejabat */}
-                                {categoryParam && (
-                                    <Alert className="bg-blue-50 border-blue-200">
-                                        <Info className="h-4 w-4 text-blue-600" />
-                                        <AlertDescription className="text-blue-900">
-                                            <strong>Kategori Surat: {CATEGORY_LABELS[categoryParam]}</strong>
-                                            <br />
-                                            {categoryParam === "AKADEMIK" && "Pejabat yang dapat menandatangani: Wakil Dekan I dan Dekan"}
-                                            {categoryParam === "SUMBER_DAYA" && "Pejabat yang dapat menandatangani: Wakil Dekan II dan Dekan"}
-                                            {categoryParam === "UMUM" && "Pejabat yang dapat menandatangani: Wakil Dekan I, Wakil Dekan II, dan Dekan"}
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
 
-                                <Alert>
-                                    <Info className="h-4 w-4" />
-                                    <AlertDescription>
-                                        Surat akan diverifikasi secara berurutan sebelum ditandatangani.
-                                    </AlertDescription>
-                                </Alert>
+
+
 
                                 {signers.map((signer, index) => (
                                     <div key={signer.id} className="space-y-3 p-4 bg-white rounded-lg border">
@@ -2113,19 +2097,18 @@ function BuatSuratContent() {
 
                 {/* Step 3: Tembusan Configuration */}
                 {currentStep === "tembusan" && (
-                    <Card className="bg-neutral-50 border-zinc-400">
-                        <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <Users className="w-5 h-5" />
+                    <Card className="bg-neutral-50/50 border-border shadow-sm">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-lg font-semibold text-[#2B2B2B]">
                                 Konfigurasi Tembusan
                             </CardTitle>
-                            <CardDescription>
+                            <CardDescription className="text-muted-foreground">
                                 Tentukan siapa saja yang akan menerima tembusan surat ini.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-6">
                             {/* Pengaju Checkbox */}
-                            <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="flex items-center space-x-3 p-4 bg-white rounded-lg border border-border shadow-sm transition-colors hover:border-gray-300">
                                 <Checkbox
                                     id="pengaju"
                                     checked={includePengaju}
@@ -2147,12 +2130,15 @@ function BuatSuratContent() {
                             {/* Section 1: Akun Pengguna untuk Akses Sistem */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-base-black">
+                                    <Label className="text-sm font-medium text-[#2B2B2B]">
                                         1. Pilih Akun Pengguna (Akses Sistem)
                                     </Label>
-                                    <p className="text-xs text-muted-foreground">
-                                        Akun yang dipilih akan dapat <strong>mengakses dan mendownload</strong> surat setelah selesai.<br />
-                                        <span className="text-amber-600 font-medium">Tidak akan tertulis di PDF surat.</span>
+                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                        Akun yang dipilih akan dapat <strong>mengakses dan mendownload</strong> surat setelah selesai.
+                                        <br />
+                                        <span className="text-muted-foreground/80 font-medium flex items-center gap-1 mt-0.5">
+                                            <Info className="w-3 h-3" /> Tidak akan tertulis di PDF surat.
+                                        </span>
                                     </p>
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -2165,7 +2151,7 @@ function BuatSuratContent() {
                                                 setShowUserResults(true);
                                             }}
                                             onFocus={() => setShowUserResults(true)}
-                                            className="pl-9"
+                                            className="pl-9 bg-white border-border focus:border-neutral-400 transition-colors"
                                         />
                                         {isSearchingUsers && (
                                             <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
@@ -2174,31 +2160,28 @@ function BuatSuratContent() {
 
                                     {/* User Search Results */}
                                     {showUserResults && userSearchQuery.length >= 2 && (
-                                        <Card className="shadow-lg border-2 max-h-64 overflow-y-auto">
+                                        <Card className="shadow-lg border border-border max-h-64 overflow-y-auto mt-1 absolute w-full z-10 bg-white">
                                             {userSearchResults.length === 0 ? (
                                                 <div className="p-4 text-center text-muted-foreground text-sm">
                                                     {isSearchingUsers ? 'Mencari...' : 'Tidak ada hasil ditemukan'}
                                                 </div>
                                             ) : (
-                                                <div className="p-2 space-y-1">
+                                                <div className="p-1 space-y-0.5">
                                                     {userSearchResults.map((user) => (
                                                         <button
                                                             key={user.id}
                                                             type="button"
-                                                            className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted text-left transition-colors"
+                                                            className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-neutral-50 text-left transition-colors group"
                                                             onClick={() => handleSelectUser(user)}
                                                         >
                                                             <div className={cn(
-                                                                "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-                                                                user.type === 'mahasiswa' ? 'bg-blue-100' : 'bg-purple-100'
+                                                                "w-9 h-9 rounded-full flex items-center justify-center shrink-0 border",
+                                                                "bg-neutral-50 border-neutral-200 text-neutral-600"
                                                             )}>
-                                                                <User className={cn(
-                                                                    "h-5 w-5",
-                                                                    user.type === 'mahasiswa' ? 'text-blue-700' : 'text-purple-700'
-                                                                )} />
+                                                                <User className="h-4 w-4" />
                                                             </div>
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="font-medium text-sm truncate">{user.name}</p>
+                                                                <p className="font-medium text-sm text-[#2B2B2B] group-hover:text-black transition-colors truncate">{user.name}</p>
                                                                 <p className="text-xs text-muted-foreground truncate">
                                                                     {user.type === 'mahasiswa'
                                                                         ? `${user.identifier} • ${user.programStudi || 'Mahasiswa'}`
@@ -2206,7 +2189,7 @@ function BuatSuratContent() {
                                                                     }
                                                                 </p>
                                                             </div>
-                                                            <Badge variant="outline" className="text-xs shrink-0">
+                                                            <Badge variant="outline" className="text-[10px] shrink-0 border-border text-muted-foreground font-normal">
                                                                 {user.type === 'mahasiswa' ? 'Mahasiswa' : 'Pegawai'}
                                                             </Badge>
                                                         </button>
@@ -2226,27 +2209,27 @@ function BuatSuratContent() {
                                 {/* List selected users */}
                                 {tembusanUsers.length > 0 && (
                                     <div className="space-y-2">
-                                        <Label className="text-sm font-medium">Akun Terpilih ({tembusanUsers.length})</Label>
-                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                        <Label className="text-sm font-medium text-[#2B2B2B] flex items-center justify-between">
+                                            <span>Akun Terpilih ({tembusanUsers.length})</span>
+                                            <span className="text-xs font-normal text-muted-foreground">Akan dapat mengakses sistem</span>
+                                        </Label>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                                             {tembusanUsers.map((user) => (
                                                 <div
                                                     key={user.userId}
-                                                    className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                                    className="flex items-center gap-3 p-3 bg-white rounded-lg border border-border group hover:border-gray-300 transition-all"
                                                 >
                                                     <div className={cn(
-                                                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                                                        user.type === 'mahasiswa' ? 'bg-blue-100' : 'bg-purple-100'
+                                                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border",
+                                                        "bg-neutral-50 border-neutral-200 text-neutral-600"
                                                     )}>
-                                                        <User className={cn(
-                                                            "h-4 w-4",
-                                                            user.type === 'mahasiswa' ? 'text-blue-700' : 'text-purple-700'
-                                                        )} />
+                                                        <User className="h-4 w-4" />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-sm truncate">{user.name}</p>
+                                                        <p className="font-medium text-sm text-[#2B2B2B] truncate">{user.name}</p>
                                                         <p className="text-xs text-muted-foreground truncate">{user.description}</p>
                                                     </div>
-                                                    <Badge variant="secondary" className="text-xs shrink-0">
+                                                    <Badge variant="secondary" className="text-[10px] bg-neutral-100 text-muted-foreground border-neutral-200 shrink-0 font-normal">
                                                         Akses Sistem
                                                     </Badge>
                                                     <Button
@@ -2269,23 +2252,35 @@ function BuatSuratContent() {
                             {/* Section 2: Text Manual untuk Tertulis di Surat */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="new-tembusan-text" className="text-sm font-medium text-base-black">
+                                    <Label htmlFor="new-tembusan-text" className="text-sm font-medium text-[#2B2B2B]">
                                         2. Tambah Text Tembusan (Tertulis di Surat)
                                     </Label>
-                                    <p className="text-xs text-muted-foreground">
-                                        Text yang diketik akan <strong>tertulis di bagian "Tembusan:"</strong> di PDF surat.<br />
-                                        <span className="text-amber-600 font-medium">Tidak terkait dengan akun sistem.</span>
+                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                        Text yang diketik akan <strong>tertulis di bagian "Tembusan:"</strong> di PDF surat.
+                                        <br />
+                                        <span className="text-muted-foreground/80 font-medium flex items-center gap-1 mt-0.5">
+                                            <Info className="w-3 h-3" /> Tidak terkait dengan akun sistem.
+                                        </span>
                                     </p>
                                     <div className="flex gap-2 items-center">
-                                        <Textarea
+                                        <Input
                                             id="new-tembusan-text"
                                             placeholder="Contoh: Arsip, Kepala Lab Fisika, Yth. Bapak/Ibu..."
                                             value={newTembusanTextInput}
                                             onChange={(e) => setNewTembusanTextInput(e.target.value)}
-                                            rows={1}
-                                            className="flex-1 min-h-[40px] py-2 resize-none"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    addTembusanText();
+                                                }
+                                            }}
+                                            className="flex-1 bg-white border-border focus:border-neutral-400 transition-colors"
                                         />
-                                        <Button onClick={addTembusanText} disabled={!newTembusanTextInput.trim()}>
+                                        <Button
+                                            onClick={addTembusanText}
+                                            disabled={!newTembusanTextInput.trim()}
+                                            className="bg-[#2B2B2B] text-white hover:bg-[#2B2B2B]/90 shadow-sm"
+                                        >
                                             <Plus className="w-4 h-4 mr-2" />
                                             Tambah
                                         </Button>
@@ -2305,8 +2300,8 @@ function BuatSuratContent() {
                                                     <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-700 shrink-0">
                                                         {index + 1}
                                                     </div>
-                                                    <span className="flex-1 text-sm">{item.text}</span>
-                                                    <Badge variant="outline" className="text-xs border-green-300 text-green-700 shrink-0">
+                                                    <span className="flex-1 text-sm font-medium text-[#2B2B2B]">{item.text}</span>
+                                                    <Badge variant="secondary" className="text-[10px] bg-neutral-100 text-muted-foreground border-neutral-200 shrink-0 font-normal">
                                                         Tertulis di Surat
                                                     </Badge>
                                                     <Button
@@ -2324,13 +2319,21 @@ function BuatSuratContent() {
                                 )}
                             </div>
 
-                            <Alert className="mt-4 bg-amber-50 border-amber-200">
-                                <Info className="h-4 w-4 text-amber-600" />
-                                <AlertDescription className="text-amber-800 text-sm">
-                                    <strong>Perbedaan:</strong><br />
-                                    • <strong>Pengaju</strong>: Dapat akses download surat, tidak tertulis di PDF<br />
-                                    • <strong>Akun Sistem (Biru)</strong>: Dapat akses download surat, tidak tertulis di PDF<br />
-                                    • <strong>Text Tertulis (Hijau)</strong>: Tertulis di surat, tidak dapat akses sistem
+                            <Alert className="mt-4 bg-blue-50/30 border-blue-100 text-[#2B2B2B]">
+                                <Info className="h-4 w-4 text-blue-600/80" />
+                                <AlertDescription className="text-sm ml-2">
+                                    <span className="font-semibold block mb-1">Panduan Pengisian:</span>
+                                    <div className="grid grid-cols-1 gap-1 text-muted-foreground">
+                                        <span className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Pengaju</strong>: Untuk arsip pribadi (tidak di PDF).
+                                        </span>
+                                        <span className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Akun Sistem</strong>: Untuk notifikasi & download (tidak di PDF).
+                                        </span>
+                                        <span className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Text Tertulis</strong>: Hanya text di bagian "Tembusan" PDF.
+                                        </span>
+                                    </div>
                                 </AlertDescription>
                             </Alert>
                         </CardContent>
@@ -2360,12 +2363,10 @@ function BuatSuratContent() {
                             />
 
                             {attachmentFiles.length === 0 && (
-                                <Alert className="bg-blue-50 border-blue-200">
-                                    <Info className="h-4 w-4 text-blue-600" />
-                                    <AlertDescription className="text-blue-800 text-sm">
-                                        Lampiran bersifat opsional. Anda dapat melanjutkan tanpa menambahkan lampiran.
-                                    </AlertDescription>
-                                </Alert>
+                                <div className="flex items-center gap-2 rounded-lg border border-[#E1DFE0] bg-white px-4 py-3">
+                                    <Info className="h-4 w-4 text-[#6D6D6D] shrink-0" />
+                                    <p className="text-[#6D6D6D] text-sm">Lampiran bersifat opsional. Anda dapat melanjutkan tanpa menambahkan lampiran.</p>
+                                </div>
                             )}
                         </CardContent>
                     </Card>
@@ -2473,23 +2474,23 @@ function BuatSuratContent() {
                                             {attachmentFiles.map((file, index) => (
                                                 <div
                                                     key={`${file.name}-${index}`}
-                                                    className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200"
+                                                    className="flex items-center gap-3 p-3 rounded-lg border border-[#E1DFE0] bg-white group hover:border-gray-300 transition-all"
                                                 >
                                                     <div className={cn(
-                                                        "w-8 h-8 rounded flex items-center justify-center shrink-0",
+                                                        "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
                                                         file.type === 'application/pdf'
                                                             ? "bg-red-100"
-                                                            : "bg-green-100"
+                                                            : "bg-blue-100"
                                                     )}>
                                                         {file.type === 'application/pdf' ? (
-                                                            <File className="w-4 h-4 text-red-600" />
+                                                            <FileText className="w-5 h-5 text-red-600" />
                                                         ) : (
-                                                            <Image className="w-4 h-4 text-green-600" />
+                                                            <Image className="w-5 h-5 text-blue-500" />
                                                         )}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-sm truncate">{file.name}</p>
-                                                        <p className="text-xs text-muted-foreground">
+                                                        <p className="font-medium text-sm text-[#2B2B2B] truncate" title={file.name}>{file.name}</p>
+                                                        <p className="text-xs text-[#6D6D6D]">
                                                             {(file.size / (1024 * 1024)).toFixed(1)} MB
                                                         </p>
                                                     </div>
@@ -2535,13 +2536,6 @@ function BuatSuratContent() {
                                 </div>
                             </CardContent>
                         </Card>
-
-                        <Alert className="border-blue-200 bg-blue-50">
-                            <Info className="h-4 w-4 text-blue-600" />
-                            <AlertDescription className="text-blue-800">
-                                Setelah surat dibuat, surat akan melalui alur verifikasi sebelum ditandatangani.
-                            </AlertDescription>
-                        </Alert>
                     </div>
                 )}
             </div>

@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Undo2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 // ============================================================================
@@ -98,28 +98,27 @@ export function RevisionDialog({
 
     // Use revisionTargets directly from backend
     // Fallback to default if empty
-    const availableTargets = revisionTargets.length > 0 
+    const availableTargets = revisionTargets.length > 0
         ? revisionTargets
         : DEFAULT_REVISION_TARGETS;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Undo2 className="h-5 w-5 text-warning" />
+            <DialogContent className="sm:max-w-md rounded-2xl" hideCloseButton>
+                <DialogHeader className="space-y-1">
+                    <DialogTitle className="text-xl font-semibold text-[#2B2B2B]">
                         Kembalikan untuk Direvisi
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-sm text-[#6D6D6D]">
                         Kembalikan surat keluar untuk direvisi oleh staf atau supervisor.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
                     {/* Pilih Tujuan Kembalikan untuk Revisi */}
-                    <div className="space-y-2">
-                        <Label htmlFor="target-role">
-                            Kembalikan Ke <span className="text-destructive">*</span>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="target-role" className="text-sm font-medium text-[#2B2B2B]">
+                            Kembalikan Ke <span className="text-red-500">*</span>
                         </Label>
                         <Select value={targetRole} onValueChange={setTargetRole}>
                             <SelectTrigger id="target-role" className="w-full">
@@ -133,15 +132,15 @@ export function RevisionDialog({
                                 ))}
                             </SelectContent>
                         </Select>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-[#6D6D6D]">
                             Pilih staf atau supervisor yang akan melakukan revisi.
                         </p>
                     </div>
-                    
+
                     {/* Catatan Revisi */}
-                    <div className="space-y-2">
-                        <Label htmlFor="reason">
-                            Catatan Revisi <span className="text-destructive">*</span>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="reason" className="text-sm font-medium text-[#2B2B2B]">
+                            Catatan Revisi <span className="text-red-500">*</span>
                         </Label>
                         <Textarea
                             id="reason"
@@ -150,18 +149,19 @@ export function RevisionDialog({
                             placeholder="Jelaskan apa yang perlu diperbaiki/direvisi..."
                             rows={4}
                         />
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-[#6D6D6D]">
                             Catatan ini akan ditampilkan kepada staf/supervisor yang melakukan revisi.
                         </p>
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2 sm:gap-0">
+                <DialogFooter className="gap-2 pt-2">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         disabled={loading}
+                        className="border-[#E1DFE0] text-[#2B2B2B]"
                     >
                         Batal
                     </Button>
@@ -171,10 +171,8 @@ export function RevisionDialog({
                         disabled={loading || !targetRole || !reason.trim()}
                         className="bg-base-black text-white hover:bg-base-black/90"
                     >
-                        {loading ? (
+                        {loading && (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                            <Undo2 className="w-4 h-4 mr-2" />
                         )}
                         Kembalikan untuk Direvisi
                     </Button>

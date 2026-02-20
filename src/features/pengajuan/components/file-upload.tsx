@@ -137,11 +137,18 @@ export function FileUpload({
         return (bytes / (1024 * 1024)).toFixed(1) + " MB";
     };
 
-    const getFileIcon = (file: File) => {
-        if (file.type === "application/pdf") {
-            return <FileText className="h-5 w-5 text-red-500" />;
-        }
-        return <Image className="h-5 w-5 text-blue-500" />;
+    const getFileIconBox = (file: File) => {
+        const isPdf = file.type === "application/pdf";
+        return (
+            <div className={cn(
+                "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                isPdf ? "bg-red-100" : "bg-blue-100"
+            )}>
+                {isPdf
+                    ? <FileText className="h-5 w-5 text-red-500" />
+                    : <Image className="h-5 w-5 text-blue-500" />}
+            </div>
+        );
     };
 
     return (
@@ -193,19 +200,19 @@ export function FileUpload({
                     {files.map((file, index) => (
                         <div
                             key={`${file.name}-${index}`}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border group"
+                            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-[#E1DFE0] group"
                         >
-                            <div 
-                                className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors"
+                            <div
+                                className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
                                 onClick={() => handlePreview(file)}
                                 title="Klik untuk melihat preview"
                             >
-                                {getFileIcon(file)}
+                                {getFileIconBox(file)}
                                 <div className="min-w-0">
-                                    <p className="text-sm font-medium text-gray-700 truncate">
+                                    <p className="text-sm font-medium text-[#2B2B2B] truncate">
                                         {file.name}
                                     </p>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-[#6D6D6D]">
                                         {formatFileSize(file.size)}
                                     </p>
                                 </div>

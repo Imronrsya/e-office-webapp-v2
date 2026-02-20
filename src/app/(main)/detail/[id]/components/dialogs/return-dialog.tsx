@@ -101,13 +101,13 @@ export function ReturnDialog({
 
     // Use returnTargets directly from backend (already includes ADMIN_PRODI as first)
     // Fallback to default if empty
-    const availableTargets = returnTargets.length > 0 
+    const availableTargets = returnTargets.length > 0
         ? returnTargets
         : DEFAULT_RETURN_TARGETS;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md" hideCloseButton>
                 <DialogHeader>
                     <DialogTitle>Kembalikan Surat</DialogTitle>
                     <DialogDescription>
@@ -137,7 +137,7 @@ export function ReturnDialog({
                             Pilih role tujuan dari daftar yang tersedia.
                         </p>
                     </div>
-                    
+
                     {/* Alasan */}
                     <div className="space-y-2">
                         <Label htmlFor="reason">
@@ -171,10 +171,8 @@ export function ReturnDialog({
                         disabled={loading || !targetRole || !reason.trim()}
                         className="bg-base-black text-white hover:bg-base-black/90"
                     >
-                        {loading ? (
+                        {loading && (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                            <Undo2 className="w-4 h-4 mr-2" />
                         )}
                         Kembalikan
                     </Button>

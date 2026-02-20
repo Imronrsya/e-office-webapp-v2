@@ -10,7 +10,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 // ============================================================================
 // TYPES
@@ -43,33 +43,28 @@ export function ApproveDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent className="sm:max-w-md">
-                <AlertDialogHeader>
-                    {/* Success Icon */}
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-success/10 mb-4">
-                        <CheckCircle className="h-6 w-6 text-success" />
-                    </div>
-                    <AlertDialogTitle className="text-center">
+            <AlertDialogContent className="sm:max-w-md rounded-2xl">
+                <AlertDialogHeader className="space-y-1">
+                    <AlertDialogTitle className="text-xl font-semibold text-[#2B2B2B]">
                         {title}
                     </AlertDialogTitle>
-                    <AlertDialogDescription className="text-center">
+                    <AlertDialogDescription className="text-sm text-[#6D6D6D]">
                         {description}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="sm:justify-center gap-2">
-                    <AlertDialogCancel disabled={loading}>
+                <AlertDialogFooter className="gap-2 pt-2">
+                    <AlertDialogCancel
+                        disabled={loading}
+                        className="border-[#E1DFE0] text-[#2B2B2B]"
+                    >
                         Batal
                     </AlertDialogCancel>
                     <AlertDialogAction
                         onClick={handleConfirm}
                         disabled={loading}
-                        className="bg-success text-success-foreground hover:bg-success/90"
+                        className="bg-green-600 hover:bg-green-700 text-white"
                     >
-                        {loading ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                        )}
+                        {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Setujui
                     </AlertDialogAction>
                 </AlertDialogFooter>

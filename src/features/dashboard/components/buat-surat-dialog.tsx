@@ -11,14 +11,9 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { 
-    FileText, 
-    ArrowRight, 
-    ArrowLeft,
-    GraduationCap, 
-    Building2, 
+import {
+    GraduationCap,
+    Building2,
     Globe,
     ClipboardList,
     Table,
@@ -51,21 +46,18 @@ const CATEGORIES = [
         label: "Akademik",
         description: "Surat terkait kegiatan akademik seperti seminar, penelitian, dll.",
         icon: GraduationCap,
-        color: "blue"
     },
     {
         id: "SUMBER_DAYA" as LetterCategory,
         label: "Sumber Daya",
         description: "Surat terkait sumber daya seperti pengadaan, inventaris, dll.",
         icon: Building2,
-        color: "emerald"
     },
     {
         id: "UMUM" as LetterCategory,
         label: "Umum",
         description: "Surat umum lainnya yang tidak termasuk kategori di atas.",
         icon: Globe,
-        color: "purple"
     }
 ];
 
@@ -75,21 +67,18 @@ const TEMPLATES = [
         label: "Surat Tugas",
         description: "Surat penugasan untuk satu orang dengan format standar.",
         icon: ClipboardList,
-        color: "blue"
     },
     {
         id: "surat-tugas-table" as TemplateTypeOption,
         label: "Surat Tugas (Tabel)",
         description: "Surat penugasan untuk banyak orang dengan format tabel.",
         icon: Table,
-        color: "emerald"
     },
     {
         id: "surat-keputusan" as TemplateTypeOption,
         label: "Surat Keputusan",
         description: "Surat keputusan dekan untuk penetapan atau kegiatan resmi.",
         icon: Award,
-        color: "purple"
     }
 ];
 
@@ -109,7 +98,7 @@ export function BuatSuratDialog({ open, onOpenChange, userRole = "" }: BuatSurat
     const availableCategories = CATEGORIES.filter((category) => {
         const isAkademikRole = ["STAF_AKADEMIK", "SUPERVISOR_AKADEMIK"].includes(userRole);
         const isSumberDayaRole = ["STAF_SUMBER_DAYA", "SUPERVISOR_SUMBER_DAYA"].includes(userRole);
-        
+
         if (isAkademikRole) {
             return category.id === "AKADEMIK" || category.id === "UMUM";
         }
@@ -143,7 +132,7 @@ export function BuatSuratDialog({ open, onOpenChange, userRole = "" }: BuatSurat
 
     const handleSubmit = () => {
         if (!selectedCategory || !selectedTemplate) return;
-        
+
         // Navigate to buat-surat page with query params
         router.push(`/buat-surat?category=${selectedCategory}&type=${selectedTemplate}`);
         handleClose();
@@ -156,36 +145,21 @@ export function BuatSuratDialog({ open, onOpenChange, userRole = "" }: BuatSurat
         onOpenChange(false);
     };
 
-    const getColorClasses = (color: string, isSelected: boolean) => {
-        const colors: Record<string, { border: string; bg: string; hover: string }> = {
-            blue: {
-                border: isSelected ? "border-blue-600" : "border-border hover:border-blue-300",
-                bg: isSelected ? "bg-blue-50" : "hover:bg-blue-50/50",
-                hover: "hover:border-blue-300"
-            },
-            emerald: {
-                border: isSelected ? "border-emerald-600" : "border-border hover:border-emerald-300",
-                bg: isSelected ? "bg-emerald-50" : "hover:bg-emerald-50/50",
-                hover: "hover:border-emerald-300"
-            },
-            purple: {
-                border: isSelected ? "border-purple-600" : "border-border hover:border-purple-300",
-                bg: isSelected ? "bg-purple-50" : "hover:bg-purple-50/50",
-                hover: "hover:border-purple-300"
-            }
-        };
-        return colors[color] || colors.blue;
+    const getCardClasses = (isSelected: boolean) => {
+        return isSelected
+            ? "border-[#2B2B2B] bg-neutral-50"
+            : "border-[#E1DFE0] bg-white hover:border-[#2B2B2B]/40 hover:bg-neutral-50/50";
     };
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg" hideCloseButton>
                 <DialogHeader>
                     <DialogTitle>
                         {step === 1 ? "Pilih Jenis Surat" : "Pilih Template Surat"}
                     </DialogTitle>
                     <DialogDescription>
-                        {step === 1 
+                        {step === 1
                             ? "Pilih kategori jenis surat yang akan Anda buat."
                             : "Pilih template surat sesuai kebutuhan Anda."}
                     </DialogDescription>
@@ -194,119 +168,100 @@ export function BuatSuratDialog({ open, onOpenChange, userRole = "" }: BuatSurat
                 <div className="py-4">
                     {/* Step 1: Category Selection */}
                     {step === 1 && (
-                        <RadioGroup
-                            value={selectedCategory}
-                            onValueChange={(value) => handleCategorySelect(value as LetterCategory)}
-                            className="grid grid-cols-1 gap-3"
-                        >
+                        <div className="grid grid-cols-1 gap-3">
                             {availableCategories.map((category) => {
                                 const IconComponent = category.icon;
                                 const isSelected = selectedCategory === category.id;
-                                const colorClasses = getColorClasses(category.color, isSelected);
 
                                 return (
-                                    <Label
+                                    <div
                                         key={category.id}
-                                        htmlFor={category.id}
+                                        onClick={() => handleCategorySelect(category.id)}
                                         className={cn(
-                                            "flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                                            colorClasses.border,
-                                            colorClasses.bg
+                                            "flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                                            getCardClasses(isSelected)
                                         )}
                                     >
-                                        <RadioGroupItem value={category.id} id={category.id} className="mt-1" />
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <IconComponent className={cn(
-                                                    "w-5 h-5",
-                                                    category.color === "blue" && "text-blue-600",
-                                                    category.color === "emerald" && "text-emerald-600",
-                                                    category.color === "purple" && "text-purple-600"
-                                                )} />
+                                                <IconComponent className="w-5 h-5 text-[#2B2B2B]" />
                                                 <span className="font-semibold">{category.label}</span>
                                             </div>
                                             <p className="text-sm text-muted-foreground">
                                                 {category.description}
                                             </p>
                                         </div>
-                                    </Label>
+                                    </div>
                                 );
                             })}
-                        </RadioGroup>
+                        </div>
                     )}
 
                     {/* Step 2: Template Selection */}
                     {step === 2 && (
-                        <RadioGroup
-                            value={selectedTemplate}
-                            onValueChange={(value) => handleTemplateSelect(value as TemplateTypeOption)}
-                            className="grid grid-cols-1 gap-3"
-                        >
+                        <div className="grid grid-cols-1 gap-3">
                             {TEMPLATES.map((template) => {
                                 const IconComponent = template.icon;
                                 const isSelected = selectedTemplate === template.id;
-                                const colorClasses = getColorClasses(template.color, isSelected);
 
                                 return (
-                                    <Label
+                                    <div
                                         key={template.id}
-                                        htmlFor={template.id}
+                                        onClick={() => handleTemplateSelect(template.id)}
                                         className={cn(
-                                            "flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                                            colorClasses.border,
-                                            colorClasses.bg
+                                            "flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                                            getCardClasses(isSelected)
                                         )}
                                     >
-                                        <RadioGroupItem value={template.id} id={template.id} className="mt-1" />
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <IconComponent className={cn(
-                                                    "w-5 h-5",
-                                                    template.color === "blue" && "text-blue-600",
-                                                    template.color === "emerald" && "text-emerald-600",
-                                                    template.color === "purple" && "text-purple-600"
-                                                )} />
+                                                <IconComponent className="w-5 h-5 text-[#2B2B2B]" />
                                                 <span className="font-semibold">{template.label}</span>
                                             </div>
                                             <p className="text-sm text-muted-foreground">
                                                 {template.description}
                                             </p>
                                         </div>
-                                    </Label>
+                                    </div>
                                 );
                             })}
-                        </RadioGroup>
+                        </div>
                     )}
                 </div>
 
-                <DialogFooter className="flex gap-2 sm:gap-0">
+                <DialogFooter className="flex gap-2 sm:gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={handleClose}
+                        className="flex-1 sm:flex-none border-[#E1DFE0] text-[#2B2B2B]"
+                    >
+                        Batal
+                    </Button>
+
                     {step === 2 && (
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             onClick={handleBack}
-                            className="flex-1 sm:flex-none"
+                            className="flex-1 sm:flex-none border-[#E1DFE0] text-[#2B2B2B]"
                         >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
                             Kembali
                         </Button>
                     )}
-                    
+
                     {step === 1 ? (
-                        <Button 
+                        <Button
                             onClick={handleNext}
                             disabled={!selectedCategory}
                             className="flex-1 sm:flex-none"
                         >
                             Lanjutkan
-                            <ArrowRight className="w-4 h-4 ml-2" />
                         </Button>
                     ) : (
-                        <Button 
+                        <Button
                             onClick={handleSubmit}
                             disabled={!selectedTemplate}
-                            className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700"
+                            className="flex-1 sm:flex-none bg-base-black text-white hover:bg-base-black/90"
                         >
-                            <FileText className="w-4 h-4 mr-2" />
                             Buat Surat
                         </Button>
                     )}
