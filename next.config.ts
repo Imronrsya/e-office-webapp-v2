@@ -34,6 +34,16 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  async rewrites() {
+    return [
+      {
+        source: '/minio-proxy/:path*',
+        // Next.js di server akan menembak langsung ke localhost MinIO
+        destination: 'http://localhost:9000/:path*', 
+      },
+    ];
+  },
+
   ...(process.env.NODE_ENV === 'development' && {
     allowedDevOrigins: [
       apiHost,      
