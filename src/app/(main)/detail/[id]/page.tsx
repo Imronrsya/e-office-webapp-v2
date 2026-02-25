@@ -980,6 +980,31 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         return { jenisSurat, judulSurat, tipeSurat, staffName, staffRole };
     })();
 
+    // Derive the correct display title for this letter (surat keluar).
+    // Rules:
+    // - Staff-created letter: use staffDerivedValues.judulSurat (from doc.perihal)
+    // - Surat keluar dari surat masuk AND surat hasil doc EXISTS: use suratHasilDoc perihal/content title
+    //   (NEVER fall back to surat masuk's judulAcara to keep titles independent)
+    // - Surat keluar dari surat masuk AND no surat hasil doc yet: show surat masuk judulAcara (pre-draft)
+    //
+    // NOTE: suratHasilDoc is declared below at line ~991, so we recalculate inline here.
+    const _earlyHasilDoc = detail.documents?.find(d =>
+        d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
+    );
+    const judulSuratForDisplay = (() => {
+        if (isStaffCreated && staffDerivedValues) {
+            return staffDerivedValues.judulSurat || '-';
+        }
+        if (_earlyHasilDoc) {
+            // Surat keluar dari surat masuk - use its own independent title
+            return _earlyHasilDoc.perihal
+                || (_earlyHasilDoc.content as Record<string, unknown>)?.judulSurat as string
+                || '-';
+        }
+        // No surat hasil doc yet (pre-draft) - show submission info as fallback
+        return submissionValues.judulAcara || '-';
+    })();
+
     // Check if status is waiting
     const isWaiting = !['COMPLETED', 'REJECTED', 'CANCELLED'].includes(detail.status);
 
@@ -1475,7 +1500,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             {/* Detail Surat */}
             <DetailSuratInfo
                 jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : (suratHasilDoc?.perihal || submissionValues.judulAcara)}
+                judulSurat={judulSuratForDisplay}
                 keperluan={submissionValues.keperluan}
                 isStaffCreated={isStaffCreated}
             />
@@ -1646,7 +1671,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             ? `${staffDerivedValues.jenisSurat === 'SURAT_KEPUTUSAN' ? 'SK' : 'ST'} - `
                             : `${submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'ST' : 'SK'} - `
                     }
-                    {(isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat || 'Surat' : suratHasilDoc?.perihal || submissionValues.judulAcara || 'Surat').toUpperCase()}
+                    {(judulSuratForDisplay || 'Surat').toUpperCase()}
                 </h2>
 
                 {/* Info label untuk lingkup fakultas */}
@@ -1683,7 +1708,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         {/* Detail Surat */}
                         <DetailSuratInfo
                             jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                            judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : (suratHasilDoc?.perihal || submissionValues.judulAcara)}
+                            judulSurat={judulSuratForDisplay}
                             keperluan={submissionValues.keperluan}
                             isStaffCreated={isStaffCreated}
                         />
@@ -1755,7 +1780,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 {/* Detail Surat */}
                                 <DetailSuratInfo
                                     jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                                    judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : (suratHasilDoc?.perihal || submissionValues.judulAcara)}
+                                    judulSurat={judulSuratForDisplay}
                                     keperluan={submissionValues.keperluan}
                                     isStaffCreated={isStaffCreated}
                                 />
@@ -1795,7 +1820,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             {/* Detail Surat */}
                             <DetailSuratInfo
                                 jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                                judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : (suratHasilDoc?.perihal || submissionValues.judulAcara)}
+                                judulSurat={judulSuratForDisplay}
                                 keperluan={submissionValues.keperluan}
                                 isStaffCreated={isStaffCreated}
                             />
