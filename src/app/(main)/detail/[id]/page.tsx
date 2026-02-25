@@ -1475,7 +1475,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             {/* Detail Surat */}
             <DetailSuratInfo
                 jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : submissionValues.judulAcara}
+                judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : (suratHasilDoc?.perihal || submissionValues.judulAcara)}
                 keperluan={submissionValues.keperluan}
                 isStaffCreated={isStaffCreated}
             />
@@ -1646,7 +1646,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             ? `${staffDerivedValues.jenisSurat === 'SURAT_KEPUTUSAN' ? 'SK' : 'ST'} - `
                             : `${submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'ST' : 'SK'} - `
                     }
-                    {(isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat || 'Surat' : submissionValues.judulAcara || 'Surat').toUpperCase()}
+                    {(isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat || 'Surat' : suratHasilDoc?.perihal || submissionValues.judulAcara || 'Surat').toUpperCase()}
                 </h2>
 
                 {/* Info label untuk lingkup fakultas */}
@@ -1683,7 +1683,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         {/* Detail Surat */}
                         <DetailSuratInfo
                             jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                            judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : submissionValues.judulAcara}
+                            judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : (suratHasilDoc?.perihal || submissionValues.judulAcara)}
                             keperluan={submissionValues.keperluan}
                             isStaffCreated={isStaffCreated}
                         />
@@ -1755,7 +1755,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 {/* Detail Surat */}
                                 <DetailSuratInfo
                                     jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                                    judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : submissionValues.judulAcara}
+                                    judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : (suratHasilDoc?.perihal || submissionValues.judulAcara)}
                                     keperluan={submissionValues.keperluan}
                                     isStaffCreated={isStaffCreated}
                                 />
@@ -1795,7 +1795,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             {/* Detail Surat */}
                             <DetailSuratInfo
                                 jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                                judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : submissionValues.judulAcara}
+                                judulSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.judulSurat : (suratHasilDoc?.perihal || submissionValues.judulAcara)}
                                 keperluan={submissionValues.keperluan}
                                 isStaffCreated={isStaffCreated}
                             />
