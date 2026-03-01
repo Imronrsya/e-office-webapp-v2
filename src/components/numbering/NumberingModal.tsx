@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2, XCircle, AlertCircle, Hash, Calendar as CalendarIcon } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, AlertCircle, Hash, Calendar as CalendarIcon, Info } from "lucide-react";
 import { legalisasiService } from "@/services/legalisasi.service";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
@@ -214,10 +214,9 @@ export function NumberingModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" hideCloseButton>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Hash className="w-5 h-5" />
+          <DialogTitle>
             Penomoran {getDocumentTypeLabel()}
           </DialogTitle>
           <DialogDescription>
@@ -265,16 +264,16 @@ export function NumberingModal({
 
           {/* Preview */}
           {nomorSurat && (
-            <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200">
-              <p className="text-sm text-zinc-500 mb-1">Preview</p>
-              <p className="font-mono text-lg font-medium">
+            <div className="rounded-lg border border-[#E1DFE0] bg-neutral-50 px-4 py-3">
+              <p className="text-xs text-[#6D6D6D] mb-1">Preview</p>
+              <p className="font-mono text-lg font-medium text-[#2B2B2B]">
                 Nomor: {nomorSurat}
               </p>
-              <p className="text-sm text-zinc-600 mt-1">
+              <p className="text-sm text-[#6D6D6D] mt-1">
                 Tanggal: {tanggalSurat ? format(tanggalSurat, "dd MMMM yyyy", { locale: id }) : "-"}
               </p>
               {documentType !== "SURAT_KEPUTUSAN" && (
-                <p className="text-xs text-zinc-500 mt-2 italic">
+                <p className="text-xs text-[#6D6D6D] mt-2 italic">
                   Format dokumen: "Semarang, {tanggalSurat ? format(tanggalSurat, "dd MMMM yyyy", { locale: id }) : "[tanggal]"}"
                 </p>
               )}
@@ -289,15 +288,18 @@ export function NumberingModal({
           )}
 
           {/* Format Reference */}
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs font-medium text-blue-800 mb-2">Format Penomoran:</p>
-            <ul className="text-xs text-blue-700 space-y-1">
-              <li>• Dengan bulan: XXX/UN7.5/ST/I/YYYY</li>
-              <li>• Tanpa bulan: XXX/UN7.5/SK/YYYY</li>
-            </ul>
-            <p className="text-xs text-blue-600 mt-2 italic">
-              Kode jenis: ST (Surat Tugas), SK (Surat Keputusan)
-            </p>
+          <div className="flex items-start gap-2.5 rounded-lg border border-[#E1DFE0] bg-neutral-50 px-4 py-3">
+            <Info className="h-4 w-4 text-[#6D6D6D] mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-medium text-[#6D6D6D] mb-1">Format Penomoran:</p>
+              <ul className="text-xs text-[#6D6D6D] space-y-0.5">
+                <li>• Dengan bulan: XXX/UN7.5/ST/I/YYYY</li>
+                <li>• Tanpa bulan: XXX/UN7.5/SK/YYYY</li>
+              </ul>
+              <p className="text-xs text-[#6D6D6D] mt-1 italic">
+                Kode jenis: ST (Surat Tugas), SK (Surat Keputusan)
+              </p>
+            </div>
           </div>
         </div>
 

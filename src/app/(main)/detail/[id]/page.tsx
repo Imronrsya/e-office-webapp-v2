@@ -1500,6 +1500,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             {/* Detail Surat */}
             <DetailSuratInfo
                 jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
+                kategoriSurat={detail.category || detail.letterType?.category}
                 judulSurat={judulSuratForDisplay}
                 keperluan={submissionValues.keperluan}
                 isStaffCreated={isStaffCreated}
@@ -1708,6 +1709,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         {/* Detail Surat */}
                         <DetailSuratInfo
                             jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
+                            kategoriSurat={detail.category || detail.letterType?.category}
                             judulSurat={judulSuratForDisplay}
                             keperluan={submissionValues.keperluan}
                             isStaffCreated={isStaffCreated}
@@ -1780,6 +1782,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 {/* Detail Surat */}
                                 <DetailSuratInfo
                                     jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
+                                    kategoriSurat={detail.category || detail.letterType?.category}
                                     judulSurat={judulSuratForDisplay}
                                     keperluan={submissionValues.keperluan}
                                     isStaffCreated={isStaffCreated}
@@ -1820,6 +1823,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             {/* Detail Surat */}
                             <DetailSuratInfo
                                 jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
+                                kategoriSurat={detail.category || detail.letterType?.category}
                                 judulSurat={judulSuratForDisplay}
                                 keperluan={submissionValues.keperluan}
                                 isStaffCreated={isStaffCreated}
@@ -2362,47 +2366,38 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
             {/* Attachment Preview Modal */}
             <Dialog open={attachmentPreviewOpen} onOpenChange={setAttachmentPreviewOpen}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col p-6">
                     <DialogHeader>
-                        <DialogTitle>Preview: {previewAttachment?.fileName}</DialogTitle>
-                        <DialogDescription>
-                            Preview file lampiran dari pengajuan surat
-                        </DialogDescription>
+                        <DialogTitle className="truncate pr-8">
+                            {previewAttachment?.fileName}
+                        </DialogTitle>
                     </DialogHeader>
-                    <div className="py-4">
+                    <div className="flex-1 w-full h-full min-h-0 bg-gray-100 rounded-md overflow-hidden relative border">
                         {previewAttachment && (
                             <>
                                 {previewAttachment.mimeType?.startsWith('image/') ? (
-                                    // Preview untuk image files
-                                    <div className="w-full flex justify-center">
+                                    <div className="w-full h-full flex items-center justify-center overflow-auto p-4">
                                         <img
                                             src={previewAttachment.fileUrl}
                                             alt={previewAttachment.fileName}
-                                            className="max-w-full max-h-[500px]"
+                                            className="max-w-full max-h-full object-contain shadow-sm"
                                         />
                                     </div>
                                 ) : previewAttachment.mimeType === 'application/pdf' ? (
-                                    // Preview untuk PDF
-                                    <div className="w-full">
-                                        <iframe
-                                            src={`${previewAttachment.fileUrl}#toolbar=0`}
-                                            className="w-full h-[600px] border border-zinc-400 rounded"
-                                            title={previewAttachment.fileName}
-                                        />
-                                    </div>
+                                    <iframe
+                                        src={previewAttachment.fileUrl}
+                                        className="w-full h-full"
+                                        title={previewAttachment.fileName}
+                                    />
                                 ) : previewAttachment.mimeType?.startsWith('text/') ? (
-                                    // Preview untuk text files
-                                    <div className="w-full">
-                                        <iframe
-                                            src={previewAttachment.fileUrl}
-                                            className="w-full h-[600px] border border-zinc-400 rounded"
-                                            title={previewAttachment.fileName}
-                                        />
-                                    </div>
+                                    <iframe
+                                        src={previewAttachment.fileUrl}
+                                        className="w-full h-full"
+                                        title={previewAttachment.fileName}
+                                    />
                                 ) : (
-                                    // File type tidak bisa di-preview, tampilkan link download
-                                    <div className="py-8 text-center">
-                                        <FileText className="w-16 h-16 mx-auto text-zinc-400 mb-4" />
+                                    <div className="w-full h-full flex flex-col items-center justify-center">
+                                        <FileText className="w-16 h-16 text-zinc-400 mb-4" />
                                         <p className="text-sm text-zinc-600 mb-4">
                                             File jenis {previewAttachment.mimeType || 'unknown'} tidak bisa di-preview di browser
                                         </p>
@@ -2418,27 +2413,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             </>
                         )}
                     </div>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setAttachmentPreviewOpen(false)}
-                        >
-                            Tutup
-                        </Button>
-                        {previewAttachment && (
-                            <Button
-                                onClick={() => {
-                                    if (previewAttachment) {
-                                        handleDownloadAttachment(previewAttachment.fileName, previewAttachment.fileUrl);
-                                    }
-                                }}
-                                className="bg-base-black hover:bg-base-black/90 text-white"
-                            >
-                                <Download className="w-4 h-4 mr-2" />
-                                Download
-                            </Button>
-                        )}
-                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 
@@ -2502,26 +2476,25 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
             {/* Preview Modal untuk Lampiran Dokumen (Surat Keluar) */}
             <Dialog open={docAttachmentPreviewOpen} onOpenChange={setDocAttachmentPreviewOpen}>
-                <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+                <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col p-6">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <FileText className="w-5 h-5" />
-                            {previewDocAttachment?.name || 'Preview Lampiran'}
+                        <DialogTitle className="truncate pr-8">
+                            {previewDocAttachment?.name}
                         </DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 overflow-auto min-h-[500px]">
+                    <div className="flex-1 w-full h-full min-h-0 bg-gray-100 rounded-md overflow-hidden relative border">
                         {previewDocAttachment?.isPdf ? (
                             <iframe
                                 src={previewDocAttachment.url}
-                                className="w-full h-full min-h-[500px] border-0"
-                                title="PDF Preview"
+                                className="w-full h-full"
+                                title={previewDocAttachment.name}
                             />
                         ) : (
-                            <div className="flex items-center justify-center p-4">
+                            <div className="w-full h-full flex items-center justify-center overflow-auto p-4">
                                 <img
                                     src={previewDocAttachment?.url}
                                     alt={previewDocAttachment?.name}
-                                    className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                                    className="max-w-full max-h-full object-contain shadow-sm"
                                 />
                             </div>
                         )}

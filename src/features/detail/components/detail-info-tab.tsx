@@ -95,9 +95,20 @@ export function DetailInfoTab({ detail }: DetailInfoTabProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="text-sm">
-                        <p className="text-muted-foreground">Jenis Surat</p>
+                        <p className="text-muted-foreground">Tipe Surat</p>
                         <p className="font-medium">
                             {submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'Surat Tugas (ST)' : 'Surat Keputusan (SK)'}
+                        </p>
+                    </div>
+                    <div className="text-sm">
+                        <p className="text-muted-foreground">Jenis Surat</p>
+                        <p className="font-medium">
+                            {(() => {
+                                const cat = detail.category || detail.letterType?.category;
+                                if (!cat) return '-';
+                                const map: Record<string, string> = { AKADEMIK: 'Akademik', SUMBER_DAYA: 'Sumber Daya', UMUM: 'Umum' };
+                                return map[cat] || cat;
+                            })()}
                         </p>
                     </div>
                     <div className="text-sm">

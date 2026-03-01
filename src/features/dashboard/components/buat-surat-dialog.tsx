@@ -242,7 +242,7 @@ export function BuatSuratDialog({ open, onOpenChange, userRole = "" }: BuatSurat
                         <Button
                             variant="outline"
                             onClick={handleBack}
-                            className="flex-1 sm:flex-none border-[#E1DFE0] text-[#2B2B2B]"
+                            className="flex-1 sm:flex-none border-[#E1DFE0] text-base-black font-medium"
                         >
                             Kembali
                         </Button>

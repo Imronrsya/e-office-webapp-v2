@@ -4,13 +4,14 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, LogOut, Users, Settings, BarChart3 } from "lucide-react";
+import { ChevronDown, LogOut, Users, Settings, BarChart3, Building2 } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -69,41 +70,7 @@ export default function TopNav() {
             </div>
           </div>
 
-          {/* Tengah: Navigation links (SUPERADMIN only) */}
-          {isSuperAdmin && (
-            <nav className="hidden md:flex items-center gap-1">
-              <Link
-                href="/dashboard"
-                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${pathname === "/dashboard"
-                    ? "bg-gray-200 text-black"
-                    : "text-gray-600 hover:bg-gray-200 hover:text-black"
-                  }`}
-              >
-                <BarChart3 className="size-4" />
-                Dashboard
-              </Link>
-              <Link
-                href="/pengguna"
-                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${pathname === "/pengguna"
-                    ? "bg-gray-200 text-black"
-                    : "text-gray-600 hover:bg-gray-200 hover:text-black"
-                  }`}
-              >
-                <Users className="size-4" />
-                Pengguna
-              </Link>
-              <Link
-                href="/pengaturan"
-                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${pathname === "/pengaturan"
-                    ? "bg-gray-200 text-black"
-                    : "text-gray-600 hover:bg-gray-200 hover:text-black"
-                  }`}
-              >
-                <Settings className="size-4" />
-                Pengaturan Departemen
-              </Link>
-            </nav>
-          )}
+          {/* Tengah: Navigation links (SUPERADMIN only) - Dihapus sesuai permintaan */}
 
           {/* Kanan: Tembusan Badge & User Profile Dropdown */}
           <div className="flex items-center gap-3">
@@ -156,6 +123,35 @@ export default function TopNav() {
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end" sideOffset={8} className="w-48">
+                {/* Dashboard Link */}
+                <DropdownMenuItem asChild className="cursor-pointer gap-2 cursor-pointer">
+                  <Link href="/dashboard" className="flex items-center w-full">
+                    <BarChart3 className="size-4" />
+                    <span className="font-medium">
+                      {isSuperAdmin ? "Dashboard Super Admin" : "Dashboard"}
+                    </span>
+                  </Link>
+                </DropdownMenuItem>
+
+                {isSuperAdmin && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/pengguna" className="flex cursor-pointer items-center gap-2">
+                        <Users className="size-4" />
+                        <span className="font-medium">Manajemen Pengguna</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/pengaturan" className="flex cursor-pointer items-center gap-2">
+                        <Building2 className="size-4" />
+                        <span className="font-medium">Pengaturan Departemen</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                <DropdownMenuSeparator />
+
                 <DropdownMenuItem
                   className="cursor-pointer gap-2 text-logout focus:bg-logout/10 focus:text-logout"
                   onSelect={(e) => {

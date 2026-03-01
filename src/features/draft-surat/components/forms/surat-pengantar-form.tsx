@@ -45,15 +45,15 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!nip || nip.trim() === '') {
       return 'NIP harus diisi!';
     }
-    
+
     if (!/^\d+$/.test(nip)) {
       return 'NIP harus berupa angka!';
     }
-    
+
     if (nip.length !== 18) {
       return `NIP harus tepat 18 karakter (saat ini: ${nip.length} karakter)`;
     }
-    
+
     return '';
   };
 
@@ -62,15 +62,15 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!nim || nim.trim() === '') {
       return 'NIM harus diisi!';
     }
-    
+
     if (!/^\d+$/.test(nim)) {
       return 'NIM harus berupa angka!';
     }
-    
+
     if (nim.length !== 14) {
       return `NIM harus tepat 14 karakter (saat ini: ${nim.length} karakter)`;
     }
-    
+
     return '';
   };
 
@@ -83,26 +83,26 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!nama || nama.trim() === '') {
       return `${label} harus diisi!`;
     }
-    
+
     if (nama.length > 100) {
       return `${label} maksimal 100 karakter (saat ini: ${nama.length} karakter)`;
     }
-    
+
     // Tidak boleh mengandung angka
     if (/\d/.test(nama)) {
       return `${label} tidak boleh mengandung angka!`;
     }
-    
+
     // Hanya huruf, spasi, dan tanda baca , . - ' yang diperbolehkan
     if (!/^[a-zA-Z\s,.'-]+$/.test(nama)) {
       return `${label} hanya boleh berisi huruf dan tanda baca (, . - ')`;
     }
-    
+
     // Tidak boleh spasi ganda
     if (/\s{2,}/.test(nama)) {
       return `${label} tidak boleh memiliki spasi ganda!`;
     }
-    
+
     return '';
   };
 
@@ -115,20 +115,20 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!keperluan || keperluan.trim() === '') {
       return 'Keperluan harus diisi!';
     }
-    
+
     if (keperluan.trim().length < 5) {
       return `Keperluan minimal 5 karakter (saat ini: ${keperluan.trim().length} karakter)`;
     }
-    
+
     if (keperluan.length > 150) {
       return `Keperluan maksimal 150 karakter (saat ini: ${keperluan.length} karakter)`;
     }
-    
+
     // Tidak boleh hanya berisi angka
     if (/^\d+$/.test(keperluan.trim())) {
       return 'Keperluan tidak boleh hanya berisi angka!';
     }
-    
+
     return '';
   };
 
@@ -140,11 +140,11 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!jabatan || jabatan.trim() === '') {
       return 'Jabatan Tujuan harus diisi!';
     }
-    
+
     if (jabatan.length > 150) {
       return `Jabatan Tujuan maksimal 150 karakter (saat ini: ${jabatan.length} karakter)`;
     }
-    
+
     return '';
   };
 
@@ -156,11 +156,11 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!alamat || alamat.trim() === '') {
       return 'Alamat Tujuan harus diisi!';
     }
-    
+
     if (alamat.length > 300) {
       return `Alamat Tujuan maksimal 300 karakter (saat ini: ${alamat.length} karakter)`;
     }
-    
+
     return '';
   };
 
@@ -172,25 +172,25 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!judul || judul.trim() === '') {
       return 'Judul Kegiatan/Proposal harus diisi!';
     }
-    
+
     if (judul.trim().length < 5) {
       return `Judul minimal 5 karakter (saat ini: ${judul.trim().length} karakter)`;
     }
-    
+
     if (judul.length > 150) {
       return `Judul maksimal 150 karakter (saat ini: ${judul.length} karakter)`;
     }
-    
+
     // Tidak boleh hanya berisi angka
     if (/^\d+$/.test(judul.trim())) {
       return 'Judul tidak boleh hanya berisi angka!';
     }
-    
+
     // Tidak boleh ada enter (newline)
     if (/[\r\n]/.test(judul)) {
       return 'Judul tidak boleh mengandung enter/baris baru!';
     }
-    
+
     return '';
   };
 
@@ -202,25 +202,25 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!lokasi || lokasi.trim() === '') {
       return 'Lokasi Kegiatan harus diisi!';
     }
-    
+
     if (lokasi.trim().length < 5) {
       return `Lokasi minimal 5 karakter (saat ini: ${lokasi.trim().length} karakter)`;
     }
-    
+
     if (lokasi.length > 150) {
       return `Lokasi maksimal 150 karakter (saat ini: ${lokasi.length} karakter)`;
     }
-    
+
     // Tidak boleh hanya berisi angka
     if (/^\d+$/.test(lokasi.trim())) {
       return 'Lokasi tidak boleh hanya berisi angka!';
     }
-    
+
     // Tidak boleh ada enter (newline)
     if (/[\r\n]/.test(lokasi)) {
       return 'Lokasi tidak boleh mengandung enter/baris baru!';
     }
-    
+
     return '';
   };
 
@@ -232,20 +232,20 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!perihal || perihal.trim() === '') {
       return 'Perihal harus diisi!';
     }
-    
+
     if (perihal.trim().length < 5) {
       return `Perihal minimal 5 karakter (saat ini: ${perihal.trim().length} karakter)`;
     }
-    
+
     if (perihal.length > 150) {
       return `Perihal maksimal 150 karakter (saat ini: ${perihal.length} karakter)`;
     }
-    
+
     // Tidak boleh hanya berisi angka
     if (/^\d+$/.test(perihal.trim())) {
       return 'Perihal tidak boleh hanya berisi angka!';
     }
-    
+
     return '';
   };
 
@@ -257,11 +257,11 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!nomorSurat || nomorSurat.trim() === '') {
       return 'Nomor Surat harus diisi!';
     }
-    
+
     if (nomorSurat.length > 50) {
       return `Nomor Surat maksimal 50 karakter (saat ini: ${nomorSurat.length} karakter)`;
     }
-    
+
     return '';
   };
 
@@ -273,7 +273,7 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!tanggalSurat || tanggalSurat.trim() === '') {
       return 'Tanggal Surat harus diisi!';
     }
-    
+
     return '';
   };
 
@@ -286,57 +286,57 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validasi Perihal sebelum submit
     if (perihalError) {
       return; // Jangan lanjut jika perihal tidak valid
     }
-    
+
     // Validasi Nomor Surat sebelum submit
     if (nomorSuratError) {
       return; // Jangan lanjut jika nomor surat tidak valid
     }
-    
+
     // Validasi Tanggal Surat sebelum submit
     if (tanggalSuratError) {
       return; // Jangan lanjut jika tanggal surat tidak valid
     }
-    
+
     // Validasi Keperluan sebelum submit
     if (keperluanError) {
       return; // Jangan lanjut jika keperluan tidak valid
     }
-    
+
     // Validasi Jabatan Tujuan sebelum submit
     if (jabatanTujuanError) {
       return; // Jangan lanjut jika jabatan tujuan tidak valid
     }
-    
+
     // Validasi Alamat Tujuan sebelum submit
     if (alamatTujuanError) {
       return; // Jangan lanjut jika alamat tujuan tidak valid
     }
-    
+
     // Validasi Judul Kegiatan sebelum submit
     if (judulAcaraError) {
       return; // Jangan lanjut jika judul kegiatan tidak valid
     }
-    
+
     // Validasi Lokasi Kegiatan sebelum submit
     if (lokasiAcaraError) {
       return; // Jangan lanjut jika lokasi kegiatan tidak valid
     }
-    
+
     // Validasi Nama sebelum submit
     if (namaError) {
       return; // Jangan lanjut jika nama tidak valid
     }
-    
+
     // Validasi Nama Tujuan sebelum submit
     if (namaTujuanError) {
       return; // Jangan lanjut jika nama tujuan tidak valid
     }
-    
+
     // Validasi NIM/NIP sebelum submit
     if (isPengajuMahasiswa && nimError) {
       return; // Jangan lanjut jika NIM tidak valid
@@ -344,7 +344,7 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
     if (!isPengajuMahasiswa && nipError) {
       return; // Jangan lanjut jika NIP tidak valid
     }
-    
+
     setFormData(formValues);
     nextStep();
   };
@@ -680,7 +680,7 @@ export function SuratPengantarForm({ initialData, isPengajuMahasiswa = true }: S
               </div>
 
               <div className="flex justify-between pt-4 border-t">
-                <Button type="button" variant="outline" onClick={prevStep}>
+                <Button type="button" variant="outline" onClick={prevStep} className="text-base-black font-medium">
                   <ChevronLeft className="w-4 h-4 mr-2" />
                   Kembali
                 </Button>

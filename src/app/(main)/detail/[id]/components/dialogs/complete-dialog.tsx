@@ -12,8 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 // ============================================================================
@@ -50,7 +49,7 @@ export function CompleteDialog({
 
     const handleSubmit = async () => {
         setTouched(true);
-        
+
         if (!notes.trim()) {
             toast.error("Catatan wajib diisi");
             return;
@@ -63,26 +62,22 @@ export function CompleteDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md" hideCloseButton>
                 <DialogHeader>
-                    {/* Success Icon */}
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-success/10 mb-4">
-                        <CheckCircle className="h-6 w-6 text-success" />
-                    </div>
-                    <DialogTitle className="text-center">Selesaikan Surat</DialogTitle>
-                    <DialogDescription className="text-center">
+                    <DialogTitle>Selesaikan Surat</DialogTitle>
+                    <DialogDescription>
                         Tandai surat sebagai selesai diproses di tingkat Anda.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
-                    <Alert variant="default" className="border-success/50 bg-success/10">
-                        <CheckCircle className="h-4 w-4 text-success" />
-                        <AlertDescription className="text-success">
+                    <div className="flex items-start gap-2.5 rounded-lg border border-[#E1DFE0] bg-neutral-50 px-4 py-3">
+                        <Info className="h-4 w-4 text-[#6D6D6D] mt-0.5 shrink-0" />
+                        <p className="text-sm text-[#6D6D6D]">
                             Surat akan dinyatakan selesai dan tidak dapat diproses lagi.
-                        </AlertDescription>
-                    </Alert>
-                    
+                        </p>
+                    </div>
+
                     {/* Catatan */}
                     <div className="space-y-2">
                         <Label htmlFor="notes" className="flex items-center gap-1">
@@ -91,11 +86,7 @@ export function CompleteDialog({
                         <Textarea
                             id="notes"
                             value={notes}
-                            onChange={(e) => {
-                                setNotes(e.target.value);
-                                if (!touched) setTouched(true);
-                            }}
-                            onBlur={() => setTouched(true)}
+                            onChange={(e) => setNotes(e.target.value)}
                             placeholder="Jelaskan mengapa surat cukup diproses sampai tahap ini..."
                             rows={4}
                             className={isError ? "border-destructive focus-visible:ring-destructive" : ""}
@@ -126,10 +117,8 @@ export function CompleteDialog({
                         disabled={loading || !notes.trim()}
                         className="bg-success text-success-foreground hover:bg-success/90"
                     >
-                        {loading ? (
+                        {loading && (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                            <CheckCircle className="w-4 h-4 mr-2" />
                         )}
                         Selesai
                     </Button>

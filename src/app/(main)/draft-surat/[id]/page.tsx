@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
     ArrowLeft,
     ArrowRight,
     Loader2,
@@ -58,6 +63,13 @@ import {
     File,
     Calendar as CalendarIcon,
     AlertCircle,
+    Send,
+    Scale,
+    BookOpen,
+    FileCheck,
+    ListChecks,
+    Check,
+    ChevronsUpDown,
 } from "lucide-react";
 import { format as formatDate, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -215,6 +227,22 @@ function parseToDate(value: string | Date | null | undefined): Date | undefined 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
+
+// Program Studi list for FSM UNDIP
+const PROGRAM_STUDI_LIST = [
+    "S1 Matematika",
+    "S2 Matematika",
+    "S1 Biologi",
+    "S1 Bioteknologi",
+    "S2 Biologi",
+    "S1 Fisika",
+    "S2 Fisika",
+    "Profesi Fisikawan Medik",
+    "S1 Kimia",
+    "S2 Kimia",
+    "S1 Statistika",
+    "S1 Informatika",
+];
 
 // All available signer roles (for reference)
 const ALL_SIGNER_ROLES = [
@@ -383,6 +411,23 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
     // Track which Surat Tugas fields have been touched (for showing inline errors)
     const [stTouchedFields, setStTouchedFields] = useState<Record<string, boolean>>({});
+
+    // Program Studi combobox state
+    const [prodiOpen, setProdiOpen] = useState(false);
+    const [prodiSearch, setProdiSearch] = useState('');
+    const prodiSearchRef = useRef<HTMLInputElement>(null);
+
+    const filteredProdiList = PROGRAM_STUDI_LIST.filter((p) =>
+        p.toLowerCase().includes(prodiSearch.toLowerCase())
+    );
+
+    useEffect(() => {
+        if (prodiOpen) {
+            setTimeout(() => prodiSearchRef.current?.focus(), 100);
+        } else {
+            setProdiSearch('');
+        }
+    }, [prodiOpen]);
     const markStTouched = (field: string) => {
         setStTouchedFields(prev => ({ ...prev, [field]: true }));
     };
@@ -2417,7 +2462,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             <>
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Informasi Surat</CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <ClipboardList className="w-5 h-5" />
+                                            Informasi Surat
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
@@ -2505,7 +2553,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Tujuan Surat</CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Send className="w-5 h-5" />
+                                            Tujuan Surat
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
@@ -2574,7 +2625,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">{isPengajuMahasiswa ? "Data Mahasiswa" : "Data Dosen"}</CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <User className="w-5 h-5" />
+                                            {isPengajuMahasiswa ? "Data Mahasiswa" : "Data Dosen"}
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
@@ -2763,7 +2817,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         {suratType === "SURAT_TUGAS" && (
                             <Card className="bg-neutral-50 border-zinc-400">
                                 <CardHeader>
-                                    <CardTitle className="text-lg">Form Surat Tugas</CardTitle>
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <ClipboardList className="w-5 h-5" />
+                                        Form Surat Tugas
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
@@ -2839,13 +2896,67 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="programStudi">Program Studi <span className="text-red-500">*</span></Label>
-                                        <Input
-                                            id="programStudi"
-                                            value={suratTugasForm.programStudi}
-                                            onChange={(e) => updateSuratTugas("programStudi", e.target.value)}
-                                            placeholder="Informatika"
-                                            className={programStudiErrorSuratTugas ? 'border-red-500' : ''}
-                                        />
+                                        <Popover open={prodiOpen} onOpenChange={setProdiOpen}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={prodiOpen}
+                                                    className={cn(
+                                                        "w-full justify-between font-normal h-9",
+                                                        !suratTugasForm.programStudi && "text-muted-foreground",
+                                                        programStudiErrorSuratTugas && "border-red-500"
+                                                    )}
+                                                >
+                                                    {suratTugasForm.programStudi || "Pilih program studi..."}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" side="bottom" avoidCollisions={false}>
+                                                {/* Search Input */}
+                                                <div className="flex items-center border-b px-3 py-2">
+                                                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    <input
+                                                        ref={prodiSearchRef}
+                                                        placeholder="Cari program studi..."
+                                                        value={prodiSearch}
+                                                        onChange={(e) => setProdiSearch(e.target.value)}
+                                                        className="flex h-8 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                                                    />
+                                                </div>
+                                                {/* List */}
+                                                <div className="max-h-[200px] overflow-y-auto p-1">
+                                                    {filteredProdiList.length === 0 ? (
+                                                        <p className="py-4 text-center text-sm text-muted-foreground">
+                                                            Program studi tidak ditemukan.
+                                                        </p>
+                                                    ) : (
+                                                        filteredProdiList.map((prodi) => (
+                                                            <button
+                                                                key={prodi}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    updateSuratTugas("programStudi", prodi);
+                                                                    setProdiOpen(false);
+                                                                }}
+                                                                className={cn(
+                                                                    "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground transition-colors",
+                                                                    suratTugasForm.programStudi === prodi && "bg-accent text-accent-foreground"
+                                                                )}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        suratTugasForm.programStudi === prodi ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {prodi}
+                                                            </button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
                                         {programStudiErrorSuratTugas && (
                                             <p className="text-sm text-red-500 flex items-center gap-1">
                                                 <span className="font-medium">⚠</span> {programStudiErrorSuratTugas}
@@ -2912,7 +3023,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             <>
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Informasi Surat Tugas</CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <ClipboardList className="w-5 h-5" />
+                                            Informasi Surat Tugas
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
@@ -3037,7 +3151,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Data Pelaksana</CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Users className="w-5 h-5" />
+                                            Data Pelaksana
+                                        </CardTitle>
                                         <CardDescription>Tambahkan daftar orang yang akan ditugaskan dalam format tabel</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
@@ -3192,7 +3309,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                             <>
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Informasi Dasar</CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <ClipboardList className="w-5 h-5" />
+                                            Informasi Dasar
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
@@ -3261,7 +3381,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Menimbang <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Scale className="w-5 h-5" />
+                                            Menimbang <span className="text-red-500">*</span>
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.menimbang.map((item, index) => (
@@ -3305,7 +3428,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Mengingat <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <BookOpen className="w-5 h-5" />
+                                            Mengingat <span className="text-red-500">*</span>
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.mengingat.map((item, index) => (
@@ -3349,7 +3475,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Menetapkan <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <FileCheck className="w-5 h-5" />
+                                            Menetapkan <span className="text-red-500">*</span>
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <Textarea
@@ -3375,7 +3504,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Keputusan <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <ListChecks className="w-5 h-5" />
+                                            Keputusan <span className="text-red-500">*</span>
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         {suratKeputusanForm.keputusan.map((k) => (
@@ -3582,7 +3714,8 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 {currentStep === "tembusan" && (
                     <Card className="bg-neutral-50/50 border-border shadow-sm">
                         <CardHeader className="pb-4">
-                            <CardTitle className="text-lg font-semibold text-[#2B2B2B]">
+                            <CardTitle className="text-lg font-semibold text-[#2B2B2B] flex items-center gap-2">
+                                <Users className="w-5 h-5" />
                                 Konfigurasi Tembusan
                             </CardTitle>
                             <CardDescription className="text-muted-foreground">
@@ -4276,36 +4409,31 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
             {/* Preview Modal */}
             <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
-                <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
-                    <DialogHeader className="px-6 py-4 border-b">
-                        <DialogTitle>Preview Lampiran</DialogTitle>
-                        <DialogDescription>{previewFileName}</DialogDescription>
+                <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col p-6">
+                    <DialogHeader>
+                        <DialogTitle className="truncate pr-8">
+                            {previewFileName}
+                        </DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 overflow-auto p-6 flex items-center justify-center">
+                    <div className="flex-1 w-full h-full min-h-0 bg-gray-100 rounded-md overflow-hidden relative border">
                         {previewUrl && (
                             previewUrl.toLowerCase().includes('.pdf') ? (
                                 <iframe
                                     src={previewUrl}
-                                    className="w-full h-[70vh] border-0 rounded"
+                                    className="w-full h-full"
                                     title={previewFileName}
                                 />
                             ) : (
-                                <img
-                                    src={previewUrl}
-                                    alt={previewFileName}
-                                    className="max-w-full max-h-[70vh] object-contain rounded"
-                                />
+                                <div className="w-full h-full flex items-center justify-center overflow-auto p-4">
+                                    <img
+                                        src={previewUrl}
+                                        alt={previewFileName}
+                                        className="max-w-full max-h-full object-contain shadow-sm"
+                                    />
+                                </div>
                             )
                         )}
                     </div>
-                    <DialogFooter className="px-6 py-4 border-t">
-                        <Button
-                            variant="outline"
-                            onClick={() => setPreviewModalOpen(false)}
-                        >
-                            Tutup
-                        </Button>
-                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 

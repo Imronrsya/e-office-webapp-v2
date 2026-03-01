@@ -376,7 +376,7 @@ export function SuratKeputusanForm({ initialData }: SuratKeputusanFormProps) {
               )}
 
               <div className="flex justify-between pt-4 border-t">
-                <Button type="button" variant="outline" onClick={prevStep}>
+                <Button type="button" variant="outline" onClick={prevStep} className="text-base-black font-medium">
                   <ChevronLeft className="w-4 h-4 mr-2" />
                   Kembali
                 </Button>

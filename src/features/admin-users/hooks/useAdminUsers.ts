@@ -23,7 +23,7 @@ export function useAdminUsers() {
   const [users, setUsers] = useState<AdminUserListItem[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({
     page: 1,
-    limit: 10,
+    limit: 5,
     total: 0,
     totalPages: 0,
   });
@@ -40,7 +40,7 @@ export function useAdminUsers() {
       setIsLoading(true);
       const params: ListUsersParams = {
         page,
-        limit: 10,
+        limit: 5,
         ...(search && { search }),
         ...(roleFilter && { role: roleFilter }),
       };

@@ -38,7 +38,10 @@ export function UserToolbar({
           className="pl-9"
         />
       </div>
-      <Select value={roleFilter} onValueChange={onRoleFilterChange}>
+      <Select
+        value={roleFilter === "" ? "ALL" : roleFilter}
+        onValueChange={(val) => onRoleFilterChange(val === "ALL" ? "" : val)}
+      >
         <SelectTrigger className="w-full sm:w-[220px]">
           <SelectValue placeholder="Semua Role" />
         </SelectTrigger>

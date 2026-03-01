@@ -32,10 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (session?.user) {
                 // Coba panggil /me untuk mendapatkan role dari backend
                 const meData = await authService.getMe();
-                
+
                 // Gunakan role dari API, atau fallback ke email mapping
                 const role = meData?.role || getRoleByEmail(session.user.email);
-                
                 setUser({
                     ...session.user,
                     role,
@@ -44,7 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     departemen: meData?.departemen,
                     programStudi: meData?.programStudi?.name,
                 });
+                localStorage.setItem('user-role', role);
             } else {
+                localStorage.removeItem('user-role');
                 setUser(null);
             }
         } catch (error) {
@@ -59,13 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             setLoading(true);
             const response = await authService.signIn(email, password);
-            
+
             // Coba panggil /me setelah login untuk mendapatkan role
             const meData = await authService.getMe();
-            
+
             // Gunakan role dari API, atau fallback ke email mapping
             const role = meData?.role || getRoleByEmail(email);
-            
+
             const userWithRole: User = {
                 ...response.user,
                 role,
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 programStudi: meData?.programStudi?.name,
             };
 
+            localStorage.setItem('user-role', role);
             setUser(userWithRole);
             router.push("/dashboard");
             return { ...response, user: userWithRole };
@@ -89,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const logout = async () => {
         try {
             await authService.signOut();
+            localStorage.removeItem('user-role');
             setUser(null);
             router.push("/login");
         } catch (error) {

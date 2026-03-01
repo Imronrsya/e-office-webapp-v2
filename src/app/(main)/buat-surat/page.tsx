@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,11 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import {
     Dialog,
     DialogContent,
@@ -45,6 +50,12 @@ import {
     Upload,
     X,
     File,
+    Scale,
+    BookOpen,
+    FileCheck,
+    ListChecks,
+    ChevronsUpDown,
+    Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -158,6 +169,22 @@ interface SuratKeputusanForm {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
+
+// Program Studi list for FSM UNDIP
+const PROGRAM_STUDI_LIST = [
+    "S1 Matematika",
+    "S2 Matematika",
+    "S1 Biologi",
+    "S1 Bioteknologi",
+    "S2 Biologi",
+    "S1 Fisika",
+    "S2 Fisika",
+    "Profesi Fisikawan Medik",
+    "S1 Kimia",
+    "S2 Kimia",
+    "S1 Statistika",
+    "S1 Informatika",
+];
 
 const ALL_SIGNER_ROLES = [
     { value: "KAPRODI", label: "Ketua Prodi" },
@@ -284,6 +311,23 @@ function BuatSuratContent() {
 
     // Track which fields have been touched (for showing inline errors)
     const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+    // Program Studi combobox state
+    const [prodiOpen, setProdiOpen] = useState(false);
+    const [prodiSearch, setProdiSearch] = useState('');
+    const prodiSearchRef = useRef<HTMLInputElement>(null);
+
+    const filteredProdiList = PROGRAM_STUDI_LIST.filter((p) =>
+        p.toLowerCase().includes(prodiSearch.toLowerCase())
+    );
+
+    useEffect(() => {
+        if (prodiOpen) {
+            setTimeout(() => prodiSearchRef.current?.focus(), 100);
+        } else {
+            setProdiSearch('');
+        }
+    }, [prodiOpen]);
     const markTouched = (field: string) => {
         setTouchedFields(prev => ({ ...prev, [field]: true }));
     };
@@ -1233,14 +1277,9 @@ function BuatSuratContent() {
             {/* Page Title */}
             <div className="flex items-center gap-2 mb-6">
                 <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
-                <div>
-                    <h1 className="text-2xl font-bold text-black">
-                        Buat {SURAT_TYPE_LABELS[suratType]}
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        Kategori: {CATEGORY_LABELS[categoryParam]}
-                    </p>
-                </div>
+                <h1 className="text-2xl font-bold text-black">
+                    Buat {SURAT_TYPE_LABELS[suratType]}
+                </h1>
             </div>
 
             {/* Step Indicator */}
@@ -1260,7 +1299,10 @@ function BuatSuratContent() {
                         {suratType === "SURAT_TUGAS" && (
                             <Card className="bg-neutral-50 border-zinc-400">
                                 <CardHeader>
-                                    <CardTitle className="text-lg">Form Surat Tugas</CardTitle>
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <ClipboardList className="w-5 h-5" />
+                                        Form Surat Tugas
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
@@ -1336,14 +1378,68 @@ function BuatSuratContent() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="programStudi">Program Studi <span className="text-red-500">*</span></Label>
-                                        <Input
-                                            id="programStudi"
-                                            value={suratTugasForm.programStudi}
-                                            onChange={(e) => updateSuratTugas("programStudi", e.target.value)}
-                                            onBlur={() => markTouched('programStudi')}
-                                            placeholder="Informatika"
-                                            className={programStudiSTError && touchedFields.programStudi ? 'border-red-500' : ''}
-                                        />
+                                        <Popover open={prodiOpen} onOpenChange={setProdiOpen}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={prodiOpen}
+                                                    className={cn(
+                                                        "w-full justify-between font-normal h-9",
+                                                        !suratTugasForm.programStudi && "text-muted-foreground",
+                                                        programStudiSTError && touchedFields.programStudi && "border-red-500"
+                                                    )}
+                                                >
+                                                    {suratTugasForm.programStudi || "Pilih program studi..."}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" side="bottom" avoidCollisions={false}>
+                                                {/* Search Input */}
+                                                <div className="flex items-center border-b px-3 py-2">
+                                                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    <input
+                                                        ref={prodiSearchRef}
+                                                        placeholder="Cari program studi..."
+                                                        value={prodiSearch}
+                                                        onChange={(e) => setProdiSearch(e.target.value)}
+                                                        className="flex h-8 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                                                    />
+                                                </div>
+                                                {/* List */}
+                                                <div className="max-h-[200px] overflow-y-auto p-1">
+                                                    {filteredProdiList.length === 0 ? (
+                                                        <p className="py-4 text-center text-sm text-muted-foreground">
+                                                            Program studi tidak ditemukan.
+                                                        </p>
+                                                    ) : (
+                                                        filteredProdiList.map((prodi) => (
+                                                            <button
+                                                                key={prodi}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    updateSuratTugas("programStudi", prodi);
+                                                                    markTouched('programStudi');
+                                                                    setProdiOpen(false);
+                                                                }}
+                                                                className={cn(
+                                                                    "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground transition-colors",
+                                                                    suratTugasForm.programStudi === prodi && "bg-accent text-accent-foreground"
+                                                                )}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        suratTugasForm.programStudi === prodi ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {prodi}
+                                                            </button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
                                         {programStudiSTError && touchedFields.programStudi && (
                                             <p className="text-sm text-red-500 flex items-center gap-1">
                                                 <span className="font-medium">⚠</span> {programStudiSTError}
@@ -1411,7 +1507,10 @@ function BuatSuratContent() {
                             <>
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Informasi Surat Tugas</CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <ClipboardList className="w-5 h-5" />
+                                            Informasi Surat Tugas
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
@@ -1536,7 +1635,10 @@ function BuatSuratContent() {
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Data Pelaksana</CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Users className="w-5 h-5" />
+                                            Data Pelaksana
+                                        </CardTitle>
                                         <CardDescription>Tambahkan daftar orang yang akan ditugaskan dalam format tabel</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
@@ -1712,7 +1814,10 @@ function BuatSuratContent() {
                             <>
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Informasi Dasar</CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <ClipboardList className="w-5 h-5" />
+                                            Informasi Dasar
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
@@ -1781,7 +1886,10 @@ function BuatSuratContent() {
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Menimbang <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Scale className="w-5 h-5" />
+                                            Menimbang <span className="text-red-500">*</span>
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.menimbang.map((item, index) => (
@@ -1825,7 +1933,10 @@ function BuatSuratContent() {
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Mengingat <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <BookOpen className="w-5 h-5" />
+                                            Mengingat <span className="text-red-500">*</span>
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {suratKeputusanForm.mengingat.map((item, index) => (
@@ -1869,7 +1980,10 @@ function BuatSuratContent() {
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Menetapkan <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <FileCheck className="w-5 h-5" />
+                                            Menetapkan <span className="text-red-500">*</span>
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <Textarea
@@ -1895,7 +2009,10 @@ function BuatSuratContent() {
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg">Keputusan <span className="text-red-500">*</span></CardTitle>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <ListChecks className="w-5 h-5" />
+                                            Keputusan <span className="text-red-500">*</span>
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         {suratKeputusanForm.keputusan.map((k) => (
@@ -2099,7 +2216,8 @@ function BuatSuratContent() {
                 {currentStep === "tembusan" && (
                     <Card className="bg-neutral-50/50 border-border shadow-sm">
                         <CardHeader className="pb-4">
-                            <CardTitle className="text-lg font-semibold text-[#2B2B2B]">
+                            <CardTitle className="text-lg font-semibold text-[#2B2B2B] flex items-center gap-2">
+                                <Users className="w-5 h-5" />
                                 Konfigurasi Tembusan
                             </CardTitle>
                             <CardDescription className="text-muted-foreground">
@@ -2129,7 +2247,7 @@ function BuatSuratContent() {
 
                             {/* Section 1: Akun Pengguna untuk Akses Sistem */}
                             <div className="space-y-4">
-                                <div className="space-y-2">
+                                <div className="space-y-2 relative">
                                     <Label className="text-sm font-medium text-[#2B2B2B]">
                                         1. Pilih Akun Pengguna (Akses Sistem)
                                     </Label>

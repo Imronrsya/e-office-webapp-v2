@@ -9,15 +9,15 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useDraftSurat, TembusanRecipient } from '../../context/draft-surat-context';
 import { userService, TembusanUser } from '@/services/user.service';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Search, 
-  X, 
-  User, 
-  Users, 
-  Loader2, 
-  Check, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  X,
+  User,
+  Users,
+  Loader2,
+  Check,
   AlertCircle,
   UserPlus,
   Info
@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 
 export function TembusanConfigStep() {
   const { state, setTembusan, nextStep, prevStep } = useDraftSurat();
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<TembusanUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -95,7 +95,7 @@ export function TembusanConfigStep() {
       <Alert className="bg-blue-50 border-blue-200">
         <Info className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-800">
-          <strong>Catatan:</strong> Akun yang dipilih di sini akan dapat <strong>mengakses dan mendownload surat</strong> setelah surat selesai diproses.<br/>
+          <strong>Catatan:</strong> Akun yang dipilih di sini akan dapat <strong>mengakses dan mendownload surat</strong> setelah surat selesai diproses.<br />
           Untuk menambahkan tembusan yang <strong>tertulis di surat</strong> (seperti "Arsip", "Pertinggal"), itu dapat dilakukan saat editing draft oleh staf/supervisor.
         </AlertDescription>
       </Alert>
@@ -176,7 +176,7 @@ export function TembusanConfigStep() {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{user.name}</p>
                             <p className="text-xs text-muted-foreground truncate">
-                              {user.type === 'mahasiswa' 
+                              {user.type === 'mahasiswa'
                                 ? `${user.identifier} • ${user.programStudi || 'Mahasiswa'}`
                                 : `${user.jabatan || 'Pegawai'} • NIP: ${user.identifier}`
                               }
@@ -228,10 +228,10 @@ export function TembusanConfigStep() {
                     <div>
                       <p className="font-medium text-sm">{state.submitterInfo.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {state.submitterInfo.nim 
-                          ? `NIM: ${state.submitterInfo.nim}` 
-                          : state.submitterInfo.nip 
-                            ? `NIP: ${state.submitterInfo.nip}` 
+                        {state.submitterInfo.nim
+                          ? `NIM: ${state.submitterInfo.nim}`
+                          : state.submitterInfo.nip
+                            ? `NIP: ${state.submitterInfo.nip}`
                             : 'Pengaju Surat'
                         }
                       </p>
@@ -297,7 +297,7 @@ export function TembusanConfigStep() {
 
       {/* Navigation Buttons */}
       <div className="flex justify-between pt-4 border-t">
-        <Button variant="outline" onClick={prevStep}>
+        <Button variant="outline" onClick={prevStep} className="text-base-black font-medium">
           <ChevronLeft className="w-4 h-4 mr-2" />
           Kembali
         </Button>

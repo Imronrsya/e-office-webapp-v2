@@ -35,6 +35,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import BottomNav from "@/components/layout/bottom-nav";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import type {
   DepartmentItem,
   ProdiItem,
@@ -58,7 +61,11 @@ import {
 // ============================================================================
 
 export default function PengaturanPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <PengaturanSkeleton />;
+  }
 
   if (user && user.role !== "SUPERADMIN") {
     return (
@@ -80,6 +87,7 @@ export default function PengaturanPage() {
 // ============================================================================
 
 function PengaturanContent() {
+  const router = useRouter();
   const [departments, setDepartments] = useState<DepartmentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -178,8 +186,11 @@ function PengaturanContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Pengaturan Departemen</h1>
+      <div className="flex items-start justify-between mb-8">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
+          <h1 className="text-2xl font-bold text-black">Pengaturan Departemen</h1>
+        </div>
         <Button
           onClick={() => {
             setDeptDialogMode("create");
@@ -222,128 +233,128 @@ function PengaturanContent() {
       {!isLoading &&
         departments.map((dept) => {
           const isFSM = dept.code === "FSM";
-          
+
           return (
-          <Card key={dept.id}>
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
-              <div>
-                <CardTitle className="text-lg">{dept.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Kode: <span className="font-mono">{dept.code}</span>
-                  {" · "}
-                  {dept._count.mahasiswa} Mahasiswa
-                  {" · "}
-                  {dept._count.pegawai} Pegawai
-                </p>
-              </div>
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setDeptDialogMode("edit");
-                    setEditingDept(dept);
-                    setDeptDialogOpen(true);
-                  }}
-                >
-                  <Pencil className="size-4" />
-                </Button>
-                {!isFSM && (
+            <Card key={dept.id}>
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
+                <div>
+                  <CardTitle className="text-lg">{dept.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Kode: <span className="font-mono">{dept.code}</span>
+                    {" · "}
+                    {dept._count.mahasiswa} Mahasiswa
+                    {" · "}
+                    {dept._count.pegawai} Pegawai
+                  </p>
+                </div>
+                <div className="flex gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => {
-                      setDeletingDept(dept);
-                      setDeleteDeptOpen(true);
+                      setDeptDialogMode("edit");
+                      setEditingDept(dept);
+                      setDeptDialogOpen(true);
                     }}
                   >
-                    <Trash2 className="size-4 text-destructive" />
+                    <Pencil className="size-4" />
                   </Button>
-                )}
-              </div>
-            </CardHeader>
-
-            {!isFSM && (
-            <CardContent>
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold text-muted-foreground">
-                  Program Studi
-                </h4>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setProdiDialogMode("create");
-                    setProdiParentDeptId(dept.id);
-                    setEditingProdi(null);
-                    setProdiDialogOpen(true);
-                  }}
-                >
-                  <Plus className="mr-1 size-3" />
-                  Tambah Prodi
-                </Button>
-              </div>
-
-              {dept.programStudi.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">
-                  Belum ada program studi.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {dept.programStudi.map((prodi) => (
-                    <div
-                      key={prodi.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2"
+                  {!isFSM && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setDeletingDept(dept);
+                        setDeleteDeptOpen(true);
+                      }}
                     >
-                      <div className="flex items-center gap-2">
-                        <GraduationCap className="size-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{prodi.name}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {prodi.jenjang}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {prodi.code}
-                        </span>
-                        {prodi.hasKaprodi && (
-                          <Badge variant="secondary" className="text-xs">
-                            Kaprodi
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-7"
-                          onClick={() => {
-                            setProdiDialogMode("edit");
-                            setProdiParentDeptId(dept.id);
-                            setEditingProdi(prodi);
-                            setProdiDialogOpen(true);
-                          }}
-                        >
-                          <Pencil className="size-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-7"
-                          onClick={() => {
-                            setDeletingProdi(prodi);
-                            setDeleteProdiOpen(true);
-                          }}
-                        >
-                          <Trash2 className="size-3 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  )}
                 </div>
+              </CardHeader>
+
+              {!isFSM && (
+                <CardContent>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-muted-foreground">
+                      Program Studi
+                    </h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setProdiDialogMode("create");
+                        setProdiParentDeptId(dept.id);
+                        setEditingProdi(null);
+                        setProdiDialogOpen(true);
+                      }}
+                    >
+                      <Plus className="mr-1 size-3" />
+                      Tambah Prodi
+                    </Button>
+                  </div>
+
+                  {dept.programStudi.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">
+                      Belum ada program studi.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {dept.programStudi.map((prodi) => (
+                        <div
+                          key={prodi.id}
+                          className="flex items-center justify-between rounded-md border px-3 py-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <GraduationCap className="size-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">{prodi.name}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {prodi.jenjang}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground font-mono">
+                              {prodi.code}
+                            </span>
+                            {prodi.hasKaprodi && (
+                              <Badge variant="secondary" className="text-xs">
+                                Kaprodi
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7"
+                              onClick={() => {
+                                setProdiDialogMode("edit");
+                                setProdiParentDeptId(dept.id);
+                                setEditingProdi(prodi);
+                                setProdiDialogOpen(true);
+                              }}
+                            >
+                              <Pencil className="size-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7"
+                              onClick={() => {
+                                setDeletingProdi(prodi);
+                                setDeleteProdiOpen(true);
+                              }}
+                            >
+                              <Trash2 className="size-3 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
               )}
-            </CardContent>
-            )}
-          </Card>
-        );
+            </Card>
+          );
         })}
 
       {/* ── Department Dialog ── */}
@@ -413,6 +424,23 @@ function PengaturanContent() {
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      {/* Spacer for bottom nav */}
+      <div className="h-24"></div>
+
+      <BottomNav
+        leftContent={
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            className="bg-white hover:bg-gray-50 text-base-black font-medium"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Kembali
+          </Button>
+        }
+      />
     </div>
   );
 }
@@ -503,8 +531,8 @@ function DepartmentDialog({
               {isSubmitting
                 ? "Menyimpan..."
                 : mode === "create"
-                ? "Tambah"
-                : "Simpan"}
+                  ? "Tambah"
+                  : "Simpan"}
             </Button>
           </DialogFooter>
         </form>
@@ -637,12 +665,57 @@ function ProdiDialog({
               {isSubmitting
                 ? "Menyimpan..."
                 : mode === "create"
-                ? "Tambah"
-                : "Simpan"}
+                  ? "Tambah"
+                  : "Simpan"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ============================================================================
+// Skeleton Loader
+// ============================================================================
+
+function PengaturanSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header Skeleton */}
+      <div className="flex items-start justify-between mb-8">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
+          <h1 className="text-2xl font-bold text-black">Pengaturan Departemen</h1>
+        </div>
+        <Skeleton className="h-10 w-44 bg-zinc-200" />
+      </div>
+
+      {/* Cards Skeleton */}
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="rounded-lg border bg-white shadow-sm p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <Skeleton className="h-6 w-48 mb-2 bg-zinc-200" />
+                <Skeleton className="h-4 w-72 bg-zinc-200" />
+              </div>
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-8 rounded-md bg-zinc-200" />
+                <Skeleton className="h-8 w-8 rounded-md bg-zinc-200" />
+              </div>
+            </div>
+            <div className="flex justify-between items-center mb-4">
+              <Skeleton className="h-5 w-32 bg-zinc-200" />
+              <Skeleton className="h-8 w-32 bg-zinc-200" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full bg-zinc-100 rounded-md" />
+              <Skeleton className="h-12 w-full bg-zinc-100 rounded-md" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

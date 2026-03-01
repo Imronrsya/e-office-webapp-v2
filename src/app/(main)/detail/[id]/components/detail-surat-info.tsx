@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 
 interface DetailSuratInfoProps {
     jenisSurat: string;
+    kategoriSurat?: string | null;
     judulSurat: string;
     keperluan: string;
     isStaffCreated?: boolean;
@@ -30,7 +31,17 @@ function InfoRow({
     );
 }
 
-export function DetailSuratInfo({ jenisSurat, judulSurat, keperluan, isStaffCreated }: DetailSuratInfoProps) {
+function formatKategori(kategori: string | null | undefined): string {
+    if (!kategori) return '-';
+    const map: Record<string, string> = {
+        AKADEMIK: 'Akademik',
+        SUMBER_DAYA: 'Sumber Daya',
+        UMUM: 'Umum',
+    };
+    return map[kategori] || kategori;
+}
+
+export function DetailSuratInfo({ jenisSurat, kategoriSurat, judulSurat, keperluan, isStaffCreated }: DetailSuratInfoProps) {
     const jenisSuratLabel = jenisSurat === 'SURAT_TUGAS' 
         ? 'Surat Tugas' 
         : jenisSurat === 'SURAT_KEPUTUSAN' 
@@ -45,8 +56,12 @@ export function DetailSuratInfo({ jenisSurat, judulSurat, keperluan, isStaffCrea
                 <h3 className="text-sm font-bold text-black mb-4">Detail Surat</h3>
                 
                 <InfoRow 
-                    label="Jenis Surat" 
+                    label="Tipe Surat" 
                     value={jenisSuratLabel} 
+                />
+                <InfoRow 
+                    label="Jenis Surat" 
+                    value={formatKategori(kategoriSurat)} 
                 />
                 <InfoRow 
                     label="Judul Surat" 

@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import BottomNav from "@/components/layout/bottom-nav";
 import {
   Card,
   CardContent,
@@ -25,6 +26,8 @@ import {
   Loader2,
   Eye,
   Paperclip,
+  Image as ImageIcon,
+  ClipboardList,
 } from "lucide-react";
 import {
   Dialog,
@@ -410,391 +413,410 @@ export default function TembusanDetailPage({
   // ============================================================================
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-7xl">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
-        <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
-        <h1 className="text-2xl font-bold text-black">
-          Detail Surat Tembusan
-        </h1>
-      </div>
+    <>
+      <div className="pb-24">
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
+          <h1 className="text-2xl font-bold text-black">
+            Detail Surat Tembusan
+          </h1>
+        </div>
 
-      {/* Back Button */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => router.push("/tembusan")}
-        className="mb-6"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Kembali ke Inbox
-      </Button>
 
-      {/* 3/4 + 1/4 Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Column - Document (3/4 width) */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Document Info + Preview Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <Badge variant="secondary" className="mb-2">
-                    <FileText className="w-3 h-3 mr-1" />
-                    {detail.jenisDocument}
-                  </Badge>
-                  <CardTitle className="text-xl">
-                    {detail.nomorSurat || "Belum Bernomor"}
-                  </CardTitle>
-                  <CardDescription className="mt-1">
-                    {detail.perihal || "-"}
-                  </CardDescription>
-                </div>
-                <Badge
-                  variant="outline"
-                  className="bg-green-50 text-green-700 border-green-200"
-                >
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Selesai
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* Document Info Grid */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="space-y-1">
-                  <p className="text-sm text-zinc-500 flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    Tanggal Surat
-                  </p>
-                  <p className="font-medium">
-                    {formatDate(detail.tanggalSurat)}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-zinc-500 flex items-center gap-1">
-                    <Hash className="w-4 h-4" />
-                    Jenis Surat
-                  </p>
-                  <p className="font-medium">{detail.letterType.name}</p>
-                </div>
-              </div>
 
-              <Separator className="my-4" />
-
-              {/* Document Preview - Rendered from Frontend Template */}
-              <div className="space-y-4">
-                <h4 className="font-medium flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Dokumen
-                </h4>
-
-                {htmlContent ? (
-                  <div className="rounded-lg overflow-hidden border border-zinc-200">
-                    <PDFPreview
-                      htmlContent={htmlContent}
-                      fileName={fileName}
-                      showDraftBadge={false}
-                      onPdfReady={setGeneratedPdfUrl}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-8 bg-zinc-50 rounded-lg border border-dashed">
-                    <FileText className="w-10 h-10 text-zinc-300 mb-2" />
-                    <p className="text-sm text-zinc-500">
-                      Preview dokumen tidak tersedia
-                    </p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Lampiran Surat Keluar Card - Same style as staff detail page */}
-          {docAttachments.length > 0 && (
-            <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
-              <CardContent className="p-6">
-                <h3 className="text-sm font-bold text-black mb-4">
-                  Lampiran Surat Keluar ({docAttachments.length})
-                </h3>
-
-                <div className="space-y-3">
-                  {docAttachments.map((attachment, index) => {
-                    const { url, name } = attachment;
-                    const isPdf = url.toLowerCase().includes(".pdf");
-                    const isImage = /\.(jpg|jpeg|png|gif)/i.test(url);
-
-                    return (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-amber-300"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={cn(
-                              "w-10 h-10 rounded-lg flex items-center justify-center",
-                              isPdf
-                                ? "bg-red-100"
-                                : isImage
-                                  ? "bg-green-100"
-                                  : "bg-blue-100"
-                            )}
-                          >
-                            <FileText
-                              className={cn(
-                                "w-5 h-5",
-                                isPdf
-                                  ? "text-red-600"
-                                  : isImage
-                                    ? "text-green-600"
-                                    : "text-blue-600"
-                              )}
-                            />
-                          </div>
-                          <div>
-                            <p
-                              className="text-sm text-black truncate max-w-[300px]"
-                              title={name}
-                            >
-                              {name}
-                            </p>
-                            <p className="text-xs text-amber-600">
-                              {isPdf
-                                ? "PDF Document"
-                                : isImage
-                                  ? "Image"
-                                  : "Attachment"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {/* Preview button - opens modal */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              handleAttachmentPreview(url, name)
-                            }
-                            title="Preview"
-                            className="h-8 w-8"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          {/* Download button */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              handleAttachmentDownload(url, name)
-                            }
-                            title="Download"
-                            className="h-8 w-8"
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* QR Code Card */}
-          {detail.qrCodeUrl && (
-            <Card>
+        {/* 3/4 + 1/4 Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Column - Document (3/4 width) */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Document Info + Preview Card */}
+            <Card className="bg-neutral-50 border-zinc-400">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <QrCode className="w-4 h-4" />
-                  QR Code Verifikasi
+                  <ClipboardList className="w-4 h-4" />
+                  Detail Surat
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-start gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-sm">
-                      <img
-                        src={detail.qrCodeUrl}
-                        alt="QR Code Verifikasi"
-                        className="w-32 h-32 object-contain"
-                      />
+                {/* Document Info Grid */}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                  {/* Nomor Surat */}
+                  <div className="space-y-1">
+                    <p className="text-sm text-[#6D6D6D]">
+                      Nomor Surat
+                    </p>
+                    <p className="font-medium text-[#2B2B2B]">
+                      {detail.nomorSurat || "Belum Bernomor"}
+                    </p>
+                  </div>
+                  {/* Status */}
+                  <div className="space-y-1">
+                    <p className="text-sm text-[#6D6D6D]">
+                      Status
+                    </p>
+                    <div>
+                      <Badge
+                        variant="outline"
+                        className="bg-green-50 text-green-700 border-green-200"
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Selesai
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex-1 space-y-2">
-                    <p className="text-sm text-zinc-600">
-                      Scan QR Code ini untuk memverifikasi keaslian dokumen.
+                  {/* Judul Surat */}
+                  <div className="space-y-1">
+                    <p className="text-sm text-[#6D6D6D]">
+                      Judul Surat
                     </p>
-                    <p className="text-xs text-zinc-400">
-                      QR Code tertanam dalam dokumen dan dapat di-scan menggunakan kamera smartphone.
+                    <p className="font-medium text-[#2B2B2B]">
+                      {detail.perihal || "-"}
+                    </p>
+                  </div>
+                  {/* Tipe Surat */}
+                  <div className="space-y-1">
+                    <p className="text-sm text-[#6D6D6D]">
+                      Tipe Surat
+                    </p>
+                    <p className="font-medium text-[#2B2B2B]">
+                      {detail.jenisDocument}
+                    </p>
+                  </div>
+                  {/* Tanggal Surat */}
+                  <div className="space-y-1">
+                    <p className="text-sm text-[#6D6D6D]">
+                      Tanggal Surat
+                    </p>
+                    <p className="font-medium text-[#2B2B2B]">
+                      {formatDate(detail.tanggalSurat)}
+                    </p>
+                  </div>
+                  {/* Jenis Surat */}
+                  <div className="space-y-1">
+                    <p className="text-sm text-[#6D6D6D]">
+                      Jenis Surat
+                    </p>
+                    <p className="font-medium text-[#2B2B2B]">{detail.letterType.name}</p>
+                  </div>
+                </div>
+
+                <Separator className="my-6" />
+
+                {/* Document Preview - Rendered from Frontend Template */}
+                <div className="space-y-4">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Dokumen
+                  </h4>
+
+                  {htmlContent ? (
+                    <div className="rounded-lg overflow-hidden border border-zinc-200">
+                      <PDFPreview
+                        htmlContent={htmlContent}
+                        fileName={fileName}
+                        showDraftBadge={false}
+                        onPdfReady={setGeneratedPdfUrl}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 bg-zinc-50 rounded-lg border border-dashed">
+                      <FileText className="w-10 h-10 text-zinc-300 mb-2" />
+                      <p className="text-sm text-zinc-500">
+                        Preview dokumen tidak tersedia
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lampiran Surat Keluar Card - Same style as staff detail page */}
+            {docAttachments.length > 0 && (
+              <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
+                <CardContent className="p-6">
+                  <h3 className="text-sm font-bold text-black mb-4 flex items-center gap-2">
+                    <Paperclip className="w-4 h-4" />
+                    Lampiran Surat Keluar ({docAttachments.length})
+                  </h3>
+
+                  <div className="space-y-3">
+                    {docAttachments.map((attachment, index) => {
+                      const { url, name } = attachment;
+                      const isPdf = url.toLowerCase().includes(".pdf");
+                      const isImage = /\.(jpg|jpeg|png|gif)/i.test(url);
+
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-[#E1DFE0]"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={cn(
+                                "w-10 h-10 rounded-lg flex items-center justify-center",
+                                isPdf
+                                  ? "bg-red-100"
+                                  : "bg-blue-100"
+                              )}
+                            >
+                              {isPdf
+                                ? <FileText className="w-5 h-5 text-red-600" />
+                                : <ImageIcon className="w-5 h-5 text-blue-500" />}
+                            </div>
+                            <div>
+                              <p
+                                className="text-sm font-medium text-[#2B2B2B] truncate max-w-[300px]"
+                                title={name}
+                              >
+                                {name}
+                              </p>
+                              <p className="text-xs text-[#6D6D6D]">
+                                {isPdf
+                                  ? "PDF Document"
+                                  : isImage
+                                    ? "Image"
+                                    : "Attachment"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {/* Preview button - opens modal */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                handleAttachmentPreview(url, name)
+                              }
+                              title="Preview"
+                              className="h-8 w-8"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {/* Download button */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                handleAttachmentDownload(url, name)
+                              }
+                              title="Download"
+                              className="h-8 w-8"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* QR Code Card */}
+            {detail.qrCodeUrl && (
+              <Card className="bg-neutral-50 border-zinc-400">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <QrCode className="w-4 h-4" />
+                    QR Code Verifikasi
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-start gap-6">
+                    <div className="flex-shrink-0">
+                      <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-sm">
+                        <img
+                          src={detail.qrCodeUrl}
+                          alt="QR Code Verifikasi"
+                          className="w-32 h-32 object-contain"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <p className="text-sm text-zinc-600">
+                        Scan QR Code ini untuk memverifikasi keaslian dokumen.
+                      </p>
+                      <p className="text-xs text-zinc-400">
+                        QR Code tertanam dalam dokumen dan dapat di-scan menggunakan kamera smartphone.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Right Column - Info Sidebar (1/4 width) */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Pemohon Card */}
+            <Card className="bg-neutral-50 border-zinc-400">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Pemohon
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-zinc-500">Nama</p>
+                    <p className="font-medium">{detail.pemohon.nama}</p>
+                  </div>
+                  {detail.pemohon.nim && (
+                    <div>
+                      <p className="text-sm text-zinc-500">NIM</p>
+                      <p className="font-medium">{detail.pemohon.nim}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm text-zinc-500">Email</p>
+                    <p className="font-medium text-sm break-all">
+                      {detail.pemohon.email}
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          )}
-        </div>
 
-        {/* Right Column - Info Sidebar (1/4 width) */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Pemohon Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Pemohon
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-zinc-500">Nama</p>
-                  <p className="font-medium">{detail.pemohon.nama}</p>
-                </div>
-                {detail.pemohon.nim && (
-                  <div>
-                    <p className="text-sm text-zinc-500">NIM</p>
-                    <p className="font-medium">{detail.pemohon.nim}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm text-zinc-500">Email</p>
-                  <p className="font-medium text-sm break-all">
-                    {detail.pemohon.email}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Penandatangan Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <PenTool className="w-4 h-4" />
-                Penandatangan
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {detail.penandatangan.length > 0 ? (
-                <div className="space-y-3">
-                  {detail.penandatangan.map((signer, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 p-3 bg-zinc-50 rounded-lg"
-                    >
-                      <div className="p-2 bg-green-100 rounded-full">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm">{signer.nama}</p>
-                        <p className="text-xs text-zinc-500">
-                          {signer.jabatan}
-                        </p>
-                        {signer.signedAt && (
-                          <p className="text-xs text-zinc-400 mt-1">
-                            {formatDateTime(signer.signedAt)}
+            {/* Penandatangan Card */}
+            <Card className="bg-neutral-50 border-zinc-400">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <PenTool className="w-4 h-4" />
+                  Penandatangan
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {detail.penandatangan.length > 0 ? (
+                  <div className="space-y-3">
+                    {detail.penandatangan.map((signer, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start gap-3 p-3 bg-zinc-50 rounded-lg"
+                      >
+                        <div className="p-2 bg-green-100 rounded-full">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{signer.nama}</p>
+                          <p className="text-xs text-zinc-500">
+                            {signer.jabatan}
                           </p>
-                        )}
+                          {signer.signedAt && (
+                            <p className="text-xs text-zinc-400 mt-1">
+                              {formatDateTime(signer.signedAt)}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-zinc-500">
-                  Tidak ada penandatangan
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Tembusan Info Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Informasi Penerimaan
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-zinc-500">Diterima Sebagai</p>
-                  <Badge variant="secondary" className="mt-1">
-                    Tembusan
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-zinc-500">Tanggal Diterima</p>
-                  <p className="font-medium text-sm">
-                    {formatDateTime(detail.diterimaTanggal)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Download Dokumen Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Unduh Dokumen
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button
-                className="w-full"
-                onClick={handleDownloadDocument}
-                disabled={!generatedPdfUrl}
-              >
-                {!generatedPdfUrl ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ))}
+                  </div>
                 ) : (
-                  <Download className="w-4 h-4 mr-2" />
+                  <p className="text-sm text-zinc-500">
+                    Tidak ada penandatangan
+                  </p>
                 )}
-                {!generatedPdfUrl ? "Generating..." : "Download PDF"}
-              </Button>
-              {!generatedPdfUrl && (
-                <p className="text-xs text-zinc-400 mt-2 text-center">
-                  PDF sedang di-generate dari template
-                </p>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Tembusan Info Card */}
+            <Card className="bg-neutral-50 border-zinc-400">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Informasi Penerimaan
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-zinc-500">Diterima Sebagai</p>
+                    <Badge variant="secondary" className="mt-1">
+                      Tembusan
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm text-zinc-500">Tanggal Diterima</p>
+                    <p className="font-medium text-sm">
+                      {formatDateTime(detail.diterimaTanggal)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+
+          </div>
         </div>
+
+        {/* Attachment Preview Dialog */}
+        <Dialog
+          open={attachmentPreviewOpen}
+          onOpenChange={setAttachmentPreviewOpen}
+        >
+          <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col p-6">
+            <DialogHeader>
+              <DialogTitle className="truncate pr-8">
+                {previewAttachment?.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 w-full h-full min-h-0 bg-gray-100 rounded-md overflow-hidden relative border">
+              {previewAttachment?.isPdf ? (
+                <iframe
+                  src={previewAttachment.url}
+                  className="w-full h-full"
+                  title={previewAttachment.name}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center overflow-auto p-4">
+                  <img
+                    src={previewAttachment?.url}
+                    alt={previewAttachment?.name}
+                    className="max-w-full max-h-full object-contain shadow-sm"
+                  />
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Attachment Preview Dialog */}
-      <Dialog
-        open={attachmentPreviewOpen}
-        onOpenChange={setAttachmentPreviewOpen}
-      >
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              {previewAttachment?.name || "Preview Lampiran"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-auto min-h-[500px]">
-            {previewAttachment?.isPdf ? (
-              <iframe
-                src={previewAttachment.url}
-                className="w-full h-full min-h-[500px] border-0"
-                title="PDF Preview"
-              />
-            ) : (
-              <div className="flex items-center justify-center p-4">
-                <img
-                  src={previewAttachment?.url}
-                  alt={previewAttachment?.name}
-                  className="max-w-full max-h-[70vh] object-contain rounded-lg"
-                />
-              </div>
+      {/* Bottom Navigation */}
+      <BottomNav
+        leftContent={
+          <Button
+            variant="outline"
+            onClick={() => router.push("/tembusan")}
+            className="border-zinc-800 text-zinc-800 gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Kembali
+          </Button>
+        }
+        rightContent={
+          <div className="flex items-center gap-3">
+            {!generatedPdfUrl && (
+              <span className="text-xs text-zinc-500 mr-2 flex items-center">
+                <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                Generating PDF...
+              </span>
             )}
+            <Button
+              onClick={handleDownloadDocument}
+              disabled={!generatedPdfUrl}
+              className="bg-[#2C2C2C] hover:bg-[#3C3C3C] text-white gap-2 px-6"
+            >
+              {generatedPdfUrl ? (
+                <Download className="w-4 h-4" />
+              ) : (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              )}
+              Download PDF
+            </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+        }
+      />
+    </>
   );
 }

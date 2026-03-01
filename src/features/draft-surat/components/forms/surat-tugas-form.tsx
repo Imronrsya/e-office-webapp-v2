@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -16,13 +15,35 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useDraftSurat, SuratTugasFormData } from '../../context/draft-surat-context';
-import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, ClipboardList, ChevronsUpDown, Check, Search } from 'lucide-react';
 import { suratTugasTemplate } from '@/lib/templates/surat-tugas';
 import {
   suratTugasStaffSchema,
   type SuratTugasStaffFormData,
 } from '@/lib/validators/surat-tugas-schema';
+import { cn } from '@/lib/utils';
+
+// Program Studi list for FSM UNDIP
+const PROGRAM_STUDI_LIST = [
+  "S1 Matematika",
+  "S2 Matematika",
+  "S1 Biologi",
+  "S1 Bioteknologi",
+  "S2 Biologi",
+  "S1 Fisika",
+  "S2 Fisika",
+  "Profesi Fisikawan Medik",
+  "S1 Kimia",
+  "S2 Kimia",
+  "S1 Statistika",
+  "S1 Informatika",
+];
 
 interface SuratTugasFormProps {
   initialData?: Partial<SuratTugasFormData>;
@@ -31,6 +52,9 @@ interface SuratTugasFormProps {
 export function SuratTugasForm({ initialData }: SuratTugasFormProps) {
   const { state, setFormData, nextStep, prevStep } = useDraftSurat();
   const [showPreview, setShowPreview] = useState(false);
+  const [prodiOpen, setProdiOpen] = useState(false);
+  const [prodiSearch, setProdiSearch] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Use stored form data from context if available, otherwise use initialData prop
   const existingData = state.formData as SuratTugasFormData | null;
@@ -52,6 +76,20 @@ export function SuratTugasForm({ initialData }: SuratTugasFormProps) {
   });
 
   const formValues = form.watch();
+
+  // Filter program studi list based on search
+  const filteredProdiList = PROGRAM_STUDI_LIST.filter((prodi) =>
+    prodi.toLowerCase().includes(prodiSearch.toLowerCase())
+  );
+
+  // Focus search input when popover opens
+  useEffect(() => {
+    if (prodiOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    } else {
+      setProdiSearch('');
+    }
+  }, [prodiOpen]);
 
   const handleJenisChange = (value: 'tugas' | 'keputusan') => {
     form.setValue('jenisSurat', value);
@@ -90,7 +128,10 @@ export function SuratTugasForm({ initialData }: SuratTugasFormProps) {
         {/* Form Section */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Form Surat Tugas</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ClipboardList className="w-5 h-5" />
+              Form Surat Tugas
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -161,20 +202,75 @@ export function SuratTugasForm({ initialData }: SuratTugasFormProps) {
                   />
                 </div>
 
-                {/* Program Studi */}
+                {/* Program Studi - Searchable Dropdown */}
                 <FormField
                   control={form.control}
                   name="programStudi"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>Program Studi</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Informatika/Dosen Departemen..."
-                          className="bg-white"
-                          {...field}
-                        />
-                      </FormControl>
+                      <Popover open={prodiOpen} onOpenChange={setProdiOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={prodiOpen}
+                              className={cn(
+                                "w-full justify-between bg-white font-normal h-9",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value || "Pilih program studi..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" side="bottom" avoidCollisions={false}>
+                          {/* Search Input */}
+                          <div className="flex items-center border-b px-3 py-2">
+                            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                            <input
+                              ref={searchInputRef}
+                              placeholder="Cari program studi..."
+                              value={prodiSearch}
+                              onChange={(e) => setProdiSearch(e.target.value)}
+                              className="flex h-8 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                            />
+                          </div>
+                          {/* List */}
+                          <div className="max-h-[200px] overflow-y-auto p-1">
+                            {filteredProdiList.length === 0 ? (
+                              <p className="py-4 text-center text-sm text-muted-foreground">
+                                Program studi tidak ditemukan.
+                              </p>
+                            ) : (
+                              filteredProdiList.map((prodi) => (
+                                <button
+                                  key={prodi}
+                                  type="button"
+                                  onClick={() => {
+                                    field.onChange(prodi);
+                                    setProdiOpen(false);
+                                  }}
+                                  className={cn(
+                                    "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground transition-colors",
+                                    field.value === prodi && "bg-accent text-accent-foreground"
+                                  )}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      field.value === prodi ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {prodi}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -225,7 +321,7 @@ export function SuratTugasForm({ initialData }: SuratTugasFormProps) {
                 <input type="hidden" {...form.register('jenisSuratText')} />
 
                 <div className="flex justify-between pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={prevStep}>
+                  <Button type="button" variant="outline" onClick={prevStep} className="text-base-black font-medium">
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Kembali
                   </Button>

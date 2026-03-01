@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/features/auth/providers/auth-context";
 import { Toaster } from "@/components/ui/sonner";
+import { Providers } from "./providers";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -24,10 +25,12 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${poppins.variable} font-sans antialiased bg-base-gray-light`}>
-        <AuthProvider>
-          {children}
-          <Toaster position="top-center" />
-        </AuthProvider>
+        <Providers>
+          <AuthProvider>
+            {children}
+            <Toaster position="top-center" />
+          </AuthProvider>
+        </Providers>
       </body>
     </html>
   );

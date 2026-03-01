@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { Eye } from "lucide-react";
+import { Eye, FileText } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -150,7 +150,7 @@ function CellRenderer({ column, item, filterType }: CellRendererProps) {
 
     case "actions":
       // Jika filterType ada (lingkup fakultas), tambahkan query param ?type=
-      const detailUrl = filterType 
+      const detailUrl = filterType
         ? `/detail/${item.id}?type=${filterType}`
         : `/detail/${item.id}`;
       return (
@@ -202,17 +202,27 @@ export function LetterTable({
           {loading ? (
             <TableSkeleton columns={columns} />
           ) : data.length === 0 ? (
-            <TableRow>
+            <TableRow className="hover:bg-transparent">
               <TableCell
                 colSpan={columns.length}
-                className="h-24 text-center text-sm text-muted-foreground"
+                className="h-auto text-center"
               >
-                {emptyMessage}
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="p-4 bg-zinc-100 rounded-full mb-4">
+                    <FileText className="w-8 h-8 text-zinc-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-zinc-900 mb-1">
+                    {emptyMessage}
+                  </h3>
+                  <p className="text-sm text-zinc-500 max-w-md">
+                    Surat akan muncul di sini ketika ada pengajuan yang masuk atau dibuat.
+                  </p>
+                </div>
               </TableCell>
             </TableRow>
           ) : (
             data.map((item) => (
-              <TableRow key={item.id} className="hover:bg-slate-50/50 border-b last:border-0">
+              <TableRow key={item.id} className="border-b last:border-0 hover:bg-transparent">
                 {columns.map((column) => (
                   <TableCell key={column.key} className={`py-3.5 px-4 ${column.className || ""}`}>
                     <CellRenderer column={column} item={item} filterType={filterType} />

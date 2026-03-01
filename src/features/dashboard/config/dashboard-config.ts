@@ -53,7 +53,7 @@ export interface RoleDashboardConfig {
 const COLUMN_DEFS: Record<ColumnKey, ColumnConfig> = {
   namaPengaju: { key: "namaPengaju", label: "Nama Pengaju", className: "w-[15%] truncate" },
   judulSurat: { key: "judulSurat", label: "Judul Surat", className: "w-[20%] truncate" },
-  nomorSurat: { key: "nomorSurat", label: "Nomor Surat", className: "w-[10%] truncate" },
+  nomorSurat: { key: "nomorSurat", label: "Nomor Surat", className: "w-[15%] truncate" },
   tipeSurat: { key: "tipeSurat", label: "Tipe Surat", className: "w-[12%]" },
   jenisSurat: { key: "jenisSurat", label: "Jenis Surat", className: "w-[10%]" },
   tanggalSurat: { key: "tanggalSurat", label: "Tanggal Surat", className: "w-[12%]" },
@@ -79,7 +79,7 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: false,
     toolbarActions: ["search", "filter_status", "filter_date", "ajukan_surat"],
     columns: {
-      default: cols("judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -88,7 +88,7 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: false,
     toolbarActions: ["search", "filter_status", "filter_date", "ajukan_surat"],
     columns: {
-      default: cols("judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -97,7 +97,7 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: false,
     toolbarActions: ["search", "filter_status", "filter_date", "ajukan_surat"],
     columns: {
-      default: cols("judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -106,7 +106,7 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: false,
     toolbarActions: ["search", "filter_status", "filter_date"],
     columns: {
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -115,7 +115,7 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: false,
     toolbarActions: ["search", "filter_status", "filter_date"],
     columns: {
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -124,7 +124,7 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: false,
     toolbarActions: ["search", "filter_status", "filter_date"],
     columns: {
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -137,9 +137,9 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: true,
     toolbarActions: ["toggle_type", "search", "filter_status", "filter_date"],
     columns: {
-      inbox: cols("namaPengaju", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
-      outbox: cols("judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
+      inbox: cols("nomorSurat", "namaPengaju", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
+      outbox: cols("nomorSurat", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "tipeSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -148,9 +148,9 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: true,
     toolbarActions: ["toggle_type", "search", "filter_status", "filter_date"],
     columns: {
-      inbox: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      outbox: cols("judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      inbox: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      outbox: cols("nomorSurat", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -159,9 +159,9 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: true,
     toolbarActions: ["toggle_type", "search", "filter_status", "filter_date"],
     columns: {
-      inbox: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      outbox: cols("judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      inbox: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      outbox: cols("nomorSurat", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -170,9 +170,9 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: true,
     toolbarActions: ["toggle_type", "search", "filter_status", "filter_date"],
     columns: {
-      inbox: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      outbox: cols("judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      inbox: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      outbox: cols("nomorSurat", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -181,9 +181,9 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: true,
     toolbarActions: ["toggle_type", "search", "filter_status", "filter_date"],
     columns: {
-      inbox: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      outbox: cols("judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      inbox: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      outbox: cols("nomorSurat", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -192,9 +192,9 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: true,
     toolbarActions: ["toggle_type", "search", "filter_status", "filter_date"],
     columns: {
-      inbox: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      outbox: cols("judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      inbox: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      outbox: cols("nomorSurat", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -203,9 +203,9 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: true,
     toolbarActions: ["toggle_type", "search", "filter_status", "filter_date"],
     columns: {
-      inbox: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      outbox: cols("judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      inbox: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      outbox: cols("nomorSurat", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -214,9 +214,9 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: true,
     toolbarActions: ["toggle_type", "buat_surat", "search", "filter_status", "filter_date"],
     columns: {
-      inbox: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      outbox: cols("judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      inbox: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      outbox: cols("nomorSurat", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -225,9 +225,9 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: true,
     toolbarActions: ["toggle_type", "buat_surat", "search", "filter_status", "filter_date"],
     columns: {
-      inbox: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      outbox: cols("judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
-      default: cols("namaPengaju", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      inbox: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      outbox: cols("nomorSurat", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "namaPengaju", "judulSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
     },
   },
 
@@ -240,7 +240,7 @@ export const DASHBOARD_CONFIG: Record<string, RoleDashboardConfig> = {
     hasInboxOutbox: false,
     toolbarActions: ["search", "filter_status", "filter_date"],
     columns: {
-      default: cols("judulSurat", "nomorSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
+      default: cols("nomorSurat", "judulSurat", "tipeSurat", "jenisSurat", "tanggalSurat", "status", "actions"),
     },
   },
 };

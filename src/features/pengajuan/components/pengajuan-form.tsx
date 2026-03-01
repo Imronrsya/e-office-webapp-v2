@@ -10,9 +10,9 @@ import {
     type CreateSubmissionJSON,
     type LetterType
 } from "@/services/submission.service";
-import { 
-    type MahasiswaProfile, 
-    type PegawaiProfile 
+import {
+    type MahasiswaProfile,
+    type PegawaiProfile
 } from "@/services/auth.service";
 import { FileUpload } from "./file-upload";
 import BottomNav from "@/components/layout/bottom-nav";
@@ -75,7 +75,7 @@ export function PengajuanForm() {
     const [files, setFiles] = useState<File[]>([]);
     const [letterTypes, setLetterTypes] = useState<LetterType[]>([]);
     const [selectedProdiDetail, setSelectedProdiDetail] = useState<ProgramStudi | null>(null);
-    
+
     // Initial State
     const [formState, setFormState] = useState<FormState>({
         jenisSurat: "",
@@ -196,10 +196,10 @@ export function PengajuanForm() {
             // Get departemen name from departemenList using ID stored in form
             const selectedDepartemen = departemenList?.find(dept => dept.id === formState.departemen);
             const departemenName = selectedDepartemen?.name || formState.departemen;
-            
+
             // Get programStudi name from detail or pass the ID (backend will resolve it)
             const programStudiName = selectedProdiDetail?.name || formState.programStudi;
-            
+
             const formDataPayload: SubmissionFormData = {
                 // Data Diri
                 nama: formState.namaLengkap,
@@ -546,7 +546,7 @@ export function PengajuanForm() {
                         type="button"
                         variant="outline"
                         onClick={() => router.back()}
-                        className="bg-white hover:bg-gray-50"
+                        className="bg-white hover:bg-gray-50 text-base-black font-medium"
                     >
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Kembali

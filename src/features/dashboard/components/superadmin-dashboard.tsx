@@ -5,21 +5,47 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Users, Building2, TrendingUp, ArrowRight } from "lucide-react";
+import { Users, Building2, TrendingUp, ArrowRight, GraduationCap, ShieldCheck } from "lucide-react";
 import { getDashboardStats, type DashboardStats } from "@/services/dashboardStats.service";
+import { listDepartments, type DepartmentItem } from "@/services/departmentSettings.service";
 import { ROLE_LABELS } from "@/lib/role-mapper";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+
+const ROLE_ORDER = [
+  "MAHASISWA",
+  "DOSEN",
+  "KAPRODI",
+  "ADMIN_PRODI",
+  "KADEP",
+  "ADMIN_FAKULTAS",
+  "DEKAN",
+  "WADEK_1",
+  "WADEK_2",
+  "MANAJER_TU",
+  "SUPERVISOR_AKADEMIK",
+  "SUPERVISOR_SUMBER_DAYA",
+  "STAF_AKADEMIK",
+  "STAF_SUMBER_DAYA",
+  "UPA",
+  "SUPERADMIN"
+];
 
 export function SuperAdminDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [departments, setDepartments] = useState<DepartmentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const data = await getDashboardStats();
-        setStats(data);
+        const [statsData, deptsData] = await Promise.all([
+          getDashboardStats(),
+          listDepartments()
+        ]);
+        setStats(statsData);
+        setDepartments(deptsData);
       } catch (error) {
         toast.error("Gagal memuat statistik dashboard");
       } finally {
@@ -32,182 +58,267 @@ export function SuperAdminDashboard() {
   if (isLoading) {
     return (
       <section aria-label="Dashboard Super Admin" className="space-y-6">
-        <div>
-          <Skeleton className="h-8 w-64 mb-2" />
-          <Skeleton className="h-4 w-96" />
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-8 bg-black rounded-sm" />
+            <h1 className="text-2xl font-bold text-gray-900">
+              Dashboard Super Admin
+            </h1>
+          </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          {[1, 2].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-40" />
-                <Skeleton className="h-4 w-60 mt-2" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-24 w-full" />
-              </CardContent>
-            </Card>
+
+        {/* 4 KPI Cards Skeleton */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="rounded-xl border bg-white shadow-sm">
+              <div className="flex flex-row items-center justify-between p-6 pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-5 rounded-md" />
+              </div>
+              <div className="p-6 pt-0">
+                <Skeleton className="h-8 w-16" />
+              </div>
+            </div>
           ))}
+        </div>
+
+        {/* 2 Panel Skeletons (Assymetric like the real page) */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Manajemen Pengguna Skeleton */}
+          <div className="rounded-xl border bg-white shadow-sm flex flex-col">
+            <div className="flex flex-row items-center justify-between p-6 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5" />
+                <Skeleton className="h-6 w-48" />
+              </div>
+              <Skeleton className="h-9 w-40 rounded-md" />
+            </div>
+            <div className="p-6 space-y-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex justify-between items-center py-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                  <Skeleton className="h-4 w-6" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Pengaturan Departemen Skeleton */}
+          <div className="rounded-xl border bg-white shadow-sm flex flex-col">
+            <div className="flex flex-row items-center justify-between p-6 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5" />
+                <Skeleton className="h-6 w-52" />
+              </div>
+              <Skeleton className="h-9 w-44 rounded-md" />
+            </div>
+            <div className="p-6 space-y-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex justify-between items-center py-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <Skeleton className="h-4 w-40" />
+                  </div>
+                  <Skeleton className="h-4 w-12" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
     );
   }
 
+  // Calculate unique roles for KPI
+  const uniqueRolesCount = stats?.users.byRole.length || 0;
+
   return (
     <section aria-label="Dashboard Super Admin" className="space-y-6">
       {/* Header Section */}
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          Dashboard Super Admin
-        </h1>
-        <p className="text-sm text-slate-500">
-          Kelola pengguna dan departemen dalam sistem E-Office
-        </p>
+      <div className="flex items-start sm:items-center justify-between mb-8">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
+          <h1 className="text-2xl font-bold text-black">
+            Dashboard Super Admin
+          </h1>
+        </div>
       </div>
 
-      {/* Statistics Grid */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* User Statistics Card */}
-        <Card
-          className="group cursor-pointer border-slate-200 bg-white transition-all duration-200 hover:border-blue-300 hover:shadow-lg"
-          onClick={() => router.push("/pengguna")}
-        >
-          <CardHeader className="space-y-1">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <CardTitle className="text-xl font-semibold text-slate-900">
-                  Manajemen Pengguna
-                </CardTitle>
-                <CardDescription className="text-sm text-slate-500">
-                  Kelola akun dan hak akses pengguna
-                </CardDescription>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-100">
-                <Users className="h-6 w-6" />
-              </div>
-            </div>
+      {/* 4 KPI Cards - Simetris dan Modern */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm border-slate-200 bg-slate-50/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">
+              Total Pengguna
+            </CardTitle>
+            <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
-          <CardContent className="space-y-5">
-            {/* Total Users */}
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-slate-900">
-                  {stats?.users.total || 0}
-                </span>
-                <span className="text-sm font-medium text-slate-500">
-                  Total Pengguna
-                </span>
-              </div>
-            </div>
-
-            {/* Role Distribution */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-slate-400" />
-                <span className="text-sm font-medium text-slate-700">
-                  Distribusi Role
-                </span>
-              </div>
-              <div className="space-y-2">
-                {stats?.users.byRole
-                  .sort((a, b) => b.count - a.count)
-                  .slice(0, 6)
-                  .map((roleStat) => (
-                    <div
-                      key={roleStat.role}
-                      className="flex items-center justify-between rounded-md border border-slate-100 bg-white px-3 py-2 text-sm"
-                    >
-                      <span className="font-medium text-slate-600">
-                        {ROLE_LABELS[roleStat.role] || roleStat.role}
-                      </span>
-                      <Badge variant="secondary" className="font-semibold">
-                        {roleStat.count}
-                      </Badge>
-                    </div>
-                  ))}
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 transition-colors group-hover:bg-blue-100">
-              <span>Kelola Pengguna</span>
-              <ArrowRight className="h-4 w-4" />
+          <CardContent>
+            <div className="text-3xl font-bold text-slate-900">
+              {stats?.users.total || 0}
             </div>
           </CardContent>
         </Card>
 
-        {/* Department Statistics Card */}
-        <Card
-          className="group cursor-pointer border-slate-200 bg-white transition-all duration-200 hover:border-emerald-300 hover:shadow-lg"
-          onClick={() => router.push("/pengaturan")}
-        >
-          <CardHeader className="space-y-1">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <CardTitle className="text-xl font-semibold text-slate-900">
-                  Pengaturan Departemen
-                </CardTitle>
-                <CardDescription className="text-sm text-slate-500">
-                  Kelola struktur akademik fakultas
-                </CardDescription>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors group-hover:bg-emerald-100">
-                <Building2 className="h-6 w-6" />
-              </div>
-            </div>
+        <Card className="shadow-sm border-slate-200 bg-slate-50/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">
+              Departemen
+            </CardTitle>
+            <Building2 className="h-4 w-4 text-emerald-600" />
           </CardHeader>
-          <CardContent className="space-y-5">
-            {/* Department & Prodi Count */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <div className="text-3xl font-bold text-slate-900">
-                  {stats?.departments.totalDepartments || 0}
-                </div>
-                <div className="mt-1 text-xs font-medium text-slate-500">
-                  Departemen
-                </div>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <div className="text-3xl font-bold text-slate-900">
-                  {stats?.departments.totalProdi || 0}
-                </div>
-                <div className="mt-1 text-xs font-medium text-slate-500">
-                  Program Studi
-                </div>
-              </div>
-            </div>
-
-            {/* Member Statistics */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-slate-400" />
-                <span className="text-sm font-medium text-slate-700">
-                  Anggota Terdaftar
-                </span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between rounded-md border border-slate-100 bg-white px-3 py-2.5 text-sm">
-                  <span className="font-medium text-slate-600">Mahasiswa</span>
-                  <Badge variant="secondary" className="font-semibold">
-                    {stats?.departments.totalMahasiswa || 0}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between rounded-md border border-slate-100 bg-white px-3 py-2.5 text-sm">
-                  <span className="font-medium text-slate-600">Pegawai</span>
-                  <Badge variant="secondary" className="font-semibold">
-                    {stats?.departments.totalPegawai || 0}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 transition-colors group-hover:bg-emerald-100">
-              <span>Kelola Departemen</span>
-              <ArrowRight className="h-4 w-4" />
+          <CardContent>
+            <div className="text-3xl font-bold text-slate-900">
+              {stats?.departments.totalDepartments || 0}
             </div>
           </CardContent>
+        </Card>
+
+        <Card className="shadow-sm border-slate-200 bg-slate-50/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">
+              Program Studi
+            </CardTitle>
+            <GraduationCap className="h-4 w-4 text-amber-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-slate-900">
+              {stats?.departments.totalProdi || 0}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm border-slate-200 bg-slate-50/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">
+              Role Aktif
+            </CardTitle>
+            <ShieldCheck className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-slate-900">
+              {uniqueRolesCount}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Detail Panels - Symmetrical 2 Columns */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Panel 1: Pengguna */}
+        <Card className="shadow-sm border-slate-200 bg-neutral-50 flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-slate-200">
+            <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Users className="w-5 h-5 text-slate-700" />
+              Manajemen Pengguna
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden sm:flex text-base-black border-base-black hover:bg-neutral-100"
+              onClick={() => router.push("/pengguna")}
+            >
+              Kelola Pengguna
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-6 flex-1">
+            {/* Scrollable container for roles if there are many */}
+            <div className="space-y-4 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+              {stats?.users.byRole
+                .sort((a, b) => {
+                  const indexA = ROLE_ORDER.indexOf(a.role);
+                  const indexB = ROLE_ORDER.indexOf(b.role);
+                  // If role not in array, push to bottom
+                  if (indexA === -1) return 1;
+                  if (indexB === -1) return -1;
+                  return indexA - indexB;
+                })
+                .map((roleStat) => (
+                  <div
+                    key={roleStat.role}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                      <span className="font-medium text-slate-700">
+                        {ROLE_LABELS[roleStat.role] || roleStat.role}
+                      </span>
+                    </div>
+                    <Badge variant="secondary" className="font-semibold bg-slate-100 text-slate-700">
+                      {roleStat.count}
+                    </Badge>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+          <div className="p-4 border-t border-slate-200 sm:hidden">
+            <Button
+              variant="outline"
+              className="w-full text-base-black border-base-black hover:bg-neutral-100"
+              onClick={() => router.push("/pengguna")}
+            >
+              Kelola Pengguna
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </Card>
+
+        {/* Panel 2: Departemen */}
+        <Card className="shadow-sm border-slate-200 bg-neutral-50 flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-slate-200">
+            <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-slate-700" />
+              Pengaturan Departemen
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden sm:flex text-base-black border-base-black hover:bg-neutral-100"
+              onClick={() => router.push("/pengaturan")}
+            >
+              Kelola Departemen
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-6 flex-1">
+            <div className="space-y-4 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+              {departments.map((dept) => (
+                <div
+                  key={dept.id}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="font-medium text-slate-700">
+                      {dept.name}
+                    </span>
+                  </div>
+                  <Badge variant="secondary" className="font-semibold bg-slate-100 text-slate-700">
+                    {dept.programStudi.length} Prodi
+                  </Badge>
+                </div>
+              ))}
+              {departments.length === 0 && (
+                <div className="text-center text-sm text-slate-500 py-4">
+                  Belum ada departemen
+                </div>
+              )}
+            </div>
+          </CardContent>
+          <div className="p-4 border-t border-slate-200 sm:hidden">
+            <Button
+              variant="outline"
+              className="w-full text-base-black border-base-black hover:bg-neutral-100"
+              onClick={() => router.push("/pengaturan")}
+            >
+              Kelola Departemen
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         </Card>
       </div>
     </section>

@@ -147,8 +147,17 @@ export function DetailView({ detail, onDownloadAttachment }: DetailViewProps) {
                     <h3 className="text-sm font-bold text-black mb-4">Detail Surat</h3>
                     
                     <InfoRow 
-                        label="Jenis Surat" 
+                        label="Tipe Surat" 
                         value={submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'Surat Tugas' : 'Surat Keputusan'} 
+                    />
+                    <InfoRow 
+                        label="Jenis Surat" 
+                        value={(() => {
+                            const cat = detail.category || detail.letterType?.category;
+                            if (!cat) return '-';
+                            const map: Record<string, string> = { AKADEMIK: 'Akademik', SUMBER_DAYA: 'Sumber Daya', UMUM: 'Umum' };
+                            return map[cat] || cat;
+                        })()} 
                     />
                     <InfoRow 
                         label="Judul Surat" 

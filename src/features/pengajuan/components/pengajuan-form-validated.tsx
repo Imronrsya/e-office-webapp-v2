@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, FileText, Calendar as CalendarIcon } from "lucide-react";
+import { ArrowLeft, FileText, Calendar as CalendarIcon, ClipboardList, User, Paperclip } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -32,6 +32,7 @@ import {
 } from "@/hooks/useMasterData";
 
 // Shadcn UI Components
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -329,301 +330,100 @@ export function PengajuanFormValidated() {
             <h1 className="text-2xl font-bold text-gray-900">Pengajuan</h1>
           </div>
 
-          <div className="space-y-8">
-            {/* Tipe Surat */}
-            <FormField
-              control={form.control}
-              name="jenisSurat"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Tipe Surat <span className="text-red-500">*</span>
-                  </FormLabel>
-                  <div className="flex gap-4">
-                    {/* SK Button */}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => field.onChange("SURAT_KEPUTUSAN")}
-                      className={cn(
-                        "h-auto p-3 rounded-xl border transition-all justify-start min-w-[200px]",
-                        field.value === "SURAT_KEPUTUSAN"
-                          ? "bg-base-black border-base-black text-white hover:bg-base-black/90 hover:text-white"
-                          : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "flex items-center justify-center w-9 h-9 rounded-full font-medium text-xs shrink-0 transition-colors",
-                            field.value === "SURAT_KEPUTUSAN"
-                              ? "bg-white text-[#2B2B2B]"
-                              : "bg-base-black text-white"
-                          )}
-                        >
-                          SK
-                        </div>
-                        <span className="font-normal text-sm">
-                          Surat Keputusan
-                        </span>
-                      </div>
-                    </Button>
-
-                    {/* ST Button */}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => field.onChange("SURAT_TUGAS")}
-                      className={cn(
-                        "h-auto p-3 rounded-xl border transition-all justify-start min-w-[200px]",
-                        field.value === "SURAT_TUGAS"
-                          ? "bg-base-black border-base-black text-white hover:bg-base-black/90 hover:text-white"
-                          : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "flex items-center justify-center w-9 h-9 rounded-full font-medium text-xs shrink-0 transition-colors",
-                            field.value === "SURAT_TUGAS"
-                              ? "bg-white text-[#2B2B2B]"
-                              : "bg-base-black text-white"
-                          )}
-                        >
-                          ST
-                        </div>
-                        <span className="font-normal text-sm">
-                          Surat Tugas
-                        </span>
-                      </div>
-                    </Button>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Judul Kegiatan */}
-            <FormField
-              control={form.control}
-              name="judulSurat"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Judul Kegiatan / Acara <span className="text-red-500">*</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Contoh: Lomba Competitive Programming Nasional"
-                      className="bg-white"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Keperluan */}
-            <FormField
-              control={form.control}
-              name="keperluan"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Keperluan <span className="text-red-500">*</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Jelaskan keperluan pembuatan surat secara detail"
-                      className="bg-white min-h-[100px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <hr className="border-gray-200" />
-
-            {/* Data Diri Section */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Data Diri
-              </h2>
-
-              {/* Nama Lengkap */}
-              <FormField
-                control={form.control}
-                name="namaLengkap"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Nama Lengkap <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Masukan Nama Lengkap"
-                        className="bg-white"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* NIM/NIP */}
-              <FormField
-                control={form.control}
-                name="nimNip"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {userRole === "MAHASISWA" ? "NIM" : "NIP"}{" "}
-                      <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={
-                          userRole === "MAHASISWA"
-                            ? "14 digit angka"
-                            : "18 digit angka"
-                        }
-                        className="bg-white"
-                        maxLength={userRole === "MAHASISWA" ? 14 : 18}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Departemen */}
-              <FormField
-                control={form.control}
-                name="departemen"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Departemen <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={true}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-gray-50 cursor-not-allowed">
-                          <SelectValue
-                            placeholder={
-                              isDeptLoading ? "Memuat..." : "Pilih Departemen"
-                            }
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {departemenList?.map((dept) => (
-                          <SelectItem key={dept.id} value={dept.id}>
-                            {dept.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Departemen diambil otomatis dari akun Anda dan tidak
-                      dapat diubah.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Program Studi */}
-              <FormField
-                control={form.control}
-                name="programStudi"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Program Studi <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={true}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-gray-50 cursor-not-allowed">
-                          <SelectValue
-                            placeholder={
-                              isProdiLoading ? "Memuat..." : "Pilih Program Studi"
-                            }
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {prodiList?.map((prodi) => (
-                          <SelectItem key={prodi.id} value={prodi.id}>
-                            {prodi.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Program Studi diambil otomatis dari akun Anda dan tidak
-                      dapat diubah.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <hr className="border-gray-200" />
-
-            {/* Detail Pelaksanaan */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Detail Pelaksanaan
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Tanggal Mulai */}
+          <div className="space-y-6">
+            <Card className="bg-neutral-50 border-zinc-400">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5" />
+                  Detail Surat
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                {/* Tipe Surat */}
                 <FormField
                   control={form.control}
-                  name="tanggalAcara"
+                  name="jenisSurat"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Tanggal Mulai <span className="text-red-500">*</span>
+                        Tipe Surat <span className="text-red-500">*</span>
                       </FormLabel>
-                      <FormControl>
-                        <DatePicker
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Pilih tanggal mulai"
-                        />
-                      </FormControl>
+                      <div className="flex gap-4">
+                        {/* SK Button */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => field.onChange("SURAT_KEPUTUSAN")}
+                          className={cn(
+                            "h-auto p-3 rounded-xl border transition-all justify-start min-w-[200px]",
+                            field.value === "SURAT_KEPUTUSAN"
+                              ? "bg-base-black border-base-black text-white hover:bg-base-black/90 hover:text-white"
+                              : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={cn(
+                                "flex items-center justify-center w-9 h-9 rounded-full font-medium text-xs shrink-0 transition-colors",
+                                field.value === "SURAT_KEPUTUSAN"
+                                  ? "bg-white text-[#2B2B2B]"
+                                  : "bg-base-black text-white"
+                              )}
+                            >
+                              SK
+                            </div>
+                            <span className="font-normal text-sm">
+                              Surat Keputusan
+                            </span>
+                          </div>
+                        </Button>
+
+                        {/* ST Button */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => field.onChange("SURAT_TUGAS")}
+                          className={cn(
+                            "h-auto p-3 rounded-xl border transition-all justify-start min-w-[200px]",
+                            field.value === "SURAT_TUGAS"
+                              ? "bg-base-black border-base-black text-white hover:bg-base-black/90 hover:text-white"
+                              : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={cn(
+                                "flex items-center justify-center w-9 h-9 rounded-full font-medium text-xs shrink-0 transition-colors",
+                                field.value === "SURAT_TUGAS"
+                                  ? "bg-white text-[#2B2B2B]"
+                                  : "bg-base-black text-white"
+                              )}
+                            >
+                              ST
+                            </div>
+                            <span className="font-normal text-sm">
+                              Surat Tugas
+                            </span>
+                          </div>
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {/* Durasi */}
+                {/* Judul Kegiatan */}
                 <FormField
                   control={form.control}
-                  name="durasiAcara"
+                  name="judulSurat"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Durasi <span className="text-red-500">*</span>
+                        Judul Kegiatan / Acara <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Contoh: 3 hari, 1 minggu, dll"
+                          placeholder="Contoh: Lomba Competitive Programming Nasional"
                           className="bg-white"
                           {...field}
                         />
@@ -632,57 +432,280 @@ export function PengajuanFormValidated() {
                     </FormItem>
                   )}
                 />
-              </div>
 
-              {/* Lokasi Kegiatan */}
-              <FormField
-                control={form.control}
-                name="lokasiAcara"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Lokasi Kegiatan <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Tempat pelaksanaan"
-                        className="bg-white"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                {/* Keperluan */}
+                <FormField
+                  control={form.control}
+                  name="keperluan"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Keperluan <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Jelaskan keperluan pembuatan surat secara detail"
+                          className="bg-white min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
 
-            <hr className="border-gray-200" />
+            {/* Data Diri Section */}
+            <Card className="bg-neutral-50 border-zinc-400">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Data Diri
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Nama Lengkap */}
+                <FormField
+                  control={form.control}
+                  name="namaLengkap"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Nama Lengkap <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Masukan Nama Lengkap"
+                          className="bg-white"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* NIM/NIP */}
+                <FormField
+                  control={form.control}
+                  name="nimNip"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {userRole === "MAHASISWA" ? "NIM" : "NIP"}{" "}
+                        <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={
+                            userRole === "MAHASISWA"
+                              ? "14 digit angka"
+                              : "18 digit angka"
+                          }
+                          className="bg-white"
+                          maxLength={userRole === "MAHASISWA" ? 14 : 18}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Departemen */}
+                <FormField
+                  control={form.control}
+                  name="departemen"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Departemen <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={true}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="bg-gray-50 cursor-not-allowed">
+                            <SelectValue
+                              placeholder={
+                                isDeptLoading ? "Memuat..." : "Pilih Departemen"
+                              }
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {departemenList?.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id}>
+                              {dept.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Departemen diambil otomatis dari akun Anda dan tidak
+                        dapat diubah.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Program Studi */}
+                <FormField
+                  control={form.control}
+                  name="programStudi"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Program Studi <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={true}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="bg-gray-50 cursor-not-allowed">
+                            <SelectValue
+                              placeholder={
+                                isProdiLoading ? "Memuat..." : "Pilih Program Studi"
+                              }
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {prodiList?.map((prodi) => (
+                            <SelectItem key={prodi.id} value={prodi.id}>
+                              {prodi.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Program Studi diambil otomatis dari akun Anda dan tidak
+                        dapat diubah.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Detail Pelaksanaan */}
+            <Card className="bg-neutral-50 border-zinc-400">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CalendarIcon className="w-5 h-5" />
+                  Detail Pelaksanaan
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Tanggal Mulai */}
+                  <FormField
+                    control={form.control}
+                    name="tanggalAcara"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Tanggal Mulai <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Pilih tanggal mulai"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Durasi */}
+                  <FormField
+                    control={form.control}
+                    name="durasiAcara"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Durasi <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Contoh: 3 hari, 1 minggu, dll"
+                            className="bg-white"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Lokasi Kegiatan */}
+                <FormField
+                  control={form.control}
+                  name="lokasiAcara"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Lokasi Kegiatan <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Tempat pelaksanaan"
+                          className="bg-white"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
 
             {/* Lampiran */}
-            <FormField
-              control={form.control}
-              name="attachments"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Lampiran Dokumen</FormLabel>
-                  <FormControl>
-                    <FileUpload
-                      files={files}
-                      onFilesChange={setFiles}
-                      maxFiles={VALIDATION_CONFIG.MAX_FILES}
-                      maxSizeKB={VALIDATION_CONFIG.MAX_FILE_SIZE / 1024}
-                      acceptedTypes={VALIDATION_CONFIG.ALLOWED_FILE_TYPES}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Format: PDF, JPG, PNG. Maksimal{" "}
-                    {VALIDATION_CONFIG.MAX_FILES} file, masing-masing maksimal{" "}
-                    {VALIDATION_CONFIG.MAX_FILE_SIZE / 1024 / 1024}MB.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <Card className="bg-neutral-50 border-zinc-400">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Paperclip className="w-5 h-5" />
+                  Lampiran
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="attachments"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Lampiran Dokumen</FormLabel>
+                      <FormControl>
+                        <FileUpload
+                          files={files}
+                          onFilesChange={setFiles}
+                          maxFiles={VALIDATION_CONFIG.MAX_FILES}
+                          maxSizeKB={VALIDATION_CONFIG.MAX_FILE_SIZE / 1024}
+                          acceptedTypes={VALIDATION_CONFIG.ALLOWED_FILE_TYPES}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Format: PDF, JPG, PNG. Maksimal{" "}
+                        {VALIDATION_CONFIG.MAX_FILES} file, masing-masing maksimal{" "}
+                        {VALIDATION_CONFIG.MAX_FILE_SIZE / 1024 / 1024}MB.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
 
             <div className="h-6" />
           </div>
@@ -695,7 +718,7 @@ export function PengajuanFormValidated() {
               type="button"
               variant="outline"
               onClick={() => router.back()}
-              className="bg-white hover:bg-gray-50"
+              className="bg-white hover:bg-gray-50 text-base-black font-medium"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Kembali

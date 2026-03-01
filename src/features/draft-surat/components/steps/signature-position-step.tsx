@@ -37,7 +37,7 @@ import { suratKeputusanTemplate } from '@/lib/templates/surat-keputusan';
 const useResizeObserver = (ref: React.RefObject<HTMLDivElement | null>, callback: (width: number) => void) => {
   useEffect(() => {
     if (!ref.current) return;
-    
+
     let lastWidth = 0;
 
     const observer = new ResizeObserver((entries) => {
@@ -49,9 +49,9 @@ const useResizeObserver = (ref: React.RefObject<HTMLDivElement | null>, callback
         }
       }
     });
-    
+
     observer.observe(ref.current);
-    
+
     const initialWidth = Math.floor(ref.current.getBoundingClientRect().width);
     lastWidth = initialWidth;
     callback(initialWidth);
@@ -70,11 +70,11 @@ const COLORS: Record<string, { border: string; bg: string; text: string }> = {
 };
 
 // Memoized SignerBox component
-const SignerBox = React.memo(({ 
-  signer, 
+const SignerBox = React.memo(({
+  signer,
   onUpdatePosition
-}: { 
-  signer: Signer, 
+}: {
+  signer: Signer,
   onUpdatePosition: (id: number, x: number, y: number) => void
 }) => {
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -119,7 +119,7 @@ const SignerBox = React.memo(({
     e.preventDefault();
     const newX = position.x + deltaX;
     const newY = position.y + deltaY;
-    
+
     setPosition({ x: newX, y: newY });
     onUpdatePosition(signer.id, newX, newY);
   };
@@ -133,7 +133,7 @@ const SignerBox = React.memo(({
       onDrag={handleDrag}
       onStop={handleStop}
     >
-      <div 
+      <div
         ref={nodeRef}
         tabIndex={0}
         onKeyDown={handleKeyDown}
@@ -157,7 +157,7 @@ const SignerBox = React.memo(({
 
         {/* Drag handle indicator */}
         <div className={`absolute bottom-1 right-1 opacity-0 group-hover:opacity-40 transition-opacity ${styles.text}`}>
-          <Grip size={12}/>
+          <Grip size={12} />
         </div>
       </div>
     </Draggable>
@@ -174,7 +174,7 @@ export function SignaturePositionStep() {
   const [containerWidth, setContainerWidth] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -212,7 +212,7 @@ export function SignaturePositionStep() {
         const pdfDoc = await PDFDocument.create();
         const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
         const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-        
+
         // Add placeholder text
         page.drawText('Preview Surat', {
           x: 50,
@@ -220,7 +220,7 @@ export function SignaturePositionStep() {
           size: 16,
           font,
         });
-        
+
         page.drawText('Drag tanda tangan ke posisi yang diinginkan', {
           x: 50,
           y: 750,
@@ -253,7 +253,7 @@ export function SignaturePositionStep() {
         URL.revokeObjectURL(pdfUrl);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.formData, state.selectedTemplate]);
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
@@ -300,7 +300,7 @@ export function SignaturePositionStep() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* PDF Preview with Draggable Signers */}
-        <div 
+        <div
           ref={containerRef}
           className="flex-1 bg-slate-200/60 rounded-xl overflow-hidden border border-slate-200 shadow-inner p-8 flex justify-center min-h-[600px] relative"
         >
@@ -323,8 +323,8 @@ export function SignaturePositionStep() {
                 }
               >
                 {displayWidth > 0 && (
-                  <Page 
-                    pageNumber={pageNumber} 
+                  <Page
+                    pageNumber={pageNumber}
                     width={displayWidth}
                     className="bg-white shadow-lg"
                     renderAnnotationLayer={false}
@@ -365,13 +365,13 @@ export function SignaturePositionStep() {
               {state.signers.map((signer, index) => {
                 const colorClass = signer.color === 'blue' ? 'bg-blue-500' :
                   signer.color === 'emerald' ? 'bg-emerald-500' :
-                  signer.color === 'purple' ? 'bg-purple-500' :
-                  signer.color === 'amber' ? 'bg-amber-500' :
-                  signer.color === 'rose' ? 'bg-rose-500' : 'bg-cyan-500';
+                    signer.color === 'purple' ? 'bg-purple-500' :
+                      signer.color === 'amber' ? 'bg-amber-500' :
+                        signer.color === 'rose' ? 'bg-rose-500' : 'bg-cyan-500';
 
                 return (
-                  <div 
-                    key={signer.id} 
+                  <div
+                    key={signer.id}
                     className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
                   >
                     <div className={`w-6 h-6 rounded-full ${colorClass} text-white text-xs flex items-center justify-center font-bold`}>
@@ -421,8 +421,8 @@ export function SignaturePositionStep() {
 
           {/* Action Buttons */}
           <div className="space-y-2">
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               size="lg"
               onClick={handleSubmit}
               disabled={isSubmitting}
@@ -439,9 +439,9 @@ export function SignaturePositionStep() {
                 </>
               )}
             </Button>
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               className="w-full"
               onClick={handleDownload}
             >
@@ -451,14 +451,14 @@ export function SignaturePositionStep() {
           </div>
 
           <p className="text-xs text-muted-foreground text-center px-4">
-            Tip: Gunakan arrow keys untuk penyesuaian posisi yang lebih presisi. 
+            Tip: Gunakan arrow keys untuk penyesuaian posisi yang lebih presisi.
             Tahan Shift untuk perpindahan 10px.
           </p>
         </div>
       </div>
 
       <div className="flex justify-between pt-4 border-t">
-        <Button variant="outline" onClick={prevStep}>
+        <Button variant="outline" onClick={prevStep} className="text-base-black font-medium">
           <ChevronLeft className="w-4 h-4 mr-2" />
           Kembali
         </Button>

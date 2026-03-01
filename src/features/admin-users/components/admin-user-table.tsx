@@ -11,15 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Pagination } from "@heroui/react";
 import { Pencil, KeyRound, Trash2 } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/role-mapper";
 import type { AdminUserListItem, PaginationMeta } from "@/services/adminUser.service";
@@ -69,7 +61,7 @@ export function AdminUserTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-white overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -78,7 +70,7 @@ export function AdminUserTable({
               <TableHead>Role</TableHead>
               <TableHead>NIM/NIP</TableHead>
               <TableHead>Unit Kerja</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
+              <TableHead>Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -102,8 +94,8 @@ export function AdminUserTable({
                     {user.identifier || "—"}
                   </TableCell>
                   <TableCell>{user.unitKerja || "—"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
+                  <TableCell>
+                    <div className="flex justify-start gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -138,122 +130,17 @@ export function AdminUserTable({
         </Table>
       </div>
 
-      {/* Pagination dengan shadcn/ui - centered */}
+      {/* Pagination dengan HeroUI - right aligned & compact */}
       {meta.totalPages > 1 && (
-        <div className="flex justify-center py-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (page > 1) onPageChange(page - 1);
-                  }}
-                  className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-
-              {/* First page */}
-              {page > 2 && (
-                <PaginationItem>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onPageChange(1);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-              )}
-
-              {/* Ellipsis if needed */}
-              {page > 3 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-
-              {/* Previous page */}
-              {page > 1 && (
-                <PaginationItem>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onPageChange(page - 1);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    {page - 1}
-                  </PaginationLink>
-                </PaginationItem>
-              )}
-
-              {/* Current page */}
-              <PaginationItem>
-                <PaginationLink
-                  isActive
-                  className="bg-base-black hover:bg-base-black/90 text-white cursor-default"
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-
-              {/* Next page */}
-              {page < meta.totalPages && (
-                <PaginationItem>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onPageChange(page + 1);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    {page + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              )}
-
-              {/* Ellipsis if needed */}
-              {page < meta.totalPages - 2 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-
-              {/* Last page */}
-              {page < meta.totalPages - 1 && (
-                <PaginationItem>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onPageChange(meta.totalPages);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    {meta.totalPages}
-                  </PaginationLink>
-                </PaginationItem>
-              )}
-
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (page < meta.totalPages) onPageChange(page + 1);
-                  }}
-                  className={page >= meta.totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+        <div className="flex w-full justify-end py-2">
+          <Pagination
+            isCompact
+            showControls
+            size="sm"
+            page={page}
+            total={meta.totalPages}
+            onChange={onPageChange}
+          />
         </div>
       )}
     </div>
