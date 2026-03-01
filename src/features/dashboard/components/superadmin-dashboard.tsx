@@ -93,7 +93,7 @@ export function SuperAdminDashboard() {
               </div>
               <Skeleton className="h-9 w-40 rounded-md" />
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-3">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="flex justify-between items-center py-2">
                   <div className="flex items-center gap-3">
@@ -115,7 +115,7 @@ export function SuperAdminDashboard() {
               </div>
               <Skeleton className="h-9 w-44 rounded-md" />
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex justify-between items-center py-2">
                   <div className="flex items-center gap-3">
@@ -227,7 +227,7 @@ export function SuperAdminDashboard() {
           </CardHeader>
           <CardContent className="pt-6 flex-1">
             {/* Scrollable container for roles if there are many */}
-            <div className="space-y-4 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-3 max-h-[224px] overflow-y-auto pr-2 custom-scrollbar">
               {stats?.users.byRole
                 .sort((a, b) => {
                   const indexA = ROLE_ORDER.indexOf(a.role);
@@ -285,24 +285,26 @@ export function SuperAdminDashboard() {
             </Button>
           </CardHeader>
           <CardContent className="pt-6 flex-1">
-            <div className="space-y-4 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
-              {departments.map((dept) => (
-                <div
-                  key={dept.id}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    <span className="font-medium text-slate-700">
-                      {dept.name}
-                    </span>
+            <div className="space-y-3 max-h-[224px] overflow-y-auto pr-2 custom-scrollbar">
+              {departments
+                .filter((dept) => dept.code !== "FSM")
+                .map((dept) => (
+                  <div
+                    key={dept.id}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span className="font-medium text-slate-700">
+                        {dept.name}
+                      </span>
+                    </div>
+                    <Badge variant="secondary" className="font-semibold bg-slate-100 text-slate-700">
+                      {dept.programStudi.length} Prodi
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className="font-semibold bg-slate-100 text-slate-700">
-                    {dept.programStudi.length} Prodi
-                  </Badge>
-                </div>
-              ))}
-              {departments.length === 0 && (
+                ))}
+              {departments.filter((dept) => dept.code !== "FSM").length === 0 && (
                 <div className="text-center text-sm text-slate-500 py-4">
                   Belum ada departemen
                 </div>
