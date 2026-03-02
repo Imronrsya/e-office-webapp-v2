@@ -123,6 +123,7 @@ export function UniversalDocumentPreview({
                         tembusan: tembusanData || [],
                         stempelUrl,
                         qrCodeDataUrl,
+                        showDraftWatermark: showDraftBadge,
                         // Format tanggal surat if available
                         tanggalSurat: (contentData.tanggalSurat as string)
                             ? `Semarang, ${formatTanggalIndonesia(contentData.tanggalSurat as string)}`
@@ -148,6 +149,7 @@ export function UniversalDocumentPreview({
                         tembusan: tembusanData || [],
                         stempelUrl,
                         qrCodeDataUrl,
+                        showDraftWatermark: showDraftBadge,
                         // Format tanggal surat if available
                         tanggalSurat: (contentData.tanggalSurat as string)
                             ? `Semarang, ${formatTanggalIndonesia(contentData.tanggalSurat as string)}`
@@ -162,6 +164,7 @@ export function UniversalDocumentPreview({
                         tembusan: tembusanData || [],
                         stempelUrl,
                         qrCodeDataUrl,
+                        showDraftWatermark: showDraftBadge,
                     };
                     return suratKeputusanTemplate(data);
                 }
@@ -182,6 +185,7 @@ export function UniversalDocumentPreview({
                     return generateSuratPengantarHTML({
                         ...pengantarData,
                         tembusan: tembusanData || pengantarData.tembusan || [],
+                        showDraftWatermark: showDraftBadge,
                         // Kaprodi signature
                         namaKaprodi: kaprodiSig?.signerName || pengantarData.namaKaprodi,
                         nipKaprodi: kaprodiSig?.signerNip || pengantarData.nipKaprodi,
@@ -204,7 +208,7 @@ export function UniversalDocumentPreview({
             onError?.(error);
             return null;
         }
-    }, [actualMode, providedHtmlContent, content, documentType, signatures, onError]);
+    }, [actualMode, providedHtmlContent, content, documentType, signatures, showDraftBadge, onError]);
 
     // Effective HTML content (provided or generated)
     const effectiveHtmlContent = providedHtmlContent || generatedHtmlContent;

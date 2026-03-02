@@ -47,6 +47,7 @@ interface LegacyPDFPreviewProps {
         positionPage?: number | null;
         prefix?: string | null;
     }>;
+    showDraftBadge?: boolean;
     onDownload?: () => void;
 }
 
@@ -61,6 +62,7 @@ export function LegacyPDFPreview({
     content,
     documentType,
     signatures,
+    showDraftBadge,
     onDownload,
 }: LegacyPDFPreviewProps) {
     // Convert legacy signatures to new SignatureData format
@@ -87,7 +89,7 @@ export function LegacyPDFPreview({
             mode={mode}
             fileName={fileName}
             signatures={convertedSignatures}
-            showDraftBadge={!isSigned && !fileUrl}
+            showDraftBadge={showDraftBadge !== undefined ? showDraftBadge : (!isSigned && !fileUrl)}
             metadata={{ status: isSigned ? 'SIGNED' : 'DRAFT' }}
             onDownload={onDownload}
             theme="dark"
@@ -137,6 +139,7 @@ interface LegacySuratPreviewProps {
     documentData?: LegacySuratPreviewDocumentData;
     fileUrl?: string | null;
     fileName?: string;
+    showDraftBadge?: boolean;
     onDownload?: () => void;
 }
 
@@ -149,6 +152,7 @@ export function LegacySuratPreview({
     documentData,
     fileUrl,
     fileName = "Surat Pengantar",
+    showDraftBadge,
     onDownload,
 }: LegacySuratPreviewProps) {
     // Generate HTML content using the same logic as original SuratPreview
@@ -248,7 +252,7 @@ export function LegacySuratPreview({
             mode={fileUrl ? 'pdf' : 'html'}
             fileName={fileName}
             signatures={convertedSignatures}
-            showDraftBadge={!documentData?.isSigned && !fileUrl}
+            showDraftBadge={showDraftBadge !== undefined ? showDraftBadge : (!documentData?.isSigned && !fileUrl)}
             metadata={{
                 status: documentData?.isSigned ? 'SIGNED' : 'DRAFT',
                 nomorSurat: documentData?.nomorSurat || undefined,

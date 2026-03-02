@@ -38,6 +38,8 @@ export interface SuratPengantarData {
     prefixKadep?: string; // Awalan seperti "Mengetahui,"
     // Tembusan - mendukung string (legacy) atau TembusanRecipient[] (baru)
     tembusan?: string | TembusanRecipient[];
+    // Watermark DRAFT - jika true selalu tampilkan, jika undefined gunakan logika otomatis
+    showDraftWatermark?: boolean;
 }
 
 /**
@@ -76,6 +78,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         signatureKadep,
         prefixKadep,
         tembusan,
+        showDraftWatermark,
     } = data;
 
     // Determine signature layout based on which signers are present (check names, not signatures)
@@ -289,16 +292,11 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             text-align: left;
             clear: both;
         }
-        .draft-watermark {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 100px;
-            color: rgba(0, 0, 0, 0.05);
-            font-weight: bold;
-            z-index: 1000;
-            pointer-events: none;
+        /* DRAFT Watermark - background repeating di seluruh konten (semua halaman) */
+        #surat-content.has-draft-watermark {
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Ctext x='300' y='200' dominant-baseline='middle' text-anchor='middle' transform='rotate(-45,300,200)' font-size='80' font-family='Times New Roman' font-weight='bold' fill='rgba(0,0,0,0.05)'%3EDRAFT%3C/text%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 600px 400px;
         }
         b, strong {
             font-weight: bold;
@@ -307,9 +305,12 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
     </style>
 </head>
 <body>
-    ${!signatureKaprodi && !signatureKadep ? '<div class="draft-watermark">DRAFT</div>' : ''}
     
-    <div id="surat-content">
+    <div id="surat-content" class="${(showDraftWatermark !== undefined ? showDraftWatermark : (
+            // Auto-detect: DRAFT muncul selama ada penandatangan yang belum tanda tangan
+            // Hanya cek penandatangan yang memang ada (punya nama)
+            (hasKaprodi && !signatureKaprodi) || (hasKadep && !signatureKadep) || (!hasKaprodi && !hasKadep)
+        )) ? 'has-draft-watermark' : ''}">
         <div class="header-container">
             <div class="logo-container">
                 <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">

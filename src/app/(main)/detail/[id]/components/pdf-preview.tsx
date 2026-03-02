@@ -134,6 +134,7 @@ export function PDFPreview({
                         signatures: signatureBlocks,
                         tembusan: tembusanData,
                         stempelUrl: stempelUrl,
+                        showDraftWatermark: !isSigned,
                     };
                     return suratTugasTemplate(data);
                 }
@@ -148,6 +149,7 @@ export function PDFPreview({
                         signatures: signatureBlocks,
                         tembusan: tembusanData,
                         stempelUrl: stempelUrl,
+                        showDraftWatermark: !isSigned,
                     };
                     return suratTugasTableTemplate(data);
                 }
@@ -157,6 +159,7 @@ export function PDFPreview({
                         signatures: signatureBlocks,
                         tembusan: tembusanData,
                         stempelUrl: stempelUrl,
+                        showDraftWatermark: !isSigned,
                     };
                     return suratKeputusanTemplate(data);
                 }
@@ -167,7 +170,7 @@ export function PDFPreview({
             console.error('Failed to generate preview:', error);
             return null;
         }
-    }, [content, documentType, signatures]);
+    }, [content, documentType, signatures, isSigned]);
 
     // Generate PDF with signature blocks embedded when we have content and signatures
     // ONLY if fileUrl is NOT available (fileUrl from backend takes priority)

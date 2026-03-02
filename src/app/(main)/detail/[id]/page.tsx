@@ -65,7 +65,7 @@ import {
 import { ProcessHistory } from "./components/process-history";
 import { DetailSuratInfo } from "./components/detail-surat-info";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SignatureModal, type SignatureModalResult } from "@/components/signature";
+import { SignatureModal, type SignatureModalResult, type PreviewData } from "@/components/signature";
 import { NumberingModal } from "@/components/numbering";
 import { legalisasiService } from "@/services/legalisasi.service";
 import { generateFinalPdf, type SuratType } from "@/lib/pdf-generator";
@@ -2343,14 +2343,78 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 revisionTargets={detail?.returnTargets}
             />
 
-            {/* Signature Modal - for Dekan/Wadek to sign documents */}
+            {/* Signature Modal - for Kaprodi/Kadep/Dekan/Wadek to sign documents */}
             <SignatureModal
                 open={signatureModalOpen}
                 onOpenChange={setSignatureModalOpen}
                 onConfirm={handleSignatureConfirm}
                 title="Tanda Tangan Digital"
-                description="Pilih metode untuk menandatangani dokumen SK/ST"
+                description="Pilih metode untuk menandatangani dokumen"
                 isLoading={actionLoading}
+                previewData={(() => {
+                    const isKaprodiOrKadep = ["KAPRODI", "KADEP"].includes(currentUserRole);
+                    if (isKaprodiOrKadep && suratPengantarDoc) {
+                        // Surat Pengantar preview for Kaprodi/Kadep
+                        return {
+                            type: 'surat-pengantar',
+                            submissionData: {
+                                nama: submissionValues.nama,
+                                nim: submissionValues.nim,
+                                nip: submissionValues.nip,
+                                programStudi: submissionValues.programStudi,
+                                departemen: "Informatika",
+                                keperluan: submissionValues.keperluan,
+                                judulAcara: submissionValues.judulAcara,
+                                tanggalAcara: submissionValues.tanggalAcara,
+                                lokasiAcara: submissionValues.lokasiAcara,
+                                durasiAcara: submissionValues.durasiAcara,
+                            },
+                            documentData: {
+                                nomorSurat: suratPengantarDoc.nomorSurat,
+                                tanggalSurat: suratPengantarDoc.tanggalSurat,
+                                perihal: suratPengantarDoc.perihal,
+                                content: suratPengantarDoc.content,
+                                contentHtml: null,
+                                isSigned: suratPengantarDoc.isSigned,
+                                tembusan: suratPengantarDoc.tembusan,
+                                signatures: suratPengantarDoc.signatures?.map(s => ({
+                                    signerRole: s.signerRole,
+                                    signerName: s.signerName,
+                                    signerNip: s.signerNip || "",
+                                    signatureUrl: s.signatureUrl || undefined,
+                                    positionX: s.positionX,
+                                    positionY: s.positionY,
+                                    positionPage: s.positionPage,
+                                })),
+                            },
+                            fileUrl: null,
+                            currentSignerRole: currentUserRole,
+                        } as PreviewData;
+                    }
+                    if (isDekanWadek && suratHasilDoc) {
+                        // Surat Hasil preview for Dekan/Wadek
+                        const contentWithMeta = suratHasilDoc.content
+                            ? {
+                                ...suratHasilDoc.content,
+                                nomorSurat: suratHasilDoc.nomorSurat || '',
+                                tanggalSurat: suratHasilDoc.tanggalSurat || undefined,
+                                tembusan: suratHasilDoc.tembusan || [],
+                                stempelUrl: suratHasilDoc.sealImageUrl || undefined,
+                                qrCodeDataUrl: suratHasilDoc.qrCodeUrl || undefined,
+                            }
+                            : null;
+                        return {
+                            type: 'surat-hasil',
+                            content: contentWithMeta,
+                            documentType: suratHasilDoc.type as 'SURAT_TUGAS' | 'SURAT_TUGAS_TABEL' | 'SURAT_KEPUTUSAN',
+                            signatures: suratHasilDoc.signatures,
+                            fileUrl: null,
+                            isSigned: suratHasilDoc.isSigned || false,
+                            currentSignerRole: currentUserRole,
+                        } as PreviewData;
+                    }
+                    return undefined;
+                })()}
             />
 
             {/* Numbering Modal - for UPA to assign nomor surat */}

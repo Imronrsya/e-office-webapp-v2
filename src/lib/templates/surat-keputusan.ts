@@ -54,6 +54,9 @@ export interface SuratKeputusanData {
 
   // Tembusan - daftar penerima salinan surat
   tembusan?: TembusanRecipient[];
+
+  // Watermark DRAFT - tampilkan selama belum COMPLETED
+  showDraftWatermark?: boolean;
 }
 
 /**
@@ -570,13 +573,20 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     b, strong {
       font-weight: bold !important;
     }
+    /* DRAFT Watermark - background repeating di seluruh konten (semua halaman) */
+    #surat-content.has-draft-watermark,
+    #lampiran-content.has-draft-watermark {
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Ctext x='300' y='200' dominant-baseline='middle' text-anchor='middle' transform='rotate(-45,300,200)' font-size='80' font-family='Times New Roman' font-weight='bold' fill='rgba(0,0,0,0.05)'%3EDRAFT%3C/text%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 600px 400px;
+    }
   </style>
 </head>
 <body>
   <!-- QR Code Running Footer - muncul di setiap halaman -->
   ${renderQRRunningFooter(data.qrCodeDataUrl)}
   
-  <div id="surat-content">
+  <div id="surat-content" class="${data.showDraftWatermark ? 'has-draft-watermark' : ''}">
     <div class="logo-container">
       <img src="/Undip-Logo.png" alt="Logo UNDIP" class="logo">
     </div>
@@ -675,7 +685,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
   </div>
   
   ${data.lampiran && data.dataPeserta ? `
-  <div id="lampiran-content" class="lampiran-content force-page-break">
+  <div id="lampiran-content" class="lampiran-content force-page-break ${data.showDraftWatermark ? 'has-draft-watermark' : ''}">
     <div class="content-section">
       <div class="section-header">
         <div class="section-label">LAMPIRAN:</div>

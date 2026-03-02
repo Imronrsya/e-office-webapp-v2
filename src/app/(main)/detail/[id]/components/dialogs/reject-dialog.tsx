@@ -66,7 +66,7 @@ export function RejectDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md rounded-2xl">
+            <DialogContent className="sm:max-w-md rounded-2xl" hideCloseButton>
                 <DialogHeader className="space-y-1">
                     <DialogTitle className="text-xl font-semibold text-[#2B2B2B]">
                         {title}

@@ -336,7 +336,15 @@ export function PDFPreview({
         // Scroll to the specific page
         const pageElement = document.getElementById(`page-${targetPage}`);
         if (pageElement && mainViewRef.current) {
-            pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Menggunakan parent scrollable container secara langsung
+            const containerTop = mainViewRef.current.getBoundingClientRect().top;
+            const elementTop = pageElement.getBoundingClientRect().top;
+            const scrollTop = mainViewRef.current.scrollTop;
+
+            mainViewRef.current.scrollTo({
+                top: scrollTop + elementTop - containerTop - 24, // 24px is p-6 padding
+                behavior: 'smooth'
+            });
         }
     };
 
