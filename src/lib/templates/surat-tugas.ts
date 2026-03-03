@@ -121,7 +121,7 @@ const renderSignatureBlock = (signature: SignatureBlock, stempelUrl?: string, sh
     <div class="signature-block" style="text-align: center; min-width: 200px; position: relative;">
       ${signature.prefix ? `<p style="margin: 0 0 5px 0; color: #000000 !important; font-style: italic;">${signature.prefix}</p>` : ''}
       <p style="margin: 0 0 5px 0; color: #000000 !important;">${getRoleDisplayLabel(signature.signerRole)}</p>
-      <div style="position: relative; display: inline-block;">
+      <div style="position: relative; display: inline-block; margin-top: 20px;">
         ${stempelOverlay}
         ${signatureImage}
       </div>
