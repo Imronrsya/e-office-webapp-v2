@@ -48,6 +48,9 @@ export interface SuratKeputusanData {
   // Stempel URL
   stempelUrl?: string;
 
+  // Stempel target role - dipilih oleh UPA saat pembubuhan stempel
+  sealTargetRole?: string;
+
   // QR Code untuk verifikasi
   qrCodeDataUrl?: string;
   verificationUrl?: string;
@@ -66,10 +69,10 @@ export interface SuratKeputusanData {
 const getHierarchyRank = (role: string): number => {
   const upperRole = role.toUpperCase();
   if (upperRole.includes('DEKAN') && !upperRole.includes('WAKIL')) return 3;
-  if (upperRole.includes('WAKIL') && upperRole.includes('1')) return 2;
-  if (upperRole.includes('WAKIL') && upperRole.includes('2')) return 1;
-  if (upperRole.includes('WADEK') && upperRole.includes('1')) return 2;
-  if (upperRole.includes('WADEK') && upperRole.includes('2')) return 1;
+  if (upperRole.includes('WAKIL') && (upperRole.includes('1') || upperRole.endsWith(' I'))) return 2;
+  if (upperRole.includes('WAKIL') && (upperRole.includes('2') || upperRole.endsWith(' II'))) return 1;
+  if (upperRole.includes('WADEK') && (upperRole.includes('1') || upperRole.includes('_I'))) return 2;
+  if (upperRole.includes('WADEK') && (upperRole.includes('2') || upperRole.includes('_II'))) return 1;
   return 0;
 };
 
@@ -149,7 +152,7 @@ const sortSignaturesByHierarchy = (signatures: SignatureBlock[]): SignatureBlock
 /**
  * Helper untuk render semua blok tanda tangan dengan layout berdasarkan jumlah
  */
-const renderSignatures = (signatures?: SignatureBlock[], stempelUrl?: string): string => {
+const renderSignatures = (signatures?: SignatureBlock[], stempelUrl?: string, sealTargetRole?: string): string => {
   if (!signatures || signatures.length === 0) {
     return `
       <div class="ttd-count-1">
@@ -161,15 +164,16 @@ const renderSignatures = (signatures?: SignatureBlock[], stempelUrl?: string): s
     `;
   }
 
-  const sortedSignatures = sortSignaturesByHierarchy(signatures);
+  // Gunakan urutan sesuai input user (tanpa sorting otomatis)
 
-  // Find which signature should receive the stempel (highest ranking)
-  const stempelRecipientRole = findStempelRecipientRole(signatures);
+  // Find which signature should receive the stempel
+  // Jika sealTargetRole tersedia (dipilih UPA), gunakan itu; jika tidak, fallback ke highest ranking
+  const stempelRecipientRole = sealTargetRole || findStempelRecipientRole(signatures);
 
-  const count = sortedSignatures.length;
+  const count = signatures.length;
   const countClass = `ttd-count-${Math.min(count, 4)}`;
 
-  const signatureBlocks = sortedSignatures.map(sig => {
+  const signatureBlocks = signatures.map(sig => {
     const shouldHaveStempel = sig.signerRole === stempelRecipientRole;
     return renderSignatureBlock(sig, stempelUrl, shouldHaveStempel);
   }).join('');
@@ -676,7 +680,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       </div>
       
       <div class="ttd-section">
-        ${renderSignatures(data.signatures, data.stempelUrl)}
+        ${renderSignatures(data.signatures, data.stempelUrl, data.sealTargetRole)}
       </div>
       
       <div class="footer-section">

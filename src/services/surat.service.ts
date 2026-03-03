@@ -33,6 +33,7 @@ export interface DocumentSummary {
     isSigned: boolean;
     fileUrl: string | null;
     sealImageUrl?: string | null; // URL stempel yang sudah dibubuhkan
+    sealTargetRole?: string | null; // Role pejabat yang dipilih UPA untuk stempel
     qrCodeUrl?: string | null; // URL QR code verifikasi
     content?: Record<string, unknown> | null; // Form data untuk generate preview
     contentHtml?: string | null; // HTML content jika sudah di-generate
@@ -49,6 +50,7 @@ export interface SignatureSummary {
     signatureUrl?: string | null; // URL of the actual signature image
     signedAt: string;
     order: number;
+    status?: string; // PENDING | SIGNED | REJECTED
     // Position data for signature placement on PDF
     positionX?: number | null;
     positionY?: number | null;

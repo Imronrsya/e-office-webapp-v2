@@ -1140,24 +1140,14 @@ function BuatSuratContent() {
                 };
             }
 
-            // Build signatories
-            const SIGNER_HIERARCHY: Record<string, number> = {
-                'WADEK_2': 1,
-                'WADEK_1': 2,
-                'DEKAN': 3,
-            };
-
+            // Build signatories - urutan sesuai inputan staff/supervisor (TANPA auto-sort hierarchy)
             const signatories = signers
-                .map(s => ({
+                .map((s, idx) => ({
                     signerRole: s.role,
                     signerName: s.name || ALL_SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
                     signerNip: s.nip || "",
                     prefix: s.prefix || "",
-                    hierarchyOrder: SIGNER_HIERARCHY[s.role] ?? 99,
-                }))
-                .sort((a, b) => a.hierarchyOrder - b.hierarchyOrder)
-                .map((s, idx) => ({
-                    ...s,
+                    // Order sesuai urutan input user (index-based)
                     order: idx + 1
                 }));
 
@@ -2088,8 +2078,17 @@ function BuatSuratContent() {
                                 {signers.map((signer, index) => (
                                     <div key={signer.id} className="space-y-3 p-4 bg-white rounded-lg border">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-sm font-medium">
-                                                {index + 1}
+                                            <div className="flex flex-col items-center gap-0.5">
+                                                <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-sm font-medium">
+                                                    {index + 1}
+                                                </div>
+                                                <span className="text-[10px] text-muted-foreground font-medium leading-tight">
+                                                    {signers.length === 1
+                                                        ? "Kanan"
+                                                        : signers.length === 2
+                                                            ? index === 0 ? "Kiri" : "Kanan"
+                                                            : index === 0 ? "Kiri" : index === 1 ? "Kanan" : "Tengah"}
+                                                </span>
                                             </div>
                                             <Select
                                                 value={signer.role}

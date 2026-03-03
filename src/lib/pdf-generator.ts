@@ -458,7 +458,7 @@ export async function embedSignaturePlaceholders(
                 currentY -= 14;
             }
 
-            // Draw role/position title (e.g., "Dekan", "Wakil Dekan 1")
+            // Draw role/position title (e.g., "Dekan", "Wakil Dekan I")
             page.drawText(signer.role, {
                 x,
                 y: currentY,

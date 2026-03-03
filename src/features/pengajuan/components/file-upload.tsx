@@ -203,9 +203,7 @@ export function FileUpload({
                             className="flex items-center gap-3 p-3 bg-white rounded-lg border border-[#E1DFE0] group"
                         >
                             <div
-                                className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
-                                onClick={() => handlePreview(file)}
-                                title="Klik untuk melihat preview"
+                                className="flex items-center gap-3 min-w-0 flex-1 p-1"
                             >
                                 {getFileIconBox(file)}
                                 <div className="min-w-0">
@@ -217,15 +215,28 @@ export function FileUpload({
                                     </p>
                                 </div>
                             </div>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeFile(index)}
-                                className="h-8 w-8 p-0 text-gray-400 hover:text-red-500"
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handlePreview(file)}
+                                    className="h-8 w-8 p-0 text-gray-500 hover:text-blue-500"
+                                    title="Lihat preview"
+                                >
+                                    <Eye className="h-4 w-4" strokeWidth={2.5} />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeFile(index)}
+                                    className="h-8 w-8 p-0 text-gray-500 hover:text-red-500"
+                                    title="Hapus file"
+                                >
+                                    <X className="h-4 w-4" strokeWidth={2.5} />
+                                </Button>
+                            </div>
                         </div>
                     ))}
                 </div>

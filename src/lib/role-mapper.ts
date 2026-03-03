@@ -75,8 +75,8 @@ export const ROLE_LABELS: Record<string, string> = {
     KADEP: "Ketua Departemen",
     ADMIN_FAKULTAS: "Admin Fakultas",
     DEKAN: "Dekan",
-    WADEK_1: "Wakil Dekan 1",
-    WADEK_2: "Wakil Dekan 2",
+    WADEK_1: "Wakil Dekan I",
+    WADEK_2: "Wakil Dekan II",
     MANAJER_TU: "Manajer TU",
     SUPERVISOR_AKADEMIK: "Supervisor Akademik",
     SUPERVISOR_SUMBER_DAYA: "Supervisor Sumber Daya",
@@ -148,12 +148,12 @@ export function canSubmitLetter(role: string): boolean {
  */
 export function getPostDraftRedirectPath(role: string): string {
     const normalizedRole = role.toUpperCase();
-    
+
     // Admin Prodi -> Dashboard
     if (normalizedRole === ROLES.ADMIN_PRODI) {
         return '/dashboard';
     }
-    
+
     // Staff Akademik, Sumber Daya, atau kategori lainnya -> Surat Keluar
     if ([
         ROLES.STAF_AKADEMIK,
@@ -164,7 +164,7 @@ export function getPostDraftRedirectPath(role: string): string {
     ].includes(normalizedRole as any)) {
         return '/dashboard?tab=surat-keluar';
     }
-    
+
     // Default fallback: Dashboard
     return '/dashboard';
 }

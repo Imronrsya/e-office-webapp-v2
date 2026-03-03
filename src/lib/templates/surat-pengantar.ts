@@ -9,6 +9,18 @@ export interface TembusanRecipient {
     description?: string;
 }
 
+/**
+ * Interface untuk blok tanda tangan (shared with other templates)
+ */
+export interface SignatureBlock {
+    signerRole: string;
+    signerName: string;
+    signerNip?: string;
+    signatureUrl?: string;
+    signedAt?: string;
+    prefix?: string;
+}
+
 export interface SuratPengantarData {
     nomorSurat: string;
     tanggalSurat: string;
@@ -40,6 +52,8 @@ export interface SuratPengantarData {
     tembusan?: string | TembusanRecipient[];
     // Watermark DRAFT - jika true selalu tampilkan, jika undefined gunakan logika otomatis
     showDraftWatermark?: boolean;
+    // Flexible signatures (baru) - jika ada, gunakan ini dan abaikan namaKaprodi/namaKadep
+    signatures?: SignatureBlock[];
 }
 
 /**
@@ -81,7 +95,22 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         showDraftWatermark,
     } = data;
 
-    // Determine signature layout based on which signers are present (check names, not signatures)
+    // Helper untuk display label role
+    const getRoleDisplayLabel = (role: string): string => {
+        const ROLE_LABELS: Record<string, string> = {
+            'DEKAN': 'Dekan',
+            'WADEK_1': 'Wakil Dekan I',
+            'WADEK_2': 'Wakil Dekan II',
+            'KADEP': 'Ketua Departemen',
+            'KAPRODI': 'Ketua Program Studi',
+        };
+        return ROLE_LABELS[role] || role;
+    };
+
+    // Determine if using new flexible signatures or legacy fields
+    const useFlexibleSignatures = !!(data.signatures && data.signatures.length > 0);
+
+    // Legacy: Determine signature layout based on which signers are present
     const hasKaprodi = !!namaKaprodi;
     const hasKadep = !!namaKadep;
     const tingkatTTD = hasKaprodi && hasKadep ? "dua" : hasKaprodi ? "kaprodi" : hasKadep ? "kadep" : "";
@@ -242,7 +271,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             page-break-inside: avoid;
         }
         
-        /* JIKA DUA TTD: Kaprodi di kiri, Kadep di kanan */
+        /* JIKA DUA TTD: kiri & kanan */
         .ttd-container.dua {
             justify-content: space-between;
         }
@@ -251,6 +280,44 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         .ttd-container.kaprodi,
         .ttd-container.kadep {
             justify-content: flex-end;
+        }
+
+        /* Flexible layout: ttd-count-* classes (sama dengan template lain) */
+        /* 1 TTD → kanan */
+        .ttd-count-1 {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        /* 2 TTD → kiri & kanan */
+        .ttd-count-2 {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* 3 TTD: 2 di atas (kiri-kanan), 1 di bawah tengah */
+        .ttd-count-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+                "t1 t2"
+                "t3 t3";
+            gap: 30px;
+        }
+
+        .ttd-count-3 .ttd-box:nth-child(1) {
+            grid-area: t1;
+            justify-self: start;
+        }
+
+        .ttd-count-3 .ttd-box:nth-child(2) {
+            grid-area: t2;
+            justify-self: end;
+        }
+
+        .ttd-count-3 .ttd-box:nth-child(3) {
+            grid-area: t3;
+            justify-self: center;
         }
         
         .ttd-box {
@@ -414,10 +481,26 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         </div>
         
         <!-- TTD Container - Dynamic based on signers -->
+        ${useFlexibleSignatures ? `
+        <!-- Flexible signatures mode -->
+        <div class="ttd-container ttd-count-${Math.min(data.signatures!.length, 3)}">
+            ${data.signatures!.map(sig => `
+            <div class="ttd-box">
+                ${sig.prefix ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${sig.prefix}</p>` : ''}
+                <p class="jabatan-ttd">${getRoleDisplayLabel(sig.signerRole)}</p>
+                <div class="signature-area">
+                    ${sig.signatureUrl ? `<img src="${sig.signatureUrl}" alt="TTD" class="signature-img" />` : ''}
+                </div>
+                <p class="nama-pejabat">${sig.signerName || '...'}</p>
+                <p class="nip-pejabat">${sig.signerNip ? `NIP. ${sig.signerNip}` : ''}</p>
+            </div>
+            `).join('')}
+        </div>
+        ` : `
+        <!-- Legacy mode: hardcoded Kaprodi/Kadep -->
         <div class="ttd-container ${tingkatTTD}">
         
             ${tingkatTTD === "dua" ? `
-            <!-- Dua TTD: Kaprodi di kiri, Kadep di kanan -->
             <div class="ttd-box kaprodi">
                 ${prefixKaprodi ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKaprodi}</p>` : ''}
                 <p class="jabatan-ttd">Ketua Program Studi</p>
@@ -439,7 +522,6 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             ` : ''}
         
             ${tingkatTTD === "kaprodi" ? `
-            <!-- Hanya Kaprodi: di kanan -->
             <div class="ttd-box kaprodi">
                 ${prefixKaprodi ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKaprodi}</p>` : ''}
                 <p class="jabatan-ttd">Ketua Program Studi</p>
@@ -452,7 +534,6 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             ` : ''}
         
             ${tingkatTTD === "kadep" ? `
-            <!-- Hanya Kadep: di kanan -->
             <div class="ttd-box kadep">
                 ${prefixKadep ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKadep}</p>` : ''}
                 <p class="jabatan-ttd">Ketua Departemen</p>
@@ -465,6 +546,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             ` : ''}
         
         </div>
+        `}
         
         ${renderTembusan(tembusan)}
     </div>

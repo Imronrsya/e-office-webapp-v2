@@ -166,7 +166,17 @@ export function LegacySuratPreview({
         // Otherwise generate from submission data
         if (!submissionData) return null;
 
-        // Extract signature data
+        // Convert signatures to SignatureBlock format for flexible mode
+        // Array order comes from backend (orderBy: { order: 'asc' }), preserving user-defined positions
+        const signatureBlocks = documentData?.signatures?.map(s => ({
+            signerRole: s.signerRole,
+            signerName: s.signerName,
+            signerNip: s.signerNip,
+            signatureUrl: s.signatureUrl,
+            prefix: s.prefix || undefined,
+        })) || [];
+
+        // Also extract legacy fields as fallback (when no signatures array)
         const kaprodiSig = documentData?.signatures?.find(s =>
             s.signerRole.toLowerCase().includes('kaprodi') ||
             s.signerRole.toLowerCase().includes('ketua prodi')
@@ -217,17 +227,19 @@ export function LegacySuratPreview({
             // Tembusan
             tembusan: documentData?.tembusan || [],
 
-            // Signatures - Kaprodi
+            // Pass signatures array for flexible positioning (respects user-defined order from DB)
+            signatures: signatureBlocks.length > 0 ? signatureBlocks : undefined,
+
+            // Legacy fields as fallback (only used when signatures array is empty)
             namaKaprodi: kaprodiSig?.signerName,
             nipKaprodi: kaprodiSig?.signerNip,
             signatureKaprodi: kaprodiSig?.signatureUrl,
-            prefixKaprodi: kaprodiSig?.prefix || undefined, // Awalan seperti "Mengetahui,"
+            prefixKaprodi: kaprodiSig?.prefix || undefined,
 
-            // Signatures - Kadep
             namaKadep: kadepSig?.signerName,
             nipKadep: kadepSig?.signerNip,
             signatureKadep: kadepSig?.signatureUrl,
-            prefixKadep: kadepSig?.prefix || undefined, // Awalan seperti "Mengetahui,"
+            prefixKadep: kadepSig?.prefix || undefined,
         });
     }, [submissionData, documentData, fileUrl]);
 

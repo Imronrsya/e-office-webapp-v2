@@ -255,8 +255,8 @@ export const legalisasiService = {
    */
   async assignNumberWithPosition(
     documentId: string,
-    data: { 
-      nomorSurat: string; 
+    data: {
+      nomorSurat: string;
       tanggalSurat: string;
       position: {
         x: number;
@@ -283,12 +283,13 @@ export const legalisasiService = {
    */
   async applyStamp(
     documentId: string,
-    sealImageUrl?: string
+    sealImageUrl?: string,
+    sealTargetRole?: string
   ): Promise<StampResponse> {
     try {
       const response = await api.post<StampResponse>(
         `/api/legalisasi/document/${documentId}/stamp`,
-        { sealImageUrl }
+        { sealImageUrl, sealTargetRole }
       );
       return response.data;
     } catch (error) {

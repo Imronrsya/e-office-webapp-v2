@@ -122,6 +122,7 @@ export function UniversalDocumentPreview({
                         signatures: signatureBlocks,
                         tembusan: tembusanData || [],
                         stempelUrl,
+                        sealTargetRole: (contentData.sealTargetRole as string) || undefined,
                         qrCodeDataUrl,
                         showDraftWatermark: showDraftBadge,
                         // Format tanggal surat if available
@@ -148,6 +149,7 @@ export function UniversalDocumentPreview({
                         signatures: signatureBlocks,
                         tembusan: tembusanData || [],
                         stempelUrl,
+                        sealTargetRole: (contentData.sealTargetRole as string) || undefined,
                         qrCodeDataUrl,
                         showDraftWatermark: showDraftBadge,
                         // Format tanggal surat if available
@@ -163,16 +165,18 @@ export function UniversalDocumentPreview({
                         signatures: signatureBlocks,
                         tembusan: tembusanData || [],
                         stempelUrl,
+                        sealTargetRole: (contentData.sealTargetRole as string) || undefined,
                         qrCodeDataUrl,
                         showDraftWatermark: showDraftBadge,
                     };
                     return suratKeputusanTemplate(data);
                 }
                 case 'SURAT_PENGANTAR': {
-                    // For SURAT_PENGANTAR, we need to convert signatures to namaKaprodi/namaKadep format
+                    // Pass signatures directly for flexible positioning
+                    // Template will use signatures[] if available, fallback to namaKaprodi/namaKadep for legacy
                     const pengantarData = content as unknown as SuratPengantarData;
 
-                    // Extract Kaprodi and Kadep signatures
+                    // Also extract legacy fields from signatureBlocks for backward compatibility
                     const kaprodiSig = signatureBlocks.find(s =>
                         s.signerRole.toLowerCase().includes('kaprodi') ||
                         s.signerRole.toLowerCase().includes('ketua prodi')
@@ -186,12 +190,13 @@ export function UniversalDocumentPreview({
                         ...pengantarData,
                         tembusan: tembusanData || pengantarData.tembusan || [],
                         showDraftWatermark: showDraftBadge,
-                        // Kaprodi signature
+                        // Pass signatures array directly for flexible positioning
+                        signatures: signatureBlocks.length > 0 ? signatureBlocks : undefined,
+                        // Legacy fields as fallback
                         namaKaprodi: kaprodiSig?.signerName || pengantarData.namaKaprodi,
                         nipKaprodi: kaprodiSig?.signerNip || pengantarData.nipKaprodi,
                         signatureKaprodi: kaprodiSig?.signatureUrl || pengantarData.signatureKaprodi,
                         prefixKaprodi: kaprodiSig?.prefix || pengantarData.prefixKaprodi,
-                        // Kadep signature
                         namaKadep: kadepSig?.signerName || pengantarData.namaKadep,
                         nipKadep: kadepSig?.signerNip || pengantarData.nipKadep,
                         signatureKadep: kadepSig?.signatureUrl || pengantarData.signatureKadep,

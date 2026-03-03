@@ -125,8 +125,8 @@ function getRoleLabel(role: string): string {
         'KADEP': 'Ketua Departemen',
         'ADMIN_FAKULTAS': 'Admin Fakultas',
         'DEKAN': 'Dekan',
-        'WADEK_1': 'Wakil Dekan 1',
-        'WADEK_2': 'Wakil Dekan 2',
+        'WADEK_1': 'Wakil Dekan I',
+        'WADEK_2': 'Wakil Dekan II',
         'UPA': 'UPA',
     };
     return roleLabels[role] || role;
@@ -190,6 +190,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const [signatureModalOpen, setSignatureModalOpen] = useState(false);
     const [numberingModalOpen, setNumberingModalOpen] = useState(false);
     const [attachmentPreviewOpen, setAttachmentPreviewOpen] = useState(false);
+
+    // Stamp selection modal state - UPA pilih siapa penerima stempel
+    const [stampModalOpen, setStampModalOpen] = useState(false);
+    const [selectedStampRole, setSelectedStampRole] = useState<string>("");
     const [previewAttachment, setPreviewAttachment] = useState<{ id: string, fileName: string, fileUrl: string, mimeType: string | null } | null>(null);
 
     // Document attachment preview modal (for staff uploaded attachments in surat hasil)
@@ -690,9 +694,30 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         setPdfRefreshKey(prev => prev + 1);
     };
 
-    // Handle stamp (UPA)
-    const handleStamp = async () => {
+    // Handle stamp (UPA) - buka modal pilih penerima stempel
+    const handleStamp = () => {
         if (!detail || actionLoading) return;
+
+        const suratHasilDoc = detail.documents?.find(d =>
+            d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
+        );
+
+        if (!suratHasilDoc) {
+            toast.error("Dokumen tidak ditemukan");
+            return;
+        }
+
+        // Default pilih signer pertama
+        const signatures = suratHasilDoc.signatures?.filter(s => s.status === 'SIGNED') || [];
+        if (signatures.length > 0) {
+            setSelectedStampRole(signatures[0].signerRole);
+        }
+        setStampModalOpen(true);
+    };
+
+    // Confirm stamp - kirim ke API dengan role yang dipilih
+    const confirmStamp = async () => {
+        if (!detail || actionLoading || !selectedStampRole) return;
 
         const suratHasilDoc = detail.documents?.find(d =>
             d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
@@ -705,10 +730,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
         setActionLoading(true);
         try {
-            const response = await legalisasiService.applyStamp(suratHasilDoc.id);
+            const response = await legalisasiService.applyStamp(suratHasilDoc.id, undefined, selectedStampRole);
 
             if (response.success) {
                 toast.success("Stempel berhasil dibubuhkan");
+                setStampModalOpen(false);
                 await fetchDetail();
                 setPdfRefreshKey(prev => prev + 1);
             } else {
@@ -1605,6 +1631,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     tanggalSurat: suratHasilDoc.tanggalSurat || undefined,
                     tembusan: suratHasilDoc.tembusan || [],
                     stempelUrl: suratHasilDoc.sealImageUrl || undefined,
+                    sealTargetRole: suratHasilDoc.sealTargetRole || undefined,
                     qrCodeDataUrl: suratHasilDoc.qrCodeUrl || undefined,
                 }
                 : suratHasilDoc.tembusan ? {
@@ -1612,11 +1639,13 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     tanggalSurat: suratHasilDoc.tanggalSurat || undefined,
                     tembusan: suratHasilDoc.tembusan,
                     stempelUrl: suratHasilDoc.sealImageUrl || undefined,
+                    sealTargetRole: suratHasilDoc.sealTargetRole || undefined,
                     qrCodeDataUrl: suratHasilDoc.qrCodeUrl || undefined,
                 } : {
                     nomorSurat: suratHasilDoc.nomorSurat,
                     tanggalSurat: suratHasilDoc.tanggalSurat || undefined,
                     stempelUrl: suratHasilDoc.sealImageUrl || undefined,
+                    sealTargetRole: suratHasilDoc.sealTargetRole || undefined,
                     qrCodeDataUrl: suratHasilDoc.qrCodeUrl || undefined,
                 };
 
@@ -2004,6 +2033,59 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                     Bubuhkan Stempel
                                 </Button>
                             )}
+
+                            {/* Stamp Selection Modal */}
+                            <Dialog open={stampModalOpen} onOpenChange={setStampModalOpen}>
+                                <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle className="flex items-center gap-2">
+                                            <Stamp className="w-5 h-5" />
+                                            Pilih Penerima Stempel
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            Pilih pejabat penandatangan yang akan menerima stempel resmi.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="py-4">
+                                        <Label className="text-sm font-medium mb-2 block">Penandatangan</Label>
+                                        <Select value={selectedStampRole} onValueChange={setSelectedStampRole}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Pilih pejabat" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {(() => {
+                                                    const suratHasilDoc = detail.documents?.find(d =>
+                                                        d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN'
+                                                    );
+                                                    const signatures = suratHasilDoc?.signatures?.filter(s => s.status === 'SIGNED') || [];
+                                                    return signatures.map((sig) => (
+                                                        <SelectItem key={sig.signerRole} value={sig.signerRole}>
+                                                            {getRoleLabel(sig.signerRole)} — {sig.signerName}
+                                                        </SelectItem>
+                                                    ));
+                                                })()}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <DialogFooter className="gap-2">
+                                        <Button variant="outline" onClick={() => setStampModalOpen(false)} disabled={actionLoading}>
+                                            Batal
+                                        </Button>
+                                        <Button
+                                            onClick={confirmStamp}
+                                            disabled={actionLoading || !selectedStampRole}
+                                            className="bg-base-black hover:bg-base-black/90 text-white gap-2"
+                                        >
+                                            {actionLoading ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Stamp className="w-4 h-4" />
+                                            )}
+                                            Bubuhkan
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
 
                             {/* Generate QR Code Button (UPA) - when status is UPA_FINALIZING and QR not yet generated */}
                             {isUPA && detail.status === 'UPA_FINALIZING' && (() => {

@@ -70,6 +70,7 @@ import {
     ListChecks,
     Check,
     ChevronsUpDown,
+    Eye,
 } from "lucide-react";
 import { format as formatDate, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -2140,36 +2141,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             }
 
             // Build signatories array for API with position data
-            // Sort by hierarchy for signing order:
-            // For Surat Pengantar: KAPRODI (1) -> KADEP (2)
-            // For Surat Hasil: WADEK_2 (1) -> WADEK_1 (2) -> DEKAN (3)
-            const SIGNER_HIERARCHY: Record<string, number> = {
-                // Surat Pengantar hierarchy
-                'KAPRODI': 1,
-                'KADEP': 2,
-                // Surat Hasil hierarchy (Wadek signs before Dekan)
-                'WADEK_2': 1,
-                'WADEK_1': 2,
-                'DEKAN': 3,
-            };
-
+            // Urutan sesuai inputan staff/supervisor (TANPA auto-sort hierarchy)
             const signatories = signers
-                .map(s => ({
+                .map((s, idx) => ({
                     signerRole: s.role,
                     signerName: s.name || ALL_SIGNER_ROLES.find(r => r.value === s.role)?.label || s.role,
                     signerNip: s.nip || "",
                     prefix: s.prefix || "", // Include prefix/awalan
-                    hierarchyOrder: SIGNER_HIERARCHY[s.role] ?? 99,
                     // Include position data if available
                     x: s.x || 0,
                     y: s.y || 0,
-                    page: s.page || 1
-                }))
-                // Sort by hierarchy
-                .sort((a, b) => a.hierarchyOrder - b.hierarchyOrder)
-                // Assign correct order based on hierarchy
-                .map((s, idx) => ({
-                    ...s,
+                    page: s.page || 1,
+                    // Order sesuai urutan input user (index-based)
                     order: idx + 1
                 }));
 
@@ -3581,8 +3564,17 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 {signers.map((signer, index) => (
                                     <div key={signer.id} className="space-y-3 p-4 bg-white rounded-lg border">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-sm font-medium">
-                                                {index + 1}
+                                            <div className="flex flex-col items-center gap-0.5">
+                                                <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-sm font-medium">
+                                                    {index + 1}
+                                                </div>
+                                                <span className="text-[10px] text-muted-foreground font-medium leading-tight">
+                                                    {signers.length === 1
+                                                        ? "Kanan"
+                                                        : signers.length === 2
+                                                            ? index === 0 ? "Kiri" : "Kanan"
+                                                            : index === 0 ? "Kiri" : index === 1 ? "Kanan" : "Tengah"}
+                                                </span>
                                             </div>
                                             <Select
                                                 value={signer.role}
@@ -4041,10 +4033,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                                     setPreviewFileName(name);
                                                                     setPreviewModalOpen(true);
                                                                 }}
-                                                                className="text-[#6D6D6D] hover:text-[#2B2B2B] h-8 w-8"
+                                                                className="text-gray-500 hover:text-blue-500 h-8 w-8"
                                                                 title="Preview"
                                                             >
-                                                                <FileText className="w-4 h-4" />
+                                                                <Eye className="w-4 h-4" strokeWidth={2.5} />
                                                             </Button>
                                                             <Button
                                                                 variant="ghost"
