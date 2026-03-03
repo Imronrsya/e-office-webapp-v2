@@ -514,8 +514,9 @@ export const suratTugasTemplate = (data: SuratTugasData): string => `<!DOCTYPE h
     }
     /* DRAFT Watermark - background repeating di seluruh konten (semua halaman) */
     #surat-content.has-draft-watermark {
-      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Ctext x='300' y='200' dominant-baseline='middle' text-anchor='middle' transform='rotate(-45,300,200)' font-size='80' font-family='Times New Roman' font-weight='bold' fill='rgba(0,0,0,0.05)'%3EDRAFT%3C/text%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Ctext x='300' y='200' dominant-baseline='middle' text-anchor='middle' transform='rotate(-45,300,200)' font-size='80' font-family='Times New Roman' font-weight='bold' fill='rgba(0,0,0,0.07)'%3EDRAFT%3C/text%3E%3C/svg%3E");
       background-repeat: repeat;
+      background-position: center top;
       background-size: 600px 400px;
     }
   </style>
