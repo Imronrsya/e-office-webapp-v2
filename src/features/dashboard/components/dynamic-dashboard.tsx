@@ -174,11 +174,17 @@ export default function DynamicDashboard() {
       // Extract tab counts from response tabs
       const tabCounts = response.data.tabs?.reduce(
         (acc, tab) => {
-          if (tab.key === "masuk") acc.masuk = tab.count;
-          if (tab.key === "keluar") acc.keluar = tab.count;
+          if (tab.key === "masuk") {
+            acc.masuk = tab.count;
+            acc.masukWaiting = (tab as any).waitingCount ?? 0;
+          }
+          if (tab.key === "keluar") {
+            acc.keluar = tab.count;
+            acc.keluarWaiting = (tab as any).waitingCount ?? 0;
+          }
           return acc;
         },
-        { masuk: 0, keluar: 0 } as TabCount
+        { masuk: 0, keluar: 0, masukWaiting: 0, keluarWaiting: 0 } as TabCount
       );
 
       setData({

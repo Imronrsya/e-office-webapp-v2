@@ -40,6 +40,8 @@ export interface DashboardFilters {
 export interface TabCount {
   masuk: number;
   keluar: number;
+  masukWaiting: number;
+  keluarWaiting: number;
 }
 
 interface DashboardToolbarProps {
@@ -141,12 +143,16 @@ export function DashboardToolbar({
                 }`}
             >
               Surat Masuk
-              {/* {tabCounts && (
-                <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${filters.type === "masuk" ? "bg-white/20" : "bg-gray-100"
-                  }`}>
-                  {tabCounts.masuk}
+              {tabCounts && tabCounts.masukWaiting > 0 && (
+                <span
+                  className={`ml-2 min-w-[20px] h-[18px] px-1.5 text-[11px] font-bold rounded-full inline-flex items-center justify-center align-middle ${filters.type === "masuk"
+                    ? "bg-white text-black"
+                    : "bg-black text-white"
+                    }`}
+                >
+                  {tabCounts.masukWaiting > 99 ? "99+" : tabCounts.masukWaiting}
                 </span>
-              )} */}
+              )}
             </Button>
             <Button
               variant={filters.type === "keluar" ? "default" : "ghost"}
@@ -157,12 +163,16 @@ export function DashboardToolbar({
                 }`}
             >
               Surat Keluar
-              {/* {tabCounts && (
-                <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${filters.type === "keluar" ? "bg-white/20" : "bg-gray-100"
-                  }`}>
-                  {tabCounts.keluar}
+              {tabCounts && tabCounts.keluarWaiting > 0 && (
+                <span
+                  className={`ml-2 min-w-[20px] h-[18px] px-1.5 text-[11px] font-bold rounded-full inline-flex items-center justify-center align-middle ${filters.type === "keluar"
+                    ? "bg-white text-black"
+                    : "bg-black text-white"
+                    }`}
+                >
+                  {tabCounts.keluarWaiting > 99 ? "99+" : tabCounts.keluarWaiting}
                 </span>
-              )} */}
+              )}
             </Button>
           </nav>
         )}
