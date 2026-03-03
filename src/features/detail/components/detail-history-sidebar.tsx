@@ -35,16 +35,22 @@ export function DetailHistorySidebar({ detail }: DetailHistorySidebarProps) {
         );
     }
 
+    const filteredLogs = detail.logs.filter((log) => {
+        if (log.notes?.toLowerCase().includes('tembusan dikirim ke')) return false;
+        if (['ASSIGN_NUMBER', 'STAMP', 'GENERATE_QR'].includes(log.action)) return false;
+        return true;
+    });
+
     return (
         <Card className="h-fit sticky top-20">
             <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold">Riwayat Proses</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-                {detail.logs.map((log, idx) => {
+                {filteredLogs.map((log, idx) => {
                     const isLatest = idx === 0;
                     const isDone = log.toStatus && !log.toStatus.includes("WAITING");
-                    
+
                     return (
                         <div key={log.id} className="flex items-start gap-3">
                             {/* Icon */}

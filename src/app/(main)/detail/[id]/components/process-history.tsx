@@ -58,7 +58,7 @@ function getWaitingLabel(role: string, status?: string): string {
         }
         return 'Tanda Tangan Ketua Departemen';
     }
-    
+
     const waitingLabels: Record<string, string> = {
         'KAPRODI': 'Verifikasi Oleh Ketua Prodi',
         'ADMIN_PRODI': 'Pembuatan Surat Pengantar',
@@ -80,7 +80,7 @@ function getActionLabel(action: string, actorRole?: string): string {
     if (action.toUpperCase() === 'DISPOSITION' && actorRole === 'ADMIN_FAKULTAS') {
         return 'Diteruskan';
     }
-    
+
     const actionLabels: Record<string, string> = {
         'SUBMIT': 'Pengajuan Dibuat',
         'RESUBMIT': 'Pengajuan Ulang',
@@ -106,14 +106,14 @@ function getActionLabel(action: string, actorRole?: string): string {
 
 function transformNotes(notes: string | null, action: string, actorRole?: string): string | null {
     if (!notes) return notes;
-    
+
     // Transform notes for Admin Fakultas disposition actions
     if (action.toUpperCase() === 'DISPOSITION' && actorRole === 'ADMIN_FAKULTAS') {
         // Replace "Disposisi ke" with "Meneruskan ke"
         // Case variations: "Disposisi ke", "disposisi ke", "DISPOSISI KE"
         return notes.replace(/Disposisi ke/gi, 'Meneruskan ke');
     }
-    
+
     return notes;
 }
 
@@ -123,13 +123,21 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
     // - masuk: hanya tampilkan log terkait surat pengantar (dari pengajuan hingga didisposisikan ke staf)
     // - keluar: hanya tampilkan log terkait surat hasil (dari staf membuat draft hingga UPA selesai)
     const filterLogsForDisplay = (allLogs: LogSummary[]): LogSummary[] => {
+        // Filter out tembusan logs and intermediate UPA actions 
+        // as they are not needed in the visible history
+        const baseLogs = allLogs.filter(log => {
+            if (log.notes?.toLowerCase().includes('tembusan dikirim ke')) return false;
+            if (['ASSIGN_NUMBER', 'STAMP', 'GENERATE_QR'].includes(log.action)) return false;
+            return true;
+        });
+
         if (userScope === 'FAKULTAS' && filterType) {
             if (filterType === 'masuk') {
                 // Riwayat Surat Masuk:
                 // Pengajuan -> Kaprodi approve -> Admin Prodi buat draft pengantar -> 
                 // Kadep tanda tangan -> Diterima Fakultas -> Didisposisikan ke Staf/Supervisor ->
                 // CLOSING: Draft Dibuat oleh Staf (DRAFT_CREATE dari SURAT_DIBUAT)
-                
+
                 // Log yang termasuk surat masuk (berdasarkan status)
                 const suratMasukStatuses = [
                     'SUBMITTED',
@@ -141,40 +149,40 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
                     'FAKULTAS_DISPOSITION',
                     'SURAT_DIBUAT', // PENUTUP Surat Masuk - disposisi ke staff
                 ];
-                
-                return allLogs.filter(log => {
+
+                return baseLogs.filter(log => {
                     const fromStatus = log.fromStatus?.toUpperCase() || '';
                     const toStatus = log.toStatus?.toUpperCase() || '';
-                    
+
                     // PERBAIKAN: Include log DRAFT_CREATE yang fromStatus = SURAT_DIBUAT
                     // sebagai CLOSING marker untuk Surat Masuk
-                    const isDraftCreateFromSuratDibuat = 
-                        log.action === 'DRAFT_CREATE' && 
+                    const isDraftCreateFromSuratDibuat =
+                        log.action === 'DRAFT_CREATE' &&
                         fromStatus.includes('SURAT_DIBUAT');
-                    
+
                     if (isDraftCreateFromSuratDibuat) {
                         return true; // PASTI include - ini closing Surat Masuk
                     }
-                    
+
                     // Include jika fromStatus atau toStatus ada di fase surat masuk
-                    const isInMasukPhase = suratMasukStatuses.some(status => 
+                    const isInMasukPhase = suratMasukStatuses.some(status =>
                         fromStatus.includes(status) || toStatus.includes(status)
                     );
-                    
+
                     // Exclude log disposisi yang menuju SURAT_DIBUAT jika dari fase keluar
                     // Ini untuk mencegah duplikasi log disposisi di timeline masuk
-                    const isDispositionToSuratDibuat = 
-                        log.action === 'DISPOSITION' && 
+                    const isDispositionToSuratDibuat =
+                        log.action === 'DISPOSITION' &&
                         toStatus.includes('SURAT_DIBUAT');
-                    
+
                     // Exclude jika sudah masuk fase drafting SK/ST (FAKULTAS_DRAFTING dan seterusnya)
-                    const isInKeluarPhase = 
+                    const isInKeluarPhase =
                         fromStatus.includes('FAKULTAS_DRAFTING') || toStatus.includes('FAKULTAS_DRAFTING') ||
                         fromStatus.includes('FAKULTAS_VERIFICATION') || toStatus.includes('FAKULTAS_VERIFICATION') ||
                         fromStatus.includes('FAKULTAS_SIGNING') || toStatus.includes('FAKULTAS_SIGNING') ||
                         fromStatus.includes('UPA_') || toStatus.includes('UPA_') ||
                         fromStatus.includes('COMPLETED') || toStatus.includes('COMPLETED');
-                    
+
                     // Include jika di fase masuk DAN (disposisi ke SURAT_DIBUAT ATAU tidak di fase keluar)
                     return isInMasukPhase && (isDispositionToSuratDibuat || !isInKeluarPhase);
                 });
@@ -182,51 +190,51 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
                 // Riwayat Surat Keluar:
                 // Staf/Supervisor buat draft SK/ST -> Supervisor verifikasi -> Manajer TU verifikasi ->
                 // Pejabat tanda tangan -> UPA beri nomor -> UPA stempel -> UPA finalisasi
-                
+
                 // PERBAIKAN: Log pertama HARUS "Draft Surat Dibuat" (DRAFT_CREATE)
                 // JANGAN include log DISPOSITION ke SURAT_DIBUAT (itu milik Surat Masuk)
-                
+
                 // Log yang termasuk surat keluar (berdasarkan status)
                 const suratKeluarStatuses = [
                     'FAKULTAS_DRAFTING',
-                    'FAKULTAS_VERIFICATION', 
+                    'FAKULTAS_VERIFICATION',
                     'FAKULTAS_SIGNING',
                     'UPA_NUMBERING',
                     'UPA_STAMPING',
                     'UPA_FINALIZING',
                     'COMPLETED',
                 ];
-                
-                return allLogs.filter(log => {
+
+                return baseLogs.filter(log => {
                     const fromStatus = log.fromStatus?.toUpperCase() || '';
                     const toStatus = log.toStatus?.toUpperCase() || '';
-                    
+
                     // PERBAIKAN: Exclude log DISPOSITION dengan toStatus SURAT_DIBUAT
                     // (itu milik timeline Surat Masuk, bukan Surat Keluar)
-                    const isDispositionToSuratDibuat = 
-                        log.action === 'DISPOSITION' && 
+                    const isDispositionToSuratDibuat =
+                        log.action === 'DISPOSITION' &&
                         toStatus.includes('SURAT_DIBUAT');
-                    
+
                     if (isDispositionToSuratDibuat) {
                         return false; // JANGAN tampilkan di Surat Keluar
                     }
-                    
+
                     // Include jika fromStatus atau toStatus ada di fase surat keluar
-                    return suratKeluarStatuses.some(status => 
+                    return suratKeluarStatuses.some(status =>
                         fromStatus.includes(status) || toStatus.includes(status)
                     );
                 });
             }
         }
-        
-        // Untuk departemen dan UPA, tampilkan semua log
-        return allLogs;
+
+        // Untuk departemen dan UPA, tampilkan semua log (kecuali tembusan)
+        return baseLogs;
     };
 
     // Sort logs in reverse chronological order (newest first from top to bottom)
     const filteredLogs = filterLogsForDisplay(logs);
     const displayLogs = [...filteredLogs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
+
     // Determine title based on scope and filter
     const getTitle = () => {
         if (userScope === 'FAKULTAS' && filterType) {
@@ -234,21 +242,21 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
         }
         return 'Riwayat Proses';
     };
-    
+
     // PERBAIKAN: Di Surat Masuk, jika sudah ada log "Draft Dibuat" (DRAFT_CREATE), 
     // maka jangan tampilkan "waiting" indicator karena Surat Masuk sudah selesai
-    const shouldHideWaiting = 
-        userScope === 'FAKULTAS' && 
-        filterType === 'masuk' && 
+    const shouldHideWaiting =
+        userScope === 'FAKULTAS' &&
+        filterType === 'masuk' &&
         displayLogs.some(log => log.action === 'DRAFT_CREATE');
-    
+
     const showWaiting = isWaiting && currentActiveRole && !shouldHideWaiting;
 
     return (
         <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
             <CardContent className="p-6">
                 <h3 className="text-sm font-bold text-black mb-6">{getTitle()}</h3>
-                
+
                 {/* Info untuk filter surat keluar jika belum ada log */}
                 {userScope === 'FAKULTAS' && filterType === 'keluar' && displayLogs.length === 0 && (
                     <div className="flex items-center gap-2 text-zinc-500 text-sm">
@@ -256,7 +264,7 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
                         <span>Belum ada riwayat proses surat keluar.</span>
                     </div>
                 )}
-                
+
                 <div className="space-y-0">
                     {/* Current waiting status (at top) */}
                     {showWaiting && (
@@ -277,7 +285,7 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
                             </div>
                         </div>
                     )}
-                    
+
                     {/* Completed logs */}
                     {displayLogs.map((log, idx) => (
                         <div key={log.id} className="flex gap-4">

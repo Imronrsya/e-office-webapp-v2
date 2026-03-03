@@ -2237,7 +2237,7 @@ function BuatSuratContent() {
                                         Pengaju Surat
                                     </Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Pengaju akan mendapat akses sistem.
+                                        Pengaju akan mendapat akses dan download surat.
                                     </p>
                                 </div>
                                 <Badge variant="secondary">Disarankan</Badge>
@@ -2249,7 +2249,7 @@ function BuatSuratContent() {
                             <div className="space-y-4">
                                 <div className="space-y-2 relative">
                                     <Label className="text-sm font-medium text-[#2B2B2B]">
-                                        1. Pilih Akun Pengguna (Akses Sistem)
+                                        1. Pilih Akun Pengguna (Dalam Sistem)
                                     </Label>
                                     <p className="text-xs text-muted-foreground leading-relaxed">
                                         Akun yang dipilih akan dapat <strong>mengakses dan mendownload</strong> surat setelah selesai.
