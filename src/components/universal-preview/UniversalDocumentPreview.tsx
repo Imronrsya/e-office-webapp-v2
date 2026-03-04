@@ -7,6 +7,7 @@ import {
     Minus,
     Plus,
     Maximize2,
+    Minimize2,
     RotateCw,
     Download,
     Printer,
@@ -77,6 +78,35 @@ export function UniversalDocumentPreview({
     const [isGenerating, setIsGenerating] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    // Listen for fullscreen changes to toggle icon & styles correctly
+    useEffect(() => {
+        const onFsChange = () => {
+            const isFs = !!(
+                document.fullscreenElement ||
+                // @ts-ignore
+                document.webkitFullscreenElement ||
+                // @ts-ignore
+                document.mozFullScreenElement ||
+                // @ts-ignore
+                document.msFullscreenElement
+            );
+            setIsFullscreen(isFs);
+        };
+
+        document.addEventListener('fullscreenchange', onFsChange);
+        document.addEventListener('webkitfullscreenchange', onFsChange);
+        document.addEventListener('mozfullscreenchange', onFsChange);
+        document.addEventListener('MSFullscreenChange', onFsChange);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', onFsChange);
+            document.removeEventListener('webkitfullscreenchange', onFsChange);
+            document.removeEventListener('mozfullscreenchange', onFsChange);
+            document.removeEventListener('MSFullscreenChange', onFsChange);
+        };
+    }, []);
 
     // Refs
     const containerRef = useRef<HTMLDivElement>(null);
@@ -282,10 +312,24 @@ export function UniversalDocumentPreview({
         }
 
         if (containerRef.current) {
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
+            const isFs = document.fullscreenElement ||
+                // @ts-ignore
+                document.webkitFullscreenElement ||
+                // @ts-ignore
+                document.mozFullScreenElement;
+
+            if (isFs) {
+                if (document.exitFullscreen) document.exitFullscreen();
+                // @ts-ignore
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                // @ts-ignore
+                else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
             } else {
-                containerRef.current.requestFullscreen();
+                if (containerRef.current.requestFullscreen) containerRef.current.requestFullscreen();
+                // @ts-ignore
+                else if (containerRef.current.webkitRequestFullscreen) containerRef.current.webkitRequestFullscreen();
+                // @ts-ignore
+                else if (containerRef.current.mozRequestFullScreen) containerRef.current.mozRequestFullScreen();
             }
         }
     }, [onFullscreen]);
@@ -520,7 +564,7 @@ export function UniversalDocumentPreview({
                         onClick={handleFullscreen}
                         className={cn("h-8 w-8", themeClasses.button)}
                     >
-                        <Maximize2 className="w-4 h-4" />
+                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </Button>
                     <Button
                         variant="ghost"
@@ -681,11 +725,13 @@ export function UniversalDocumentPreview({
         }
 
         // Return PDFPreview directly - it has its own complete toolbar
+        // When minHeight is 0, the parent controls sizing so PDFPreview should fill container
         return (
             <PDFPreview
                 htmlContent={effectiveHtmlContent}
                 fileName={fileName}
                 showDraftBadge={showDraftBadge}
+                fillContainer={!minHeight}
             />
         );
     };
@@ -707,21 +753,38 @@ export function UniversalDocumentPreview({
     };
 
     // Container styles
+    // When minHeight is 0, the caller controls sizing (e.g. in a modal)
     const containerStyle: React.CSSProperties = {
-        minHeight: typeof minHeight === 'number' ? `${minHeight}px` : minHeight,
+        ...(minHeight ? { minHeight: typeof minHeight === 'number' ? `${minHeight}px` : minHeight } : {}),
         ...(maxHeight && { maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight }),
+        // Only set fixed height when minHeight is not 0 (default behavior)
+        ...(minHeight ? { height: '75vh' } : {}),
     };
 
     return (
         <div
             ref={containerRef}
             className={cn(
-                "rounded-xl overflow-hidden flex flex-col h-full relative",
+                "flex flex-col h-full relative pdf-preview-root",
+                isFullscreen ? "rounded-none" : "rounded-xl overflow-hidden",
                 themeClasses.container,
                 className
             )}
-            style={{ ...containerStyle, height: '75vh' }}
+            style={containerStyle}
         >
+            {/* Fullscreen global style override to prevent underlying scrollbar */}
+            {isFullscreen && (
+                <style>{`
+                    html, body { overflow: hidden !important; }
+                    .pdf-preview-root { 
+                        width: 100vw !important; 
+                        height: 100vh !important; 
+                        max-width: none !important; 
+                        margin: 0 !important; 
+                        padding: 0 !important; 
+                    }
+                `}</style>
+            )}
             {/* Skip parent toolbar for HTML mode - PDFPreview has its own */}
             {actualMode !== 'html' && renderToolbar()}
             {renderContent()}

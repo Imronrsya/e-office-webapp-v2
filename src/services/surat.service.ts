@@ -291,12 +291,12 @@ export const suratService = {
     },
 
     async sign(
-        id: string, 
-        signatureData: { 
+        id: string,
+        signatureData: {
             signatureData?: string; // base64 data for new signatures
             signatureUrl?: string;  // URL for saved signatures
             saveSignature?: boolean;
-            signerName?: string; 
+            signerName?: string;
             signerNip?: string;
         }
     ): Promise<ApiResponse<unknown>> {
@@ -445,7 +445,7 @@ export const suratService = {
      * Staf creates draft SK/ST
      */
     async createDraftSuratHasil(
-        id: string, 
+        id: string,
         data: {
             documentType: 'SURAT_TUGAS' | 'SURAT_KEPUTUSAN' | 'SURAT_PENGANTAR' | 'SURAT_TUGAS_TABEL';
             signatories: Array<{
@@ -507,7 +507,7 @@ export const suratService = {
         data: {
             content?: Record<string, unknown>;
             tembusan?: Array<{ userId: string; name: string; description?: string }> | string[];
-            perihal?: string;            signatories?: Array<{
+            perihal?: string; signatories?: Array<{
                 signerRole: string;
                 signerName: string;
                 signerNip?: string;
@@ -516,7 +516,8 @@ export const suratService = {
                 x?: number;
                 y?: number;
                 page?: number;
-            }>;        }
+            }>;
+        }
     ): Promise<ApiResponse<unknown>> {
         const response = await api.put<ApiResponse<unknown>>(
             `/api/surat-hasil/${letterId}/supervisor-edit`,
@@ -584,12 +585,12 @@ export const suratService = {
      * Supports both base64 signatureData and existing signatureUrl
      */
     async signSuratHasil(
-        letterId: string, 
-        signatureData: { 
+        letterId: string,
+        signatureData: {
             signatureData?: string; // base64 data for new signatures
             signatureUrl?: string;  // URL for saved signatures
             saveSignature?: boolean;
-            signerName?: string; 
+            signerName?: string;
             signerNip?: string;
         }
     ): Promise<ApiResponse<unknown>> {

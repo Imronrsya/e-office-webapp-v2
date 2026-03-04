@@ -11,6 +11,7 @@ import {
     Minus,
     Plus,
     Maximize2,
+    Minimize2,
     RotateCw,
     Printer,
     Download,
@@ -32,6 +33,8 @@ interface PDFPreviewProps {
     fileName?: string;
     className?: string;
     showDraftBadge?: boolean;
+    /** When true, fill parent container instead of using fixed 75vh height */
+    fillContainer?: boolean;
     onZoomChange?: (zoom: number) => void;
     /** Callback fired when PDF blob URL is ready (or null on error) */
     onPdfReady?: (url: string | null) => void;
@@ -47,6 +50,7 @@ export function PDFPreview({
     fileName = "Dokumen",
     className = "",
     showDraftBadge = true,
+    fillContainer = false,
     onZoomChange,
     onPdfReady
 }: PDFPreviewProps) {
@@ -58,10 +62,48 @@ export function PDFPreview({
     const [showSidebar, setShowSidebar] = useState(true);
     const [internalZoom, setInternalZoom] = useState(100);
     const [rotation, setRotation] = useState(0);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    // Listen for fullscreen changes to toggle icon and styles correctly
+    useEffect(() => {
+        const onFsChange = () => {
+            const isFs = !!(
+                document.fullscreenElement ||
+                // @ts-ignore
+                document.webkitFullscreenElement ||
+                // @ts-ignore
+                document.mozFullScreenElement ||
+                // @ts-ignore
+                document.msFullscreenElement
+            );
+            setIsFullscreen(isFs);
+        };
+
+        document.addEventListener('fullscreenchange', onFsChange);
+        document.addEventListener('webkitfullscreenchange', onFsChange);
+        document.addEventListener('mozfullscreenchange', onFsChange);
+        document.addEventListener('MSFullscreenChange', onFsChange);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', onFsChange);
+            document.removeEventListener('webkitfullscreenchange', onFsChange);
+            document.removeEventListener('mozfullscreenchange', onFsChange);
+            document.removeEventListener('MSFullscreenChange', onFsChange);
+        };
+    }, []);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const mainViewRef = useRef<HTMLDivElement>(null);
     const renderIdRef = useRef(0);
+
+    // Unique instance ID prefix for page element IDs.
+    // When fillContainer is true (modal context), use a unique prefix to avoid
+    // conflicting with page elements from another PDFPreview instance (e.g. detail page).
+    // When fillContainer is false (detail page), keep original 'page-' prefix unchanged.
+    const instanceIdRef = useRef(
+        fillContainer ? `modal-${Math.random().toString(36).slice(2, 8)}-page-` : 'page-'
+    );
+    const pageIdPrefix = instanceIdRef.current;
 
     // Use external zoom if provided, otherwise internal
     const zoom = externalZoom ?? internalZoom;
@@ -333,8 +375,8 @@ export function PDFPreview({
         const targetPage = Math.max(1, Math.min(numPages, page));
         setCurrentPage(targetPage);
 
-        // Scroll to the specific page
-        const pageElement = document.getElementById(`page-${targetPage}`);
+        // Scroll to the specific page — use scoped query within this instance's container
+        const pageElement = containerRef.current?.querySelector(`#${CSS.escape(pageIdPrefix + targetPage)}`) as HTMLElement | null;
         if (pageElement && mainViewRef.current) {
             // Menggunakan parent scrollable container secara langsung
             const containerTop = mainViewRef.current.getBoundingClientRect().top;
@@ -354,10 +396,24 @@ export function PDFPreview({
 
     const handleFullscreen = () => {
         if (containerRef.current) {
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
+            const isFs = document.fullscreenElement ||
+                // @ts-ignore
+                document.webkitFullscreenElement ||
+                // @ts-ignore
+                document.mozFullScreenElement;
+
+            if (isFs) {
+                if (document.exitFullscreen) document.exitFullscreen();
+                // @ts-ignore
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                // @ts-ignore
+                else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
             } else {
-                containerRef.current.requestFullscreen();
+                if (containerRef.current.requestFullscreen) containerRef.current.requestFullscreen();
+                // @ts-ignore
+                else if (containerRef.current.webkitRequestFullscreen) containerRef.current.webkitRequestFullscreen();
+                // @ts-ignore
+                else if (containerRef.current.mozRequestFullScreen) containerRef.current.mozRequestFullScreen();
             }
         }
     };
@@ -444,8 +500,11 @@ export function PDFPreview({
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
-                        const pageNumber = Number(entry.target.id.replace('page-', ''));
-                        setCurrentPage(pageNumber);
+                        // Extract page number from the ID (handles both 'page-N' and 'modal-xxx-page-N')
+                        const match = entry.target.id.match(/(\d+)$/);
+                        if (match) {
+                            setCurrentPage(Number(match[1]));
+                        }
                     }
                 });
             },
@@ -459,9 +518,9 @@ export function PDFPreview({
             }
         );
 
-        // Observe all page elements
+        // Observe all page elements — scoped to this instance's container
         for (let i = 1; i <= numPages; i++) {
-            const element = document.getElementById(`page-${i}`);
+            const element = containerRef.current?.querySelector(`#${CSS.escape(pageIdPrefix + i)}`) as HTMLElement | null;
             if (element) observer.observe(element);
         }
 
@@ -471,7 +530,7 @@ export function PDFPreview({
     // Initial loading state (only when no PDF is shown yet)
     if (isGenerating && !pdfUrl) {
         return (
-            <div className={cn("flex flex-col bg-zinc-800 rounded-xl overflow-hidden", className)} style={{ height: '75vh', minHeight: '800px' }}>
+            <div className={cn("flex flex-col bg-zinc-800 rounded-xl overflow-hidden", fillContainer && "h-full", className)} style={fillContainer ? undefined : { height: '75vh', minHeight: '800px' }}>
                 <div className="flex items-center bg-zinc-700 px-3 py-2 text-white text-sm">
                     <span className="truncate">{fileName}</span>
                 </div>
@@ -488,7 +547,7 @@ export function PDFPreview({
     // Error state (only when no PDF and not generating)
     if ((error || !pdfUrl) && !isGenerating) {
         return (
-            <div className={cn("flex flex-col bg-zinc-800 rounded-xl overflow-hidden", className)} style={{ height: '75vh', minHeight: '800px' }}>
+            <div className={cn("flex flex-col bg-zinc-800 rounded-xl overflow-hidden", fillContainer && "h-full", className)} style={fillContainer ? undefined : { height: '75vh', minHeight: '800px' }}>
                 <div className="flex items-center bg-zinc-700 px-3 py-2 text-white text-sm">
                     <span className="truncate">{fileName}</span>
                 </div>
@@ -504,9 +563,27 @@ export function PDFPreview({
     return (
         <div
             ref={containerRef}
-            className={cn("flex flex-col bg-zinc-800 rounded-xl overflow-hidden relative", className)}
-            style={{ height: '75vh', minHeight: '800px' }}
+            className={cn(
+                "flex flex-col bg-zinc-800 relative pdf-preview-root",
+                fillContainer && "h-full",
+                isFullscreen ? "rounded-none" : "rounded-xl overflow-hidden",
+                className
+            )}
+            style={fillContainer ? undefined : { height: '75vh', minHeight: '800px' }}
         >
+            {/* Fullscreen global style override to prevent underlying scrollbar */}
+            {isFullscreen && (
+                <style>{`
+                    html, body { overflow: hidden !important; }
+                    .pdf-preview-root { 
+                        width: 100vw !important; 
+                        height: 100vh !important; 
+                        max-width: none !important; 
+                        margin: 0 !important; 
+                        padding: 0 !important; 
+                    }
+                `}</style>
+            )}
             {/* ... rest of the component ... */}
             {/* Loading Overlay when updating */}
             {isGenerating && (
@@ -597,7 +674,7 @@ export function PDFPreview({
                         className="text-white hover:bg-zinc-600 h-8 w-8"
                         title="Fullscreen"
                     >
-                        <Maximize2 className="w-4 h-4" />
+                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </Button>
                     <Button
                         variant="ghost"
@@ -694,7 +771,7 @@ export function PDFPreview({
                             {Array.from(new Array(numPages), (el, index) => (
                                 <div
                                     key={`page_${index + 1}`}
-                                    id={`page-${index + 1}`}
+                                    id={`${pageIdPrefix}${index + 1}`}
                                     className="relative"
                                 >
                                     <Page

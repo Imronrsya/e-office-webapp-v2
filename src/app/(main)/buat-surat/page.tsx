@@ -2328,7 +2328,7 @@ function BuatSuratContent() {
                                     <div className="space-y-2">
                                         <Label className="text-sm font-medium text-[#2B2B2B] flex items-center justify-between">
                                             <span>Akun Terpilih ({tembusanUsers.length})</span>
-                                            <span className="text-xs font-normal text-muted-foreground">Akan dapat mengakses sistem</span>
+                                            <span className="text-xs font-normal text-muted-foreground">Akan dapat mengakses dan mendownload surat</span>
                                         </Label>
                                         <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                                             {tembusanUsers.map((user) => (
@@ -2347,7 +2347,7 @@ function BuatSuratContent() {
                                                         <p className="text-xs text-muted-foreground truncate">{user.description}</p>
                                                     </div>
                                                     <Badge variant="secondary" className="text-[10px] bg-neutral-100 text-muted-foreground border-neutral-200 shrink-0 font-normal">
-                                                        Akses Sistem
+                                                        Dalam Sistem
                                                     </Badge>
                                                     <Button
                                                         variant="ghost"
@@ -2541,14 +2541,14 @@ function BuatSuratContent() {
 
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Tembusan ({(includePengaju ? 1 : 0) + tembusanTexts.length + tembusanUsers.length} akses sistem)
+                                        Tembusan ({(includePengaju ? 1 : 0) + tembusanTexts.length + tembusanUsers.length} dalam sistem)
                                     </Label>
                                     <div className="space-y-2">
                                         {includePengaju && (
                                             <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                                                 <User className="w-5 h-5 text-blue-600" />
                                                 <span className="flex-1">Pengaju Surat</span>
-                                                <Badge variant="secondary" className="text-xs">Akses Sistem</Badge>
+                                                <Badge variant="secondary" className="text-xs">Dalam Sistem</Badge>
                                             </div>
                                         )}
                                         {tembusanUsers.map((user) => (
@@ -2558,7 +2558,7 @@ function BuatSuratContent() {
                                             >
                                                 <User className="w-5 h-5 text-blue-600" />
                                                 <span className="flex-1">{user.name}</span>
-                                                <Badge variant="secondary" className="text-xs">Akses Sistem</Badge>
+                                                <Badge variant="secondary" className="text-xs">Dalam Sistem</Badge>
                                             </div>
                                         ))}
                                         {tembusanTexts.map((item) => (

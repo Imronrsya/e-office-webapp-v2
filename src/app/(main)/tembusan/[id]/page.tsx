@@ -38,6 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { tembusanService, TembusanDetail } from "@/services/tembusan.service";
+import { TembusanCard } from "@/app/(main)/detail/[id]/components/tembusan-card";
 import dynamic from "next/dynamic";
 
 // Dynamic imports for PDF rendering (client-only)
@@ -645,6 +646,9 @@ export default function TembusanDetailPage({
                 </CardContent>
               </Card>
             )}
+
+            {/* Tembusan Dalam Sistem */}
+            <TembusanCard tembusanList={(detail.tembusanList || []) as Array<{ name: string; description?: string; userId?: string }>} />
           </div>
 
           {/* Right Column - Info Sidebar (1/4 width) */}

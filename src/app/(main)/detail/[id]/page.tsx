@@ -64,6 +64,7 @@ import {
 } from "@/components/universal-preview";
 import { ProcessHistory } from "./components/process-history";
 import { DetailSuratInfo } from "./components/detail-surat-info";
+import { TembusanCard } from "./components/tembusan-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SignatureModal, type SignatureModalResult, type PreviewData } from "@/components/signature";
 import { NumberingModal } from "@/components/numbering";
@@ -204,8 +205,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     const [supervisorModalOpen, setSupervisorModalOpen] = useState(false);
     const [selectedSupervisor, setSelectedSupervisor] = useState<'SUPERVISOR_AKADEMIK' | 'SUPERVISOR_SUMBER_DAYA' | null>(null);
 
-    // Active document tab state - untuk mengontrol lampiran yang ditampilkan
     const [activeDocTab, setActiveDocTab] = useState<'surat-pengantar' | 'surat-hasil'>('surat-pengantar');
+    const [isTabInitialized, setIsTabInitialized] = useState(false);
 
     // User's current role
     const currentUserRole = user?.role?.toUpperCase() || "";
@@ -248,13 +249,19 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         fetchDetail();
     }, [fetchDetail]);
 
-    // Set default active tab berdasarkan dokumen yang tersedia
+    // Set default active tab berdasarkan dokumen yang tersedia (hanya sekali saat detail baru dimuat)
     useEffect(() => {
-        if (detail) {
+        if (detail && !isTabInitialized) {
             const hasPengantar = detail.documents?.some(d => d.type === 'SURAT_PENGANTAR');
             setActiveDocTab(hasPengantar ? 'surat-pengantar' : 'surat-hasil');
+            setIsTabInitialized(true);
         }
-    }, [detail]);
+    }, [detail, isTabInitialized]);
+
+    // Reset initialization flag when navigation happens (new ID)
+    useEffect(() => {
+        return () => setIsTabInitialized(false);
+    }, [resolvedParams.id]);
 
     // Download attachment handler - force download without opening in browser
     const handleDownloadAttachment = async (fileName: string, fileUrl: string) => {
@@ -1119,6 +1126,18 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     const documentViewMode = getDocumentViewMode();
 
+    // Condition to show TembusanCard (matches LampiranDokumenCard visibility rules)
+    const shouldShowTembusanCard = (() => {
+        if (!suratHasilDoc) return false;
+        if (isUPA) return true;
+        if (filterType === 'masuk') return false;
+        // Non-UPA roles: hide if not looking at surat hasil tab
+        if (userScope === 'DEPARTEMEN' && activeDocTab !== 'surat-hasil') return false;
+        // If single document view is set to pengantar, hide tembusan (which belongs to hasil)
+        if (documentViewMode === 'pengantar') return false;
+        return true;
+    })();
+
     // ========================================================================
     // RENDER
     // ========================================================================
@@ -1540,6 +1559,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
             {/* Lampiran Dokumen dari Staf/Supervisor */}
             <LampiranDokumenCard />
+
+            {/* Tembusan Dalam Sistem */}
+            {shouldShowTembusanCard && suratHasilDoc && (
+                <TembusanCard tembusanList={(suratHasilDoc.tembusan || []) as any} />
+            )}
         </div>
     );
 
@@ -1753,6 +1777,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         {/* Lampiran Dokumen dari Staf/Supervisor */}
                         <LampiranDokumenCard />
 
+                        {/* Tembusan Dalam Sistem */}
+                        {shouldShowTembusanCard && suratHasilDoc && (
+                            <TembusanCard tembusanList={(suratHasilDoc.tembusan || []) as any} />
+                        )}
+
                         {/* Info untuk user tentang mode ini */}
 
 
@@ -1760,7 +1789,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 ) : documentViewMode === 'both' ? (
                     /* Lingkup Departemen dengan tabs (jika UPA sudah selesai) */
                     <Tabs
-                        defaultValue={defaultTab}
+                        value={activeDocTab}
                         className="w-full"
                         onValueChange={(value) => setActiveDocTab(value as 'surat-pengantar' | 'surat-hasil')}
                     >
@@ -1825,6 +1854,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                                 {/* Lampiran Dokumen dari Staf/Supervisor */}
                                 <LampiranDokumenCard />
+
+                                {/* Tembusan Dalam Sistem */}
+                                {shouldShowTembusanCard && suratHasilDoc && (
+                                    <TembusanCard tembusanList={(suratHasilDoc.tembusan || []) as any} />
+                                )}
                             </div>
                         </div>
                     </Tabs>
@@ -1866,6 +1900,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                             {/* Lampiran Dokumen dari Staf/Supervisor */}
                             <LampiranDokumenCard />
+
+                            {/* Tembusan Dalam Sistem */}
+                            {shouldShowTembusanCard && suratHasilDoc && (
+                                <TembusanCard tembusanList={(suratHasilDoc.tembusan || []) as any} />
+                            )}
                         </div>
                     </div>
                 )}

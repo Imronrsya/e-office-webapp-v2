@@ -3840,7 +3840,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                         <p className="text-xs text-muted-foreground truncate">{user.description}</p>
                                                     </div>
                                                     <Badge variant="secondary" className="text-xs shrink-0">
-                                                        Akses Sistem
+                                                        Dalam Sistem
                                                     </Badge>
                                                     <Button
                                                         variant="ghost"
@@ -4186,7 +4186,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         <>
                                             <div>
                                                 <Label className="text-sm text-muted-foreground mb-2 block">
-                                                    Tembusan ({tembusanTexts.length + tembusanUsers.length + (includePengaju ? 1 : 0)} akses sistem)
+                                                    Tembusan ({tembusanTexts.length + tembusanUsers.length + (includePengaju ? 1 : 0)} dalam sistem)
                                                 </Label>
                                                 <div className="space-y-2">
                                                     {includePengaju && (
@@ -4194,7 +4194,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                             <Users className="w-5 h-5 text-blue-600" />
                                                             <div className="flex-1">
                                                                 <span className="font-medium">Pengaju Surat</span>
-                                                                <p className="text-xs text-muted-foreground">Akses sistem saja</p>
+                                                                <p className="text-xs text-muted-foreground">Dalam sistem saja</p>
                                                             </div>
                                                         </div>
                                                     )}
@@ -4208,7 +4208,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                                 <p className="font-medium text-sm truncate">{user.name}</p>
                                                                 <p className="text-xs text-muted-foreground truncate">{user.description}</p>
                                                             </div>
-                                                            <Badge variant="secondary" className="text-xs">Akses Sistem</Badge>
+                                                            <Badge variant="secondary" className="text-xs">Dalam Sistem</Badge>
                                                         </div>
                                                     ))}
                                                     {tembusanTexts.map((item, index) => (
