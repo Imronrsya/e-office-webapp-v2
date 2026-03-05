@@ -3,16 +3,15 @@
 import { useState } from "react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Plus, ShieldAlert, ArrowLeft } from "lucide-react";
+import { Plus, ShieldAlert } from "lucide-react";
 import { useAdminUsers } from "@/features/admin-users/hooks/useAdminUsers";
 import { UserToolbar } from "@/features/admin-users/components/user-toolbar";
-import { AdminUserTable } from "@/features/admin-users/components/admin-user-table";
+import { AdminUserTable, AdminUserTableSkeleton } from "@/features/admin-users/components/admin-user-table";
 import { UserFormDialog } from "@/features/admin-users/components/user-form-dialog";
 import { ResetPasswordDialog } from "@/features/admin-users/components/reset-password-dialog";
 import { DeleteUserDialog } from "@/features/admin-users/components/delete-user-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import BottomNav from "@/components/layout/bottom-nav";
-import { useRouter } from "next/navigation";
+import { TablePagination } from "@/features/dashboard/components/table-pagination";
 import type {
   AdminUserDetail,
   CreateUserPayload,
@@ -44,7 +43,6 @@ export default function PenggunaPage() {
 
 // ── Separated so hooks are called only for SUPERADMIN ──
 function PenggunaContent() {
-  const router = useRouter();
   const {
     users,
     meta,
@@ -56,6 +54,8 @@ function PenggunaContent() {
     setRoleFilter,
     page,
     setPage,
+    limit,
+    handleLimitChange,
     handleCreate,
     handleUpdate,
     handleDelete,
@@ -69,16 +69,10 @@ function PenggunaContent() {
   const [editData, setEditData] = useState<AdminUserDetail | null>(null);
 
   const [resetOpen, setResetOpen] = useState(false);
-  const [resetTarget, setResetTarget] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
+  const [resetTarget, setResetTarget] = useState<{ id: string; name: string } | null>(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   // ── Handlers ──
   const openCreateDialog = () => {
@@ -106,9 +100,7 @@ function PenggunaContent() {
     setDeleteOpen(true);
   };
 
-  const handleFormSubmit = async (
-    payload: CreateUserPayload | UpdateUserPayload
-  ) => {
+  const handleFormSubmit = async (payload: CreateUserPayload | UpdateUserPayload) => {
     if (formMode === "create") {
       await handleCreate(payload as CreateUserPayload);
     } else if (editData) {
@@ -117,38 +109,68 @@ function PenggunaContent() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between mb-8">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
-          <h1 className="text-2xl font-bold text-black">Manajemen Pengguna</h1>
+    // Layout identik dengan DynamicDashboard
+    <section aria-label="Manajemen Pengguna" className="flex flex-1 flex-col min-h-0">
+
+      {/* Toolbar: header + search + filter */}
+      <div className="shrink-0">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
+            <h1 className="text-2xl font-bold text-black">Manajemen Pengguna</h1>
+          </div>
+          <Button onClick={openCreateDialog}>
+            <Plus className="mr-2 size-4" />
+            Tambah Pengguna
+          </Button>
         </div>
-        <Button onClick={openCreateDialog}>
-          <Plus className="mr-2 size-4" />
-          Tambah Pengguna
-        </Button>
+
+        {/* Search + Role Filter */}
+        <UserToolbar
+          search={search}
+          onSearchChange={setSearch}
+          roleFilter={roleFilter}
+          onRoleFilterChange={setRoleFilter}
+          roles={roles}
+        />
       </div>
 
-      <UserToolbar
-        search={search}
-        onSearchChange={setSearch}
-        roleFilter={roleFilter}
-        onRoleFilterChange={setRoleFilter}
-        roles={roles}
-      />
+      {/* Table Card — scrollbar di dalam card, identik dengan DynamicDashboard */}
+      <div
+        className="mt-4 flex-1 min-h-0 overflow-hidden rounded-lg border border-border bg-white"
+      >
+        <div className="h-full overflow-auto">
+          <AdminUserTable
+            users={users}
+            meta={meta}
+            page={page}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={handleLimitChange}
+            isLoading={isLoading}
+            onEdit={(id) => openEditDialog(id)}
+            onResetPassword={(id, name) => openResetDialog(id, name)}
+            onDelete={(id, name) => openDeleteDialog(id, name)}
+          />
+        </div>
+      </div>
 
-      <AdminUserTable
-        users={users}
-        meta={meta}
-        page={page}
-        onPageChange={setPage}
-        isLoading={isLoading}
-        onEdit={(id) => openEditDialog(id)}
-        onResetPassword={(id, name) => openResetDialog(id, name)}
-        onDelete={(id, name) => openDeleteDialog(id, name)}
-      />
+      {/* Pagination — identik dengan DynamicDashboard */}
+      <div className="shrink-0 mt-4 border-t border-gray-200 pt-2">
+        <TablePagination
+          pagination={{
+            page,
+            limit,
+            total: meta.total,
+            totalPages: meta.totalPages,
+          }}
+          onPageChange={setPage}
+          onLimitChange={handleLimitChange}
+        />
+      </div>
 
-      {/* ── Smart Form Dialog ── */}
+      {/* ── Dialogs ── */}
       <UserFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
@@ -157,8 +179,6 @@ function PenggunaContent() {
         editData={editData}
         onSubmit={handleFormSubmit}
       />
-
-      {/* ── Reset Password Dialog ── */}
       {resetTarget && (
         <ResetPasswordDialog
           open={resetOpen}
@@ -167,8 +187,6 @@ function PenggunaContent() {
           onConfirm={async () => { await handleResetPassword(resetTarget.id); }}
         />
       )}
-
-      {/* ── Delete Dialog ── */}
       {deleteTarget && (
         <DeleteUserDialog
           open={deleteOpen}
@@ -177,65 +195,43 @@ function PenggunaContent() {
           onConfirm={() => handleDelete(deleteTarget.id)}
         />
       )}
-
-      {/* Spacer for bottom nav */}
-      <div className="h-24"></div>
-
-      <BottomNav
-        leftContent={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.back()}
-            className="bg-white hover:bg-gray-50 text-base-black font-medium"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Kembali
-          </Button>
-        }
-      />
-    </div>
+    </section>
   );
 }
 
 // ── Skeleton Loader ──
 function PenggunaSkeleton() {
   return (
-    <div className="space-y-6">
-      {/* Header Skeleton */}
-      <div className="flex items-start justify-between mb-8">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
-          <h1 className="text-2xl font-bold text-black">Manajemen Pengguna</h1>
-        </div>
-        <Skeleton className="h-10 w-40 bg-zinc-200" />
-      </div>
-
-      {/* Toolbar Skeleton */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <Skeleton className="h-10 flex-1 bg-zinc-200" />
-        <Skeleton className="h-10 w-[180px] bg-zinc-200" />
-      </div>
-
-      {/* Table Skeleton */}
-      <div className="rounded-lg border border-border bg-white overflow-hidden shadow-sm">
-        <div className="bg-slate-50 border-b px-4 py-3 flex gap-4">
-          <Skeleton className="h-4 w-[150px] bg-zinc-200" />
-          <Skeleton className="h-4 w-[120px] bg-zinc-200" />
-          <Skeleton className="h-4 w-[100px] bg-zinc-200" />
-          <Skeleton className="h-4 w-[100px] bg-zinc-200" />
-          <Skeleton className="h-4 w-[60px] ml-auto bg-zinc-200" />
-        </div>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="px-4 py-3.5 border-b last:border-0 flex gap-4 items-center">
-            <Skeleton className="h-4 w-[150px] bg-zinc-200" />
-            <Skeleton className="h-4 w-[120px] bg-zinc-200" />
-            <Skeleton className="h-4 w-[100px] bg-zinc-200" />
-            <Skeleton className="h-4 w-[100px] bg-zinc-200" />
-            <Skeleton className="h-8 w-[70px] ml-auto bg-zinc-200" />
+    <section className="flex flex-1 flex-col min-h-0">
+      {/* Header */}
+      <div className="shrink-0">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
+            <h1 className="text-2xl font-bold text-black">Manajemen Pengguna</h1>
           </div>
-        ))}
+          <Skeleton className="h-10 w-40 bg-zinc-200" />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Skeleton className="h-10 flex-1 bg-zinc-200" />
+          <Skeleton className="h-10 w-[180px] bg-zinc-200" />
+        </div>
       </div>
-    </div>
+
+      {/* Table Card Skeleton — identik dengan DynamicDashboard skeleton */}
+      <div className="mt-4 flex-1 min-h-0 overflow-hidden rounded-lg border border-border bg-white">
+        <div className="h-full overflow-auto">
+          <AdminUserTableSkeleton />
+        </div>
+      </div>
+
+      {/* Pagination Skeleton */}
+      <div className="shrink-0 mt-4 border-t border-gray-200 pt-2">
+        <div className="flex w-full items-center justify-between">
+          <Skeleton className="h-8 w-[60px] rounded-lg bg-zinc-200" />
+          <Skeleton className="h-8 w-[180px] rounded-lg bg-zinc-200" />
+        </div>
+      </div>
+    </section>
   );
 }

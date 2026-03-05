@@ -1,9 +1,11 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 @plugin "./hero";
 @source "../../node_modules/@heroui/theme/dist";
 
 @import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: hsl(var(--background));
@@ -128,13 +130,13 @@
   --chart-4: 43 74% 66%;
   --chart-5: 27 87% 67%;
 
-  /* Sidebar */
-  --sidebar: 0 0% 98%;
-  --sidebar-foreground: 240 5.3% 26.1%;
-  --sidebar-primary: 240 5.9% 10%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 4.8% 95.9%;
-  --sidebar-accent-foreground: 240 5.9% 10%;
+  /* Sidebar - matching navbar gray-100 for unified frame */
+  --sidebar: 220 14% 96%;
+  --sidebar-foreground: 0 0% 25%;
+  --sidebar-primary: 0 0% 17%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 13% 91%;
+  --sidebar-accent-foreground: 0 0% 17%;
   --sidebar-border: 220 13% 91%;
   --sidebar-ring: 217.2 91.2% 59.8%;
 }
@@ -146,18 +148,12 @@
 
   /* Prevent layout shift when scrollbar appears/disappears */
   html {
-    overflow-y: scroll !important;
-    overflow-x: hidden !important;
-    scrollbar-gutter: stable;
-    width: 100vw;
+    overflow: hidden !important;
   }
 
   body {
     @apply bg-background text-foreground;
-    overflow-y: scroll !important;
-    overflow-x: hidden !important;
-    scrollbar-gutter: stable;
-    width: 100%;
+    overflow: hidden !important;
     /* Prevent padding-right injection by libraries */
     padding-right: 0 !important;
   }
@@ -165,22 +161,16 @@
   /* Prevent any element from injecting padding when modals/dropdowns open */
   body[style*="overflow"],
   body[style*="padding-right"] {
-    overflow-y: scroll !important;
-    overflow-x: hidden !important;
+    overflow: hidden !important;
     padding-right: 0 !important;
   }
 
-  /* Ensure all major containers respect scrollbar gutter */
-  #__next,
-  [data-radix-portal],
-  main {
-    scrollbar-gutter: stable;
-  }
 
-  /* Custom scrollbar styling - always visible */
+
+  /* Custom scrollbar styling */
   ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
@@ -211,4 +201,15 @@
   input::-ms-clear {
     display: none;
   }
+}
+
+.dark {
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }

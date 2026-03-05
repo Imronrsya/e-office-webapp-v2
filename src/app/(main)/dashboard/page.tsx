@@ -37,7 +37,7 @@ export default function DashboardPage() {
 
   // Hindari SSR mismatch dengan menunggu komponen di-mount di klien
   if (!isMounted) {
-    return <div className="min-h-screen bg-transparent" />; // Spacer kosong sebentar
+    return <div className="bg-transparent" />; // Spacer kosong sebentar
   }
 
   if (loading || !user) {

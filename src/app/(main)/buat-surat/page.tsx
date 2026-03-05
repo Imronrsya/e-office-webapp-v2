@@ -1281,7 +1281,7 @@ function BuatSuratContent() {
             </div>
 
             {/* Content */}
-            <div className="pb-24">
+            <div>
                 {/* Step 1: Form */}
                 {currentStep === "form" && (
                     <div className="space-y-6">

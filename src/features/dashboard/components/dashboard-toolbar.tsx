@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Search, Plus } from "lucide-react";
-import Link from "next/link";
+import { useCallback } from "react";
+import { Search } from "lucide-react";
 import { DateRangePicker } from "rsuite";
 import "rsuite/DateRangePicker/styles/index.css";
 
@@ -21,7 +20,6 @@ import {
   type RoleDashboardConfig,
   hasToolbarAction
 } from "../config/dashboard-config";
-import { BuatSuratDialog } from "./buat-surat-dialog";
 
 // ============================================================================
 // TYPES
@@ -57,9 +55,6 @@ interface DashboardToolbarProps {
 // COMPONENT
 // ============================================================================
 
-// Roles that should use the BuatSuratDialog instead of direct link
-const STAFF_ROLES = ["STAF_AKADEMIK", "STAF_SUMBER_DAYA"];
-
 export function DashboardToolbar({
   role,
   config,
@@ -68,10 +63,6 @@ export function DashboardToolbar({
   availableStatuses,
   tabCounts,
 }: DashboardToolbarProps) {
-  const [buatSuratDialogOpen, setBuatSuratDialogOpen] = useState(false);
-
-  // Check if this role is a staff role
-  const isStaffRole = STAFF_ROLES.includes(role);
 
   // Handlers
   const handleSearchChange = useCallback((value: string) => {
@@ -98,38 +89,7 @@ export function DashboardToolbar({
 
   return (
     <header className="space-y-3">
-      {/* Row 1: Buat Surat Button (di atas, lebar sama dengan tabs) */}
-      {config.hasInboxOutbox && hasToolbarAction(role, "buat_surat") && (
-        <div>
-          {isStaffRole ? (
-            // Staff roles: Show dialog with category/template selection
-            <>
-              <Button
-                onClick={() => setBuatSuratDialogOpen(true)}
-                className="w-[320px] bg-base-black hover:bg-base-black/90 text-white"
-              >
-                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-                Buat Surat
-              </Button>
-              <BuatSuratDialog
-                open={buatSuratDialogOpen}
-                onOpenChange={setBuatSuratDialogOpen}
-                userRole={role}
-              />
-            </>
-          ) : (
-            // Other roles: Direct link to pengajuan form
-            <Button asChild className="w-[320px] bg-base-black hover:bg-base-black/90 text-white">
-              <Link href="/pengajuan/buat">
-                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-                Buat Surat
-              </Link>
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Row 2: Tabs + Filters (sejajar) */}
+      {/* Tabs + Filters */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Tabs Surat Masuk/Keluar */}
         {config.hasInboxOutbox && (
@@ -175,16 +135,6 @@ export function DashboardToolbar({
               )}
             </Button>
           </nav>
-        )}
-
-        {/* Ajukan Surat Button - untuk role Pengaju (Mahasiswa/Dosen) */}
-        {hasToolbarAction(role, "ajukan_surat") && (
-          <Link href="/pengajuan/buat">
-            <Button className="bg-base-black hover:bg-base-black/90 text-white">
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Ajukan Surat
-            </Button>
-          </Link>
         )}
 
         {/* Right side filters group - Date, Status, Search */}

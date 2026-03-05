@@ -34,13 +34,14 @@ export function useAdminUsers() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(5);
 
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
       const params: ListUsersParams = {
         page,
-        limit: 5,
+        limit,
         ...(search && { search }),
         ...(roleFilter && { role: roleFilter }),
       };
@@ -53,7 +54,7 @@ export function useAdminUsers() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, search, roleFilter]);
+  }, [page, limit, search, roleFilter]);
 
   const fetchRoles = useCallback(async () => {
     try {
@@ -116,6 +117,11 @@ export function useAdminUsers() {
     setRoleFilter,
     page,
     setPage,
+    limit,
+    handleLimitChange: (newLimit: number) => {
+      setPage(1);
+      setLimit(newLimit);
+    },
     fetchUsers,
     handleCreate,
     handleUpdate,

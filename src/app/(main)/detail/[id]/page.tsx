@@ -1921,7 +1921,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             </div>
 
             {/* Main Content - Always use MahasiswaViewLayout with template preview */}
-            <div className="pb-24">
+            <div>
                 <MahasiswaViewLayout />
             </div>
 

@@ -51,14 +51,14 @@ export interface RoleDashboardConfig {
 // ============================================================================
 
 const COLUMN_DEFS: Record<ColumnKey, ColumnConfig> = {
-  namaPengaju: { key: "namaPengaju", label: "Nama Pengaju", className: "w-[15%] truncate" },
-  judulSurat: { key: "judulSurat", label: "Judul Surat", className: "w-[20%] truncate" },
-  nomorSurat: { key: "nomorSurat", label: "Nomor Surat", className: "w-[15%] truncate" },
-  tipeSurat: { key: "tipeSurat", label: "Tipe Surat", className: "w-[12%]" },
-  jenisSurat: { key: "jenisSurat", label: "Jenis Surat", className: "w-[10%]" },
-  tanggalSurat: { key: "tanggalSurat", label: "Tanggal Surat", className: "w-[12%]" },
-  status: { key: "status", label: "Status", className: "w-[12%]" },
-  actions: { key: "actions", label: "Aksi", className: "w-[9%]" },
+  namaPengaju: { key: "namaPengaju", label: "Nama Pengaju" },
+  judulSurat: { key: "judulSurat", label: "Judul Surat" },
+  nomorSurat: { key: "nomorSurat", label: "Nomor Surat" },
+  tipeSurat: { key: "tipeSurat", label: "Tipe Surat" },
+  jenisSurat: { key: "jenisSurat", label: "Jenis Surat" },
+  tanggalSurat: { key: "tanggalSurat", label: "Tanggal Surat" },
+  status: { key: "status", label: "Status" },
+  actions: { key: "actions", label: "Aksi", className: "w-[120px]" },
 };
 
 // Helper untuk membuat array kolom

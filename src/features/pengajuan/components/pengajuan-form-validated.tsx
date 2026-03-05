@@ -321,9 +321,9 @@ export function PengajuanFormValidated() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit, onError)}
-        className="min-h-screen flex flex-col"
+        className="flex flex-col"
       >
-        <div className="flex-1 w-full pb-24">
+        <div className="w-full">
           {/* Header */}
           <div className="flex items-center gap-3 mb-8">
             <div className="w-2 h-8 bg-base-black rounded-full" />
@@ -707,7 +707,6 @@ export function PengajuanFormValidated() {
               </CardContent>
             </Card>
 
-            <div className="h-6" />
           </div>
         </div>
 

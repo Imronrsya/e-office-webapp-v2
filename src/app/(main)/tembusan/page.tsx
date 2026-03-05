@@ -75,6 +75,7 @@ export default function TembusanInboxPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(10);
 
   // Fetch inbox data
   const fetchInbox = useCallback(async () => {
@@ -82,7 +83,7 @@ export default function TembusanInboxPage() {
     try {
       const response = await tembusanService.getInbox({
         page,
-        limit: 10,
+        limit,
         search: searchQuery || undefined,
         sortOrder: "desc",
       });
@@ -99,7 +100,7 @@ export default function TembusanInboxPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery]);
+  }, [page, limit, searchQuery]);
 
   useEffect(() => {
     fetchInbox();
@@ -110,6 +111,12 @@ export default function TembusanInboxPage() {
     e.preventDefault();
     setPage(1);
     fetchInbox();
+  };
+
+  // Handle limit change — reset page to 1 when rows-per-page changes
+  const handleLimitChange = (newLimit: number) => {
+    setPage(1);
+    setLimit(newLimit);
   };
 
   // Handle view detail
@@ -158,7 +165,7 @@ export default function TembusanInboxPage() {
 
   return (
     <>
-      <div className="pb-24">
+      <div>
         {/* Header */}
         <div className="flex items-center gap-2 mb-6">
           <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
@@ -337,11 +344,12 @@ export default function TembusanInboxPage() {
             <TablePagination
               pagination={{
                 page,
-                limit: 10,
+                limit,
                 total,
                 totalPages,
               }}
               onPageChange={setPage}
+              onLimitChange={handleLimitChange}
             />
           </CardContent>
         </Card>

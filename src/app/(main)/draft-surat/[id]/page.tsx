@@ -2372,7 +2372,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 </div>
 
                 {/* Skeleton Content */}
-                <div className="space-y-6 pb-24">
+                <div className="space-y-6">
                     <Card className="bg-neutral-50 border-zinc-400">
                         <CardHeader>
                             <Skeleton className="h-6 w-40" />
@@ -2436,7 +2436,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             </div>
 
             {/* Content */}
-            <div className="pb-24">
+            <div>
                 {/* Step 1: Form */}
                 {currentStep === "form" && (
                     <div className="space-y-6">

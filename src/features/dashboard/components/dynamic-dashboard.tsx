@@ -130,6 +130,7 @@ export default function DynamicDashboard() {
     type: initialTab,
   });
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(5);
 
   // Get role configuration
   const config = useMemo(() => getDashboardConfig(userRole), [userRole]);
@@ -161,7 +162,7 @@ export default function DynamicDashboard() {
       // Send displayStatus filter to backend for server-side filtering
       const params = {
         page,
-        limit: 5, // 5 rows per page
+        limit,
         search: filters.search || undefined,
         displayStatus: filters.status || undefined, // Server-side displayStatus filter
         type: config.hasInboxOutbox ? filters.type : undefined,
@@ -206,7 +207,7 @@ export default function DynamicDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [page, filters.search, filters.status, filters.type, filters.dateRange, config.hasInboxOutbox, router]);
+  }, [page, limit, filters.search, filters.status, filters.type, filters.dateRange, config.hasInboxOutbox, router]);
 
   // Load data on mount and when dependencies change
   useEffect(() => {
@@ -221,6 +222,12 @@ export default function DynamicDashboard() {
   useEffect(() => {
     setPage(1);
   }, [filters.search, filters.status, filters.type, filters.dateRange]);
+
+  // Handle limit change — reset page first, then update limit
+  const handleLimitChange = useCallback((newLimit: number) => {
+    setPage(1);
+    setLimit(newLimit);
+  }, []);
 
   // Handle filters change
   const handleFiltersChange = useCallback((newFilters: DashboardFilters) => {
@@ -245,39 +252,50 @@ export default function DynamicDashboard() {
   return (
     <section
       aria-label="Dashboard Surat"
-      className="space-y-4"
+      className="flex flex-1 flex-col min-h-0"
     >
       {/* Toolbar */}
-      <DashboardToolbar
-        role={userRole}
-        config={config}
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        availableStatuses={data?.availableStatuses || []}
-        tabCounts={data?.tabCounts}
-      />
-
-      {/* Table */}
-      <LetterTable
-        columns={columns}
-        data={data?.items || []}
-        loading={loading}
-        filterType={config.hasInboxOutbox ? filters.type : undefined}
-        emptyMessage={
-          filters.search
-            ? `Tidak ditemukan hasil untuk "${filters.search}"`
-            : filters.status
-              ? `Tidak ada surat dengan status "${filters.status}"`
-              : "Belum ada data surat"
-        }
-      />
-
-      {/* Pagination */}
-      {data?.pagination && (
-        <TablePagination
-          pagination={data.pagination}
-          onPageChange={handlePageChange}
+      <div className="shrink-0">
+        <DashboardToolbar
+          role={userRole}
+          config={config}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          availableStatuses={data?.availableStatuses || []}
+          tabCounts={data?.tabCounts}
         />
+      </div>
+
+      {/* Table - scrollable area */}
+      <div
+        className="mt-4 flex-1 min-h-0 overflow-hidden rounded-lg border border-border bg-white"
+      >
+        <div className="h-full overflow-auto">
+          <LetterTable
+            columns={columns}
+            data={data?.items || []}
+            loading={loading}
+            filterType={config.hasInboxOutbox ? filters.type : undefined}
+            emptyMessage={
+              filters.search
+                ? `Tidak ditemukan hasil untuk "${filters.search}"`
+                : filters.status
+                  ? `Tidak ada surat dengan status "${filters.status}"`
+                  : "Belum ada data surat"
+            }
+          />
+        </div>
+      </div>
+
+      {/* Pagination — sticky bottom bar */}
+      {data?.pagination && (
+        <div className="shrink-0 mt-4 border-t border-gray-200 pt-2">
+          <TablePagination
+            pagination={data.pagination}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+          />
+        </div>
       )}
     </section>
   );

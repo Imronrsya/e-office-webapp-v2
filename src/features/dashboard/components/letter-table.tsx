@@ -7,7 +7,6 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -184,55 +183,59 @@ export function LetterTable({
   filterType,
 }: LetterTableProps) {
   return (
-    <div className="rounded-lg border border-border bg-white shadow-sm overflow-x-auto">
-      <Table className="w-full table-fixed">
-        <TableHeader>
-          <TableRow className="bg-slate-50 hover:bg-slate-50 border-b">
-            {columns.map((column) => (
-              <TableHead
-                key={column.key}
-                className={`text-sm font-medium text-slate-700 py-3 px-4 whitespace-nowrap ${column.className || ""}`}
-              >
-                {column.label}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <TableSkeleton columns={columns} />
-          ) : data.length === 0 ? (
-            <TableRow className="hover:bg-transparent">
-              <TableCell
-                colSpan={columns.length}
-                className="h-auto text-center"
-              >
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="p-4 bg-zinc-100 rounded-full mb-4">
-                    <FileText className="w-8 h-8 text-zinc-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-zinc-900 mb-1">
-                    {emptyMessage}
-                  </h3>
-                  <p className="text-sm text-zinc-500 max-w-md">
-                    Surat akan muncul di sini ketika ada pengajuan yang masuk atau dibuat.
-                  </p>
+    <table className="w-full table-fixed caption-bottom text-sm">
+      <TableHeader className="sticky top-0 z-20">
+        <TableRow className="bg-slate-50 hover:bg-slate-50 border-b shadow-[0_1px_0_0_theme(colors.border)]">
+          {columns.map((column) => (
+            <TableHead
+              key={column.key}
+              className={`text-sm font-medium text-slate-700 py-3 px-4 whitespace-nowrap ${column.key === 'actions'
+                  ? 'sticky right-0 bg-slate-50 z-30 shadow-[-1px_0_0_0_theme(colors.border)]'
+                  : ''
+                } ${column.className || ""}`}
+            >
+              {column.label}
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {loading ? (
+          <TableSkeleton columns={columns} />
+        ) : data.length === 0 ? (
+          <TableRow className="hover:bg-transparent">
+            <TableCell
+              colSpan={columns.length}
+              className="h-auto text-center"
+            >
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="p-4 bg-zinc-100 rounded-full mb-4">
+                  <FileText className="w-8 h-8 text-zinc-400" />
                 </div>
-              </TableCell>
+                <h3 className="text-lg font-medium text-zinc-900 mb-1">
+                  {emptyMessage}
+                </h3>
+                <p className="text-sm text-zinc-500 max-w-md">
+                  Surat akan muncul di sini ketika ada pengajuan yang masuk atau dibuat.
+                </p>
+              </div>
+            </TableCell>
+          </TableRow>
+        ) : (
+          data.map((item) => (
+            <TableRow key={item.id} className="border-b last:border-0 hover:bg-transparent">
+              {columns.map((column) => (
+                <TableCell key={column.key} className={`py-3.5 px-4 ${column.key === 'actions'
+                    ? 'sticky right-0 bg-white z-10 shadow-[-1px_0_0_0_theme(colors.border)]'
+                    : ''
+                  } ${column.className || ""}`}>
+                  <CellRenderer column={column} item={item} filterType={filterType} />
+                </TableCell>
+              ))}
             </TableRow>
-          ) : (
-            data.map((item) => (
-              <TableRow key={item.id} className="border-b last:border-0 hover:bg-transparent">
-                {columns.map((column) => (
-                  <TableCell key={column.key} className={`py-3.5 px-4 ${column.className || ""}`}>
-                    <CellRenderer column={column} item={item} filterType={filterType} />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+          ))
+        )}
+      </TableBody>
+    </table>
   );
 }

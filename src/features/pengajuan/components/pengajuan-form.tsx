@@ -274,9 +274,9 @@ export function PengajuanForm() {
         formState.lokasiAcara;
 
     return (
-        <form onSubmit={handleSubmit} className="min-h-screen flex flex-col">
+        <form onSubmit={handleSubmit} className="flex flex-col">
             {/* --- HEADER --- */}
-            <div className="flex-1 w-full pb-24">
+            <div className="w-full">
                 <div className="flex items-center gap-3 mb-8">
                     <div className="w-2 h-8 bg-base-black rounded-full" />
                     <h1 className="text-2xl font-bold text-gray-900">Pengajuan</h1>
@@ -534,8 +534,6 @@ export function PengajuanForm() {
                         </p>
                     </div>
 
-                    {/* Spacer footer */}
-                    <div className="h-24" />
                 </div>
             </div>
 

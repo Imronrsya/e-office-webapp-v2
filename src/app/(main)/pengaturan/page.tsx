@@ -185,6 +185,7 @@ function PengaturanContent() {
   };
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-center gap-2">
@@ -425,9 +426,7 @@ function PengaturanContent() {
         </AlertDialog>
       )}
 
-      {/* Spacer for bottom nav */}
-      <div className="h-24"></div>
-
+      </div>
       <BottomNav
         leftContent={
           <Button
@@ -441,11 +440,9 @@ function PengaturanContent() {
           </Button>
         }
       />
-    </div>
+    </>
   );
 }
-
-// ============================================================================
 // Department Form Dialog
 // ============================================================================
 

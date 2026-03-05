@@ -415,7 +415,7 @@ export default function TembusanDetailPage({
 
   return (
     <>
-      <div className="pb-24">
+      <div>
         {/* Header */}
         <div className="flex items-center gap-2 mb-6">
           <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
