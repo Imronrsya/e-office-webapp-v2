@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { BuatSuratDialog } from "@/features/dashboard/components/buat-surat-dialog";
 import { tembusanService } from "@/services/tembusan.service";
+import { dashboardService } from "@/services/dashboard.service";
 
 const menuItems = [
   {
@@ -71,6 +72,7 @@ export function AppSidebar() {
   const { user } = useAuth();
   const [buatSuratDialogOpen, setBuatSuratDialogOpen] = useState(false);
   const [unreadTembusanCount, setUnreadTembusanCount] = useState(0);
+  const [unreadDashboardCount, setUnreadDashboardCount] = useState(0);
 
   const role = user?.role?.toUpperCase() || "";
   const showAjukanSurat = PENGAJU_ROLES.includes(role);
@@ -79,14 +81,22 @@ export function AppSidebar() {
 
   useEffect(() => {
     if (user?.id) {
-      const fetchUnreadCount = async () => {
-        const res = await tembusanService.getUnreadCount();
-        if (res.success && res.data) {
-          setUnreadTembusanCount(res.data.count);
+      const fetchUnreadCounts = async () => {
+        const [tembusanRes, dashboardRes] = await Promise.all([
+          tembusanService.getUnreadCount(),
+          dashboardService.getUnreadCount()
+        ]);
+
+        if (tembusanRes.success && tembusanRes.data) {
+          setUnreadTembusanCount(tembusanRes.data.count);
+        }
+
+        if (dashboardRes.success && dashboardRes.data) {
+          setUnreadDashboardCount(dashboardRes.data.count);
         }
       };
 
-      fetchUnreadCount();
+      fetchUnreadCounts();
     }
   }, [user?.id, pathname]); // Re-fetch occasionally or on navigation
 
@@ -177,8 +187,14 @@ export function AppSidebar() {
                         <Link href={item.href} className="flex items-center w-full">
                           <div className="relative flex items-center justify-center overflow-visible">
                             <item.icon className="size-4 shrink-0" />
-                            {/* Titik merah untuk mode collapsed (hanya muncul saat ada unread dan item adalah Tembusan, disetel hidden pada group-data-[collapsible=icon]) */}
+                            {/* Titik merah untuk mode collapsed */}
                             {item.title === "Tembusan" && unreadTembusanCount > 0 && (
+                              <span className="absolute -top-1.5 -right-2 flex h-2 w-2 group-data-[state=expanded]:hidden z-50">
+                                <span className="absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
+                                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+                              </span>
+                            )}
+                            {item.title === "Dashboard" && unreadDashboardCount > 0 && (
                               <span className="absolute -top-1.5 -right-2 flex h-2 w-2 group-data-[state=expanded]:hidden z-50">
                                 <span className="absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
                                 <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
@@ -188,10 +204,15 @@ export function AppSidebar() {
                           <span className="text-sm font-medium ml-2 flex-1">
                             {item.title}
                           </span>
-                          {/* Badge angka untuk mode expanded (hanya muncul saat ada unread dan item adalah Tembusan, menggunakan warna teks dan tanpa background merah) */}
+                          {/* Badge angka untuk mode expanded */}
                           {item.title === "Tembusan" && unreadTembusanCount > 0 && (
                             <span className="ml-auto inline-flex items-center justify-center font-bold text-sm group-data-[collapsible=icon]:hidden text-gray-600 pr-4">
                               {unreadTembusanCount > 99 ? "99+" : unreadTembusanCount}
+                            </span>
+                          )}
+                          {item.title === "Dashboard" && unreadDashboardCount > 0 && (
+                            <span className="ml-auto inline-flex items-center justify-center font-bold text-sm group-data-[collapsible=icon]:hidden text-gray-600 pr-4">
+                              {unreadDashboardCount > 99 ? "99+" : unreadDashboardCount}
                             </span>
                           )}
                         </Link>

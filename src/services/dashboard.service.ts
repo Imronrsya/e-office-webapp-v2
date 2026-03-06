@@ -1,10 +1,10 @@
 // src/services/dashboard.service.ts
 import { api } from '@/lib/api';
-import type { 
-  DashboardResponse, 
-  DashboardParams, 
-  DashboardStatistics, 
-  RecentActivity 
+import type {
+  DashboardResponse,
+  DashboardParams,
+  DashboardStatistics,
+  RecentActivity
 } from '@/features/dashboard/types';
 
 export const dashboardService = {
@@ -33,6 +33,15 @@ export const dashboardService = {
    */
   getRecent: async (): Promise<{ success: boolean; data: RecentActivity[] }> => {
     const response = await api.get<{ success: boolean; data: RecentActivity[] }>('/dash/recent');
+    return response.data;
+  },
+
+  /**
+   * Get unread waiting count for dashboard badge
+   * Backend: /dash/unread
+   */
+  getUnreadCount: async (): Promise<{ success: boolean; data: { count: number } }> => {
+    const response = await api.get<{ success: boolean; data: { count: number } }>('/dash/unread');
     return response.data;
   },
 };
