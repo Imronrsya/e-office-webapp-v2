@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 // ============================================================================
 // TYPES
@@ -33,7 +34,7 @@ type DispositionMode = "forward" | "disposition";
 interface DispositionDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (category: LetterCategory, targetRole: string, notes?: string) => Promise<void>;
+    onSubmit: (category: LetterCategory, targetRole: string, notes?: string, targetUserId?: string) => Promise<void>;
     loading: boolean;
     /** Mode: 'forward' untuk Admin Fakultas, 'disposition' untuk Pejabat */
     mode?: DispositionMode;
@@ -41,6 +42,17 @@ interface DispositionDialogProps {
     currentUserRole?: string;
     /** Letter category (jika sudah di-set sebelumnya - hanya untuk mode disposition) */
     letterCategory?: LetterCategory | null;
+}
+
+// ============================================================================
+// STAFF USER TYPE
+// ============================================================================
+
+interface StaffUser {
+    id: string;
+    name: string;
+    email: string;
+    pegawai?: { nip: string; jabatan: string } | null;
 }
 
 // ============================================================================
@@ -260,8 +272,12 @@ export function DispositionDialog({
     const [category, setCategory] = useState<LetterCategory | "">("");
     const [targetRole, setTargetRole] = useState<string>("");
     const [notes, setNotes] = useState<string>("");
+    const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
+    const [selectedUserId, setSelectedUserId] = useState<string>("");
+    const [loadingUsers, setLoadingUsers] = useState(false);
 
     const isForwardMode = mode === "forward";
+    const isStaffRole = targetRole === "STAF_AKADEMIK" || targetRole === "STAF_SUMBER_DAYA";
 
     // Reset when dialog opens/closes
     useEffect(() => {
@@ -269,6 +285,8 @@ export function DispositionDialog({
             setCategory("");
             setTargetRole("");
             setNotes("");
+            setStaffUsers([]);
+            setSelectedUserId("");
         } else if (!isForwardMode && letterCategory) {
             // Pre-set category only for disposition mode (Pejabat)
             setCategory(letterCategory);
@@ -278,7 +296,35 @@ export function DispositionDialog({
     // Reset target role when category changes
     useEffect(() => {
         setTargetRole("");
+        setStaffUsers([]);
+        setSelectedUserId("");
     }, [category]);
+
+    // Fetch staff users when a staff role is selected
+    useEffect(() => {
+        if (!isStaffRole) {
+            setStaffUsers([]);
+            setSelectedUserId("");
+            return;
+        }
+
+        const fetchStaffUsers = async () => {
+            setLoadingUsers(true);
+            try {
+                const res = await api.get<{ data: StaffUser[] }>(`/api/faculty-disposition/users/${targetRole}`);
+                setStaffUsers(res.data.data || []);
+            } catch (err) {
+                console.error("Failed to fetch staff users:", err);
+                toast.error("Gagal mengambil data staf");
+                setStaffUsers([]);
+            } finally {
+                setLoadingUsers(false);
+            }
+        };
+
+        fetchStaffUsers();
+        setSelectedUserId("");
+    }, [targetRole]);
 
     // Get available roles based on mode and hierarchy
     const availableRoles = useMemo(() => {
@@ -308,8 +354,12 @@ export function DispositionDialog({
             toast.error("Pilih pejabat tujuan terlebih dahulu");
             return;
         }
+        if (isStaffRole && !selectedUserId) {
+            toast.error("Pilih staf tujuan terlebih dahulu");
+            return;
+        }
 
-        await onSubmit(category, targetRole, notes || undefined);
+        await onSubmit(category, targetRole, notes || undefined, isStaffRole ? selectedUserId : undefined);
     };
 
     // Title and button text based on mode
@@ -419,6 +469,42 @@ export function DispositionDialog({
                         </Select>
                     </div>
 
+                    {/* Pilih Staf (hanya muncul jika target role adalah staf) */}
+                    {isStaffRole && (
+                        <div className="space-y-2">
+                            <Label htmlFor="target-user">
+                                Staf Tujuan <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                                value={selectedUserId}
+                                onValueChange={setSelectedUserId}
+                                disabled={loadingUsers}
+                            >
+                                <SelectTrigger id="target-user" className="w-full">
+                                    <SelectValue placeholder={loadingUsers ? "Memuat data staf..." : "Pilih Staf"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {loadingUsers ? (
+                                        <div className="flex items-center justify-center px-2 py-3 text-sm text-muted-foreground">
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Memuat...
+                                        </div>
+                                    ) : staffUsers.length > 0 ? (
+                                        staffUsers.map((user) => (
+                                            <SelectItem key={user.id} value={user.id}>
+                                                {user.name}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                                            Tidak ada staf yang tersedia
+                                        </div>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+
                     {/* Catatan (Optional) */}
                     <div className="space-y-2">
                         <Label htmlFor="notes">Catatan</Label>
@@ -444,7 +530,7 @@ export function DispositionDialog({
                     <Button
                         type="submit"
                         onClick={handleSubmit}
-                        disabled={loading || !category || !targetRole}
+                        disabled={loading || !category || !targetRole || (isStaffRole && !selectedUserId)}
                         variant="default"
                         className="bg-base-black text-white hover:bg-base-black/90"
                     >

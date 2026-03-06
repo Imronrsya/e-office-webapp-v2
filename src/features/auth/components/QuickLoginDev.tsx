@@ -77,6 +77,12 @@ const TEST_ACCOUNTS: {
   ],
   dosen: [
     { role: "DOSEN", email: "raden.satrio@lecturer.undip.ac.id", name: "Dr. Raden Satrio, M.Kom.", prodi: "S1 Informatika" },
+    { role: "DOSEN", email: "widowati@lecturer.undip.ac.id", name: "Dr. Widowati, S.Si., M.Si.", prodi: "S1 Matematika" },
+    { role: "DOSEN", email: "agung.suprihadi@lecturer.undip.ac.id", name: "Dr. Agung Suprihadi, S.Si., M.Si.", prodi: "S1 Biologi" },
+    { role: "DOSEN", email: "endang.kusdiyantini@lecturer.undip.ac.id", name: "Dr. Endang Kusdiyantini, DEA.", prodi: "S1 Bioteknologi" },
+    { role: "DOSEN", email: "ainie.khuriati@lecturer.undip.ac.id", name: "Dr. Ainie Khuriati R.S., S.Si., M.Si.", prodi: "S1 Fisika" },
+    { role: "DOSEN", email: "khairul.anam@lecturer.undip.ac.id", name: "Dr. Khairul Anam, S.Si., M.Si.", prodi: "S1 Kimia" },
+    { role: "DOSEN", email: "mustafid@lecturer.undip.ac.id", name: "Dr. Mustafid, M.Eng.", prodi: "S1 Statistika" },
   ],
   kadep: [
     { role: "KADEP", email: "kadep.matematika@fsm.undip.ac.id", name: "Dr. Susilo Hariyanto, S.Si., M.Si.", prodi: "S1 Matematika" },
@@ -120,6 +126,7 @@ const TEST_ACCOUNTS: {
     { role: "STAF_AKADEMIK", email: "staf.akademik1@fsm.undip.ac.id", name: "Rina Oktavia, A.Md." },
     { role: "STAF_AKADEMIK", email: "staf.akademik2@fsm.undip.ac.id", name: "Budi Hartono, A.Md." },
     { role: "STAF_SUMBER_DAYA", email: "staf.sumberdaya@fsm.undip.ac.id", name: "Yuni Astuti, A.Md." },
+    { role: "STAF_SUMBER_DAYA", email: "staf.sumberdaya2@fsm.undip.ac.id", name: "Sari Dewi, A.Md." },
     { role: "UPA", email: "upa@fsm.undip.ac.id", name: "Hendra Wijaya, S.Kom." },
   ],
 };

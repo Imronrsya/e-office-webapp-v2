@@ -325,10 +325,10 @@ export const suratService = {
     /**
      * Admin Fakultas forwards letter to target role
      */
-    async forward(id: string, targetRole: string, notes?: string): Promise<ApiResponse<unknown>> {
+    async forward(id: string, targetRole: string, notes?: string, targetUserId?: string): Promise<ApiResponse<unknown>> {
         const response = await api.post<ApiResponse<unknown>>(
             `/api/faculty-disposition/${id}/forward`,
-            { targetRole, notes }
+            { targetRole, notes, targetUserId }
         );
         return response.data;
     },
@@ -337,10 +337,10 @@ export const suratService = {
      * Pejabat disposisi ke pejabat bawah
      * Note: Uses same endpoint as forward - backend determines action based on user role
      */
-    async dispose(id: string, targetRole: string, notes?: string): Promise<ApiResponse<unknown>> {
+    async dispose(id: string, targetRole: string, notes?: string, targetUserId?: string): Promise<ApiResponse<unknown>> {
         const response = await api.post<ApiResponse<unknown>>(
             `/api/faculty-disposition/${id}/forward`,
-            { targetRole, notes }
+            { targetRole, notes, targetUserId }
         );
         return response.data;
     },
@@ -359,10 +359,10 @@ export const suratService = {
     /**
      * Pejabat kembalikan surat ke pejabat sebelumnya
      */
-    async returnLetter(id: string, targetRole: string, reason: string): Promise<ApiResponse<unknown>> {
+    async returnLetter(id: string, targetRole: string, reason: string, targetUserId?: string): Promise<ApiResponse<unknown>> {
         const response = await api.post<ApiResponse<unknown>>(
             `/api/faculty-disposition/${id}/return`,
-            { targetRole, reason }
+            { targetRole, reason, targetUserId }
         );
         return response.data;
     },
@@ -571,10 +571,10 @@ export const suratService = {
      * Uses letterId (not documentId)
      * @param targetStaff - Optional target staff for UMUM category letters
      */
-    async returnSuratHasil(letterId: string, reason: string, targetStaff?: string): Promise<ApiResponse<unknown>> {
+    async returnSuratHasil(letterId: string, reason: string, targetStaff?: string, targetUserId?: string): Promise<ApiResponse<unknown>> {
         const response = await api.post<ApiResponse<unknown>>(
             `/api/surat-hasil/${letterId}/return`,
-            { reason, targetStaff }
+            { reason, targetStaff, targetUserId }
         );
         return response.data;
     },

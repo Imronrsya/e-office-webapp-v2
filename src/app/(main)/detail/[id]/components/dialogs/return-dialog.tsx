@@ -21,15 +21,23 @@ import {
 } from "@/components/ui/select";
 import { Undo2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
+interface StaffUser {
+    id: string;
+    name: string;
+    email: string;
+    pegawai?: { nip: string; jabatan: string } | null;
+}
+
 interface ReturnDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (targetRole: string, reason: string) => Promise<void>;
+    onSubmit: (targetRole: string, reason: string, targetUserId?: string) => Promise<void>;
     loading: boolean;
     /** Available return targets based on disposition history */
     returnTargets?: string[];
@@ -74,17 +82,50 @@ export function ReturnDialog({
 }: ReturnDialogProps) {
     const [targetRole, setTargetRole] = useState<string>("");
     const [reason, setReason] = useState<string>("");
+    const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
+    const [selectedUserId, setSelectedUserId] = useState<string>("");
+    const [loadingUsers, setLoadingUsers] = useState(false);
+
+    const isStaffRole = targetRole === "STAF_AKADEMIK" || targetRole === "STAF_SUMBER_DAYA";
 
     // Reset when dialog closes, auto-select ADMIN_PRODI as default
     useEffect(() => {
         if (!open) {
             setTargetRole("");
             setReason("");
+            setStaffUsers([]);
+            setSelectedUserId("");
         } else if (returnTargets.length > 0) {
             // Auto-select first target (ADMIN_PRODI is always first from backend)
             setTargetRole(returnTargets[0]);
         }
     }, [open, returnTargets]);
+
+    // Fetch staff users when a staff role is selected
+    useEffect(() => {
+        if (!isStaffRole) {
+            setStaffUsers([]);
+            setSelectedUserId("");
+            return;
+        }
+
+        const fetchStaffUsers = async () => {
+            setLoadingUsers(true);
+            try {
+                const res = await api.get<{ data: StaffUser[] }>(`/api/faculty-disposition/users/${targetRole}`);
+                setStaffUsers(res.data.data || []);
+            } catch (err) {
+                console.error("Failed to fetch staff users:", err);
+                toast.error("Gagal mengambil data staf");
+                setStaffUsers([]);
+            } finally {
+                setLoadingUsers(false);
+            }
+        };
+
+        fetchStaffUsers();
+        setSelectedUserId("");
+    }, [targetRole]);
 
     const handleSubmit = async () => {
         if (!targetRole) {
@@ -95,8 +136,12 @@ export function ReturnDialog({
             toast.error("Alasan pengembalian wajib diisi");
             return;
         }
+        if (isStaffRole && !selectedUserId) {
+            toast.error("Pilih staf tujuan terlebih dahulu");
+            return;
+        }
 
-        await onSubmit(targetRole, reason.trim());
+        await onSubmit(targetRole, reason.trim(), isStaffRole ? selectedUserId : undefined);
     };
 
     // Use returnTargets directly from backend (already includes ADMIN_PRODI as first)
@@ -138,6 +183,42 @@ export function ReturnDialog({
                         </p>
                     </div>
 
+                    {/* Pilih Staf (hanya muncul jika target role adalah staf) */}
+                    {isStaffRole && (
+                        <div className="space-y-2">
+                            <Label htmlFor="target-user">
+                                Staf Tujuan <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                                value={selectedUserId}
+                                onValueChange={setSelectedUserId}
+                                disabled={loadingUsers}
+                            >
+                                <SelectTrigger id="target-user" className="w-full">
+                                    <SelectValue placeholder={loadingUsers ? "Memuat data staf..." : "Pilih Staf"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {loadingUsers ? (
+                                        <div className="flex items-center justify-center px-2 py-3 text-sm text-muted-foreground">
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Memuat...
+                                        </div>
+                                    ) : staffUsers.length > 0 ? (
+                                        staffUsers.map((user) => (
+                                            <SelectItem key={user.id} value={user.id}>
+                                                {user.name}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                                            Tidak ada staf yang tersedia
+                                        </div>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+
                     {/* Alasan */}
                     <div className="space-y-2">
                         <Label htmlFor="reason">
@@ -168,7 +249,7 @@ export function ReturnDialog({
                     <Button
                         type="submit"
                         onClick={handleSubmit}
-                        disabled={loading || !targetRole || !reason.trim()}
+                        disabled={loading || !targetRole || !reason.trim() || (isStaffRole && !selectedUserId)}
                         className="bg-base-black text-white hover:bg-base-black/90"
                     >
                         {loading && (

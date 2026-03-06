@@ -463,7 +463,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     // Forward Letter Handler (Admin Fakultas)
     // This handles both "receive" (categorize) and "forward" in one action
-    const handleForward = async (category: LetterCategory, targetRole: string, notes?: string) => {
+    const handleForward = async (category: LetterCategory, targetRole: string, notes?: string, targetUserId?: string) => {
         if (!detail || actionLoading) return; // Prevent double-click
 
         setActionLoading(true);
@@ -478,7 +478,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             }
 
             // Step 2: Forward to target role
-            const response = await suratService.forward(detail.id, targetRole, notes);
+            const response = await suratService.forward(detail.id, targetRole, notes, targetUserId);
 
             if (response.success) {
                 toast.success("Surat berhasil diteruskan");
@@ -496,12 +496,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     };
 
     // Dispose Letter Handler (Pejabat - to lower hierarchy)
-    const handleDispose = async (category: LetterCategory, targetRole: string, notes?: string) => {
+    const handleDispose = async (category: LetterCategory, targetRole: string, notes?: string, targetUserId?: string) => {
         if (!detail || actionLoading) return;
 
         setActionLoading(true);
         try {
-            const response = await suratService.dispose(detail.id, targetRole, notes);
+            const response = await suratService.dispose(detail.id, targetRole, notes, targetUserId);
 
             if (response.success) {
                 toast.success("Surat berhasil didisposisikan");
@@ -542,12 +542,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     };
 
     // Return Letter Handler (Pejabat - return to previous handler)
-    const handleReturn = async (targetRole: string, reason: string) => {
+    const handleReturn = async (targetRole: string, reason: string, targetUserId?: string) => {
         if (!detail || actionLoading) return;
 
         setActionLoading(true);
         try {
-            const response = await suratService.returnLetter(detail.id, targetRole, reason);
+            const response = await suratService.returnLetter(detail.id, targetRole, reason, targetUserId);
 
             if (response.success) {
                 toast.success("Surat berhasil dikembalikan");
@@ -2606,13 +2606,13 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             <RevisionDialog
                 open={revisionDialogOpen}
                 onOpenChange={setRevisionDialogOpen}
-                onSubmit={async (targetRole, reason) => {
+                onSubmit={async (targetRole, reason, targetUserId) => {
                     // Re-use handleReturnSuratHasil logic but with parameters
                     if (!detail || actionLoading) return;
 
                     setActionLoading(true);
                     try {
-                        const response = await suratService.returnSuratHasil(detail.id, reason, targetRole);
+                        const response = await suratService.returnSuratHasil(detail.id, reason, targetRole, targetUserId);
 
                         if (response.success) {
                             toast.success("Surat berhasil dikembalikan untuk revisi");
