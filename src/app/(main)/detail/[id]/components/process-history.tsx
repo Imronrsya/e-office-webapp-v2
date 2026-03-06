@@ -1,7 +1,9 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Clock, Info } from "lucide-react";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, Clock, Info, History } from "lucide-react";
 import { LogSummary } from "@/services/surat.service";
 import { cn } from "@/lib/utils";
 
@@ -9,12 +11,13 @@ interface ProcessHistoryProps {
     logs: LogSummary[];
     isWaiting: boolean;
     currentActiveRole: string | null;
-    /** Current status of the letter */
     currentStatus?: string;
-    /** Scope user untuk menyesuaikan tampilan timeline */
     userScope?: 'DEPARTEMEN' | 'FAKULTAS' | 'UPA';
-    /** Filter type dari dashboard (masuk/keluar) - hanya untuk lingkup fakultas */
     filterType?: 'masuk' | 'keluar' | null;
+    /** Enable collapsible mode — show only maxVisible items by default */
+    collapsible?: boolean;
+    /** Number of items to show when collapsed (default: 3) */
+    maxVisible?: number;
 }
 
 function formatDateTime(dateString: string | null | undefined) {
@@ -117,7 +120,8 @@ function transformNotes(notes: string | null, action: string, actorRole?: string
     return notes;
 }
 
-export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStatus, userScope, filterType }: ProcessHistoryProps) {
+export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStatus, userScope, filterType, collapsible = false, maxVisible = 3 }: ProcessHistoryProps) {
+    const [expanded, setExpanded] = useState(false);
     // Filter logs berdasarkan scope dan filter type
     // Untuk lingkup fakultas dengan filter:
     // - masuk: hanya tampilkan log terkait surat pengantar (dari pengajuan hingga didisposisikan ke staf)
@@ -243,19 +247,36 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
         return 'Riwayat Proses';
     };
 
-    // PERBAIKAN: Di Surat Masuk, jika sudah ada log "Draft Dibuat" (DRAFT_CREATE), 
-    // maka jangan tampilkan "waiting" indicator karena Surat Masuk sudah selesai
+    // PERBAIKAN: Di Surat Masuk, jika sudah ada log "Draft Dibuat" dari fase SURAT_DIBUAT
+    // (yaitu Staf mulai membuat draft SK/ST), maka jangan tampilkan "waiting" indicator 
+    // karena Surat Masuk sudah selesai.
+    // NOTE: Harus spesifik cek fromStatus = SURAT_DIBUAT agar tidak salah match 
+    // dengan DRAFT_CREATE dari Admin Prodi (surat pengantar) yang fromStatus = SURAT_PENGANTAR_DRAFT
     const shouldHideWaiting =
         userScope === 'FAKULTAS' &&
         filterType === 'masuk' &&
-        displayLogs.some(log => log.action === 'DRAFT_CREATE');
+        displayLogs.some(log => 
+            log.action === 'DRAFT_CREATE' && 
+            log.fromStatus?.toUpperCase().includes('SURAT_DIBUAT')
+        );
 
     const showWaiting = isWaiting && currentActiveRole && !shouldHideWaiting;
 
+    // Collapsible support: show only N most recent items when collapsed
+    const visibleLogs = collapsible && !expanded
+        ? displayLogs.slice(0, maxVisible)
+        : displayLogs;
+    const hasMore = collapsible && displayLogs.length > maxVisible;
+
     return (
-        <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
-            <CardContent className="p-6">
-                <h3 className="text-sm font-bold text-black mb-6">{getTitle()}</h3>
+        <Card className="bg-neutral-50 border-zinc-400">
+            <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                    <History className="w-4 h-4" />
+                    {getTitle()}
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
 
                 {/* Info untuk filter surat keluar jika belum ada log */}
                 {userScope === 'FAKULTAS' && filterType === 'keluar' && displayLogs.length === 0 && (
@@ -265,7 +286,10 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
                     </div>
                 )}
 
-                <div className="space-y-0">
+                <div className={cn(
+                    "space-y-0",
+                    collapsible && expanded && "max-h-[400px] overflow-y-auto pr-1"
+                )}>
                     {/* Current waiting status (at top) */}
                     {showWaiting && (
                         <div className="flex gap-4">
@@ -274,7 +298,7 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
                                 <div className="w-10 h-10 rounded-full flex items-center justify-center border-4 bg-white border-zinc-400 flex-shrink-0">
                                     <Clock className="w-4 h-4 text-zinc-400" />
                                 </div>
-                                {displayLogs.length > 0 && <div className="w-0.5 flex-1 bg-zinc-400 min-h-4" />}
+                                {visibleLogs.length > 0 && <div className="w-0.5 flex-1 bg-zinc-400 min-h-4" />}
                             </div>
                             {/* Content */}
                             <div className="min-w-0 flex-1 pb-6">
@@ -287,19 +311,19 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
                     )}
 
                     {/* Completed logs */}
-                    {displayLogs.map((log, idx) => (
+                    {visibleLogs.map((log, idx) => (
                         <div key={log.id} className="flex gap-4">
                             {/* Timeline Icon */}
                             <div className="flex flex-col items-center">
                                 <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-500 flex-shrink-0">
                                     <CheckCircle className="w-5 h-5 text-white" />
                                 </div>
-                                {idx < displayLogs.length - 1 && <div className="w-0.5 flex-1 bg-zinc-400 min-h-4" />}
+                                {idx < visibleLogs.length - 1 && <div className="w-0.5 flex-1 bg-zinc-400 min-h-4" />}
                             </div>
                             {/* Content */}
                             <div className={cn(
                                 "min-w-0 flex-1",
-                                idx < displayLogs.length - 1 && "pb-6"
+                                idx < visibleLogs.length - 1 && "pb-6"
                             )}>
                                 <p className="text-sm font-bold text-black leading-5">{getActionLabel(log.action, log.actorRole)}</p>
                                 <p className="text-sm text-black leading-5">
@@ -314,6 +338,18 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
                         </div>
                     ))}
                 </div>
+
+                {/* Expand/Collapse button */}
+                {hasMore && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setExpanded(!expanded)}
+                        className="mt-4 w-full text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                    >
+                        {expanded ? "Tampilkan Sedikit" : `Lihat Semua (${displayLogs.length})`}
+                    </Button>
+                )}
             </CardContent>
         </Card>
     );

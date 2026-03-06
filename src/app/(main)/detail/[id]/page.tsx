@@ -5,8 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/layout/bottom-nav";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { suratService, SubmissionDetail } from "@/services/surat.service";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
     Dialog,
@@ -45,6 +46,9 @@ import {
     Eye,
     AlertCircle,
     Image as ImageIcon,
+    User,
+    ClipboardList,
+    Paperclip,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -63,7 +67,6 @@ import {
     SuratPreview
 } from "@/components/universal-preview";
 import { ProcessHistory } from "./components/process-history";
-import { DetailSuratInfo } from "./components/detail-surat-info";
 import { TembusanCard } from "./components/tembusan-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SignatureModal, type SignatureModalResult, type PreviewData } from "@/components/signature";
@@ -105,6 +108,62 @@ function formatDateTime(dateString: string | null | undefined) {
         hour: "2-digit",
         minute: "2-digit",
     });
+}
+
+function formatDate(dateString: string | null | undefined) {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    });
+}
+
+function formatKategori(kategori: string | null | undefined): string {
+    if (!kategori) return '-';
+    const map: Record<string, string> = {
+        AKADEMIK: 'Akademik',
+        SUMBER_DAYA: 'Sumber Daya',
+        UMUM: 'Umum',
+    };
+    return map[kategori] || kategori;
+}
+
+function getStatusBadge(displayStatus: string, status: string) {
+    // Use status (COMPLETED, REJECTED, etc.) for badge styling
+    // Use displayStatus (from backend) for display text
+    if (status === 'COMPLETED') {
+        return (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                {displayStatus}
+            </Badge>
+        );
+    }
+    if (status === 'REJECTED') {
+        return (
+            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                <XCircle className="w-3 h-3 mr-1" />
+                {displayStatus}
+            </Badge>
+        );
+    }
+    if (status === 'CANCELLED') {
+        return (
+            <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                <XCircle className="w-3 h-3 mr-1" />
+                {displayStatus}
+            </Badge>
+        );
+    }
+    // Default: in-progress/pending status
+    return (
+        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+            <Clock className="w-3 h-3 mr-1" />
+            {displayStatus}
+        </Badge>
+    );
 }
 
 function formatFileSize(bytes: number | null | undefined) {
@@ -1146,7 +1205,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     // IDENTITAS PEMOHON CARD
     // ========================================================================
     const IdentitasPemohonCard = () => {
-        // Staff-created letters: show staff identity instead of pemohon
+        // Staff-created letters: show staff identity
         if (isStaffCreated && staffDerivedValues) {
             const jabatanLabel = (() => {
                 const role = detail.createdBy?.role;
@@ -1156,43 +1215,105 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             })();
 
             return (
-                <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
-                    <CardContent className="p-6">
-                        <h3 className="text-sm font-bold text-black mb-4">Dibuat Oleh</h3>
-
-                        <InfoRow
-                            label="Nama Lengkap"
-                            value={staffDerivedValues.staffName}
-                        />
-                        <InfoRow
-                            label="Jabatan"
-                            value={jabatanLabel}
-                            showSeparator={false}
-                        />
+                <Card className="bg-neutral-50 border-zinc-400">
+                    <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <User className="w-4 h-4" />
+                            Dibuat Oleh
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-sm text-zinc-500">Nama</p>
+                                <p className="font-medium">{staffDerivedValues.staffName}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-zinc-500">Jabatan</p>
+                                <p className="font-medium">{jabatanLabel}</p>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             );
         }
 
-        // Normal flow (surat masuk): show pemohon identity
+        // Normal flow: show pemohon identity
         return (
-            <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
-                <CardContent className="p-6">
-                    <h3 className="text-sm font-bold text-black mb-4">Identitas Pemohon</h3>
+            <Card className="bg-neutral-50 border-zinc-400">
+                <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Pemohon
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-3">
+                        <div>
+                            <p className="text-sm text-zinc-500">Nama</p>
+                            <p className="font-medium">{submissionValues.nama}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-zinc-500">{submissionValues.nim ? "NIM" : "NIP"}</p>
+                            <p className="font-medium">{submissionValues.nim || submissionValues.nip || "-"}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-zinc-500">Program Studi</p>
+                            <p className="font-medium">{submissionValues.programStudi || "-"}</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    };
 
-                    <InfoRow
-                        label="Nama Lengkap"
-                        value={submissionValues.nama}
-                    />
-                    <InfoRow
-                        label={submissionValues.nim ? "NIM" : "NIP"}
-                        value={submissionValues.nim || submissionValues.nip || "-"}
-                    />
-                    <InfoRow
-                        label="Program Studi"
-                        value={submissionValues.programStudi}
-                        showSeparator={false}
-                    />
+    // ========================================================================
+    // TUJUAN CARD - Informasi Tujuan Surat (dari document content)
+    // Hanya tampilkan jika ada primaryDocument dan content.namaTujuan
+    // ========================================================================
+    const TujuanCard = () => {
+        // Get primary document (SURAT_PENGANTAR or SURAT_HASIL)
+        const primaryDocument = activeDocTab === 'surat-hasil' && hasSuratHasil
+            ? detail?.documents?.find(d => d.type === 'SURAT_TUGAS' || d.type === 'SURAT_TUGAS_TABEL' || d.type === 'SURAT_KEPUTUSAN')
+            : detail?.documents?.find(d => d.type === 'SURAT_PENGANTAR');
+
+        // Get tujuan data from document content
+        const namaTujuan = primaryDocument?.content?.namaTujuan as string | undefined;
+        const jabatanTujuan = primaryDocument?.content?.jabatanTujuan as string | undefined;
+        const alamatTujuan = primaryDocument?.content?.alamatTujuan as string | undefined;
+
+        // Only show card if namaTujuan exists
+        if (!namaTujuan) {
+            return null;
+        }
+
+        return (
+            <Card className="bg-neutral-50 border-zinc-400">
+                <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Tujuan
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-3">
+                        <div>
+                            <p className="text-sm text-zinc-500">Nama</p>
+                            <p className="font-medium wrap-break-word">{namaTujuan}</p>
+                        </div>
+                        {jabatanTujuan && (
+                            <div>
+                                <p className="text-sm text-zinc-500">Jabatan</p>
+                                <p className="font-medium wrap-break-word">{jabatanTujuan}</p>
+                            </div>
+                        )}
+                        {alamatTujuan && (
+                            <div>
+                                <p className="text-sm text-zinc-500">Alamat</p>
+                                <p className="font-medium wrap-break-word">{alamatTujuan}</p>
+                            </div>
+                        )}
+                    </div>
                 </CardContent>
             </Card>
         );
@@ -1285,9 +1406,14 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
 
         return (
-            <Card className="bg-neutral-50 border-zinc-400 rounded-xl overflow-hidden">
-                <CardContent className="p-6">
-                    <h3 className="text-sm font-bold text-black mb-4">Lampiran Pengaju</h3>
+            <Card className="bg-neutral-50 border-zinc-400">
+                <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <Paperclip className="w-4 h-4" />
+                        Lampiran Pengaju
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
 
                     <div className="space-y-3">
                         {/* Lampiran dari Pengaju (Mahasiswa/Dosen) */}
@@ -1528,46 +1654,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     };
 
     // ========================================================================
-    // CONTENT CARDS FOR OLD LAYOUT (NO DOCUMENT)
-    // ========================================================================
-    const ContentCards = () => (
-        <div className="space-y-6">
-            {/* Riwayat Proses */}
-            <ProcessHistory
-                logs={logs}
-                isWaiting={isWaiting}
-                currentActiveRole={detail.currentActiveRole}
-                currentStatus={detail.status}
-                userScope={userScope}
-                filterType={filterType}
-            />
-
-            {/* Detail Surat */}
-            <DetailSuratInfo
-                jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                kategoriSurat={detail.category || detail.letterType?.category}
-                judulSurat={judulSuratForDisplay}
-                keperluan={submissionValues.keperluan}
-                isStaffCreated={isStaffCreated}
-            />
-
-            {/* Identitas Pemohon */}
-            <IdentitasPemohonCard />
-
-            {/* Lampiran */}
-            <LampiranCard />
-
-            {/* Lampiran Dokumen dari Staf/Supervisor */}
-            <LampiranDokumenCard />
-
-            {/* Tembusan Dalam Sistem */}
-            {shouldShowTembusanCard && suratHasilDoc && (
-                <TembusanCard tembusanList={(suratHasilDoc.tembusan || []) as any} />
-            )}
-        </div>
-    );
-
-    // ========================================================================
     // MAHASISWA VIEW LAYOUT (dengan preview PDF dan sidebar)
     // ========================================================================
     const MahasiswaViewLayout = () => {
@@ -1715,41 +1801,112 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         // Determine the default tab for 'both' mode
         const defaultTab = hasSuratPengantar ? "surat-pengantar" : "surat-hasil";
 
-        return (
-            <>
-                {/* Sub-header dengan Judul Pengajuan */}
-                <h2 className="text-lg font-bold text-black mb-4">
-                    {documentViewMode === 'hasil' || filterType === 'keluar'
-                        ? `${suratHasilDoc?.type === 'SURAT_KEPUTUSAN' ? 'SK' : 'ST'} - `
-                        : isStaffCreated && staffDerivedValues
-                            ? `${staffDerivedValues.jenisSurat === 'SURAT_KEPUTUSAN' ? 'SK' : 'ST'} - `
-                            : `${submissionValues.jenisSurat === 'SURAT_TUGAS' ? 'ST' : 'SK'} - `
-                    }
-                    {(judulSuratForDisplay || 'Surat').toUpperCase()}
-                </h2>
+        // Computed values for combined Detail Surat card
+        const nomorSuratValue = primaryDocument?.nomorSurat || "Belum Bernomor";
+        // For surat masuk: when suratHasilDoc is primary, its tanggalSurat is null (set only on penomoran).
+        // Fall back to suratPengantarDoc?.tanggalSurat which holds the actual date.
+        const tanggalSuratValue = primaryDocument?.tanggalSurat || suratPengantarDoc?.tanggalSurat || null;
+        const kategoriValue = detail.category || detail.letterType?.category || null;
+        const tipeSuratLabel = (() => {
+            if (isStaffCreated && staffDerivedValues) {
+                return staffDerivedValues.jenisSurat === 'SURAT_KEPUTUSAN' ? 'Surat Keputusan' : 'Surat Tugas';
+            }
+            const type = suratHasilDoc?.type || submissionValues.jenisSurat;
+            if (type === 'SURAT_TUGAS' || type === 'SURAT_TUGAS_TABEL') return 'Surat Tugas';
+            if (type === 'SURAT_KEPUTUSAN') return 'Surat Keputusan';
+            return type || '-';
+        })();
 
-                {/* Info label untuk lingkup fakultas */}
-                {userScope === 'FAKULTAS' && filterType && (
-                    <div className="mb-4 text-sm text-zinc-500">
-                        {filterType === 'masuk' ? (
-                            <span className="inline-flex items-center gap-1.5">
-                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                Surat Masuk (Surat Pengantar)
-                            </span>
-                        ) : (
-                            <span className="inline-flex items-center gap-1.5">
-                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                                Surat Keluar ({suratHasilDoc?.type === 'SURAT_KEPUTUSAN' ? 'Surat Keputusan' : 'Surat Tugas'})
-                            </span>
+        // Override displayStatus for surat masuk context:
+        // When viewing via surat masuk tab and SK/ST doc already exists,
+        // the surat masuk process is complete (same logic as dashboard table)
+        const effectiveDisplayStatus = (filterType === 'masuk' && hasSuratHasil)
+            ? 'SELESAI'
+            : detail.displayStatus;
+        const effectiveStatus = (filterType === 'masuk' && hasSuratHasil)
+            ? 'COMPLETED'
+            : detail.status;
+
+        // form-only mode: 2-column grid with Riwayat Proses on the right (no document preview yet)
+        if (documentViewMode === 'form-only') {
+            return (
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    {/* Left Column — Info Cards (3/4 width) */}
+                    <div className="lg:col-span-3 space-y-6">
+                        {/* Detail Surat */}
+                        <Card className="bg-neutral-50 border-zinc-400">
+                            <CardHeader>
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <ClipboardList className="w-4 h-4" />
+                                    Detail Surat
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                                    {/* Row 1: Nomor Surat | Status */}
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-base-gray">Nomor Surat</p>
+                                        <p className="font-medium text-base-black wrap-break-word">{nomorSuratValue}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-base-gray">Status</p>
+                                        <div>{getStatusBadge(effectiveDisplayStatus, effectiveStatus)}</div>
+                                    </div>
+                                    
+                                    {/* Row 2: Tanggal Mulai | Tipe Surat */}
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-base-gray">Tanggal Mulai</p>
+                                        <p className="font-medium text-base-black">{submissionValues.tanggalAcara ? formatDate(submissionValues.tanggalAcara) : '-'}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-base-gray">Tipe Surat</p>
+                                        <p className="font-medium text-base-black">{tipeSuratLabel}</p>
+                                    </div>
+                                    
+                                    {/* Row 3: Durasi | Lokasi */}
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-base-gray">Durasi</p>
+                                        <p className="font-medium text-base-black">{submissionValues.durasiAcara || '-'}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-base-gray">Lokasi</p>
+                                        <p className="font-medium text-base-black wrap-break-word">{submissionValues.lokasiAcara || '-'}</p>
+                                    </div>
+                                    
+                                    {/* Full Width: Judul Surat */}
+                                    <div className="col-span-2 space-y-1">
+                                        <p className="text-sm text-base-gray">Judul Surat</p>
+                                        <p className="font-medium text-base-black wrap-break-word">{judulSuratForDisplay || '-'}</p>
+                                    </div>
+                                    
+                                    {/* Full Width: Keperluan (for non-staff-created letters) */}
+                                    {!isStaffCreated && submissionValues.keperluan && (
+                                        <div className="col-span-2 space-y-1">
+                                            <p className="text-sm text-base-gray">Keperluan</p>
+                                            <p className="font-medium text-base-black wrap-break-word">{submissionValues.keperluan}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Pemohon */}
+                        <IdentitasPemohonCard />
+
+                        {/* Lampiran */}
+                        <LampiranCard />
+
+                        {/* Lampiran Dokumen */}
+                        <LampiranDokumenCard />
+
+                        {/* Tembusan */}
+                        {shouldShowTembusanCard && suratHasilDoc && (
+                            <TembusanCard tembusanList={(suratHasilDoc.tembusan || []) as any} />
                         )}
                     </div>
-                )}
 
-                {/* Content based on documentViewMode */}
-                {documentViewMode === 'form-only' ? (
-                    /* Mode form-only: Verification mode atau Pre-draft mode - fokus ke data form, bukan dokumen */
-                    <div className="space-y-6">
-                        {/* Riwayat Proses */}
+                    {/* Right Column — Riwayat Proses (1/4 width) */}
+                    <div className="lg:col-span-1">
                         <ProcessHistory
                             logs={logs}
                             isWaiting={isWaiting}
@@ -1757,165 +1914,176 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             currentStatus={detail.status}
                             userScope={userScope}
                             filterType={filterType}
+                            collapsible
+                            maxVisible={3}
                         />
-
-                        {/* Detail Surat */}
-                        <DetailSuratInfo
-                            jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                            kategoriSurat={detail.category || detail.letterType?.category}
-                            judulSurat={judulSuratForDisplay}
-                            keperluan={submissionValues.keperluan}
-                            isStaffCreated={isStaffCreated}
-                        />
-
-                        {/* Identitas Pemohon */}
-                        <IdentitasPemohonCard />
-
-                        {/* Lampiran */}
-                        <LampiranCard />
-
-                        {/* Lampiran Dokumen dari Staf/Supervisor */}
-                        <LampiranDokumenCard />
-
-                        {/* Tembusan Dalam Sistem */}
-                        {shouldShowTembusanCard && suratHasilDoc && (
-                            <TembusanCard tembusanList={(suratHasilDoc.tembusan || []) as any} />
-                        )}
-
-                        {/* Info untuk user tentang mode ini */}
-
-
                     </div>
-                ) : documentViewMode === 'both' ? (
-                    /* Lingkup Departemen dengan tabs (jika UPA sudah selesai) */
-                    <Tabs
-                        value={activeDocTab}
-                        className="w-full"
-                        onValueChange={(value) => setActiveDocTab(value as 'surat-pengantar' | 'surat-hasil')}
-                    >
-                        {/* Tab Buttons */}
-                        <div className="mb-6">
-                            <TabsList className="bg-transparent gap-2 p-0 h-auto">
-                                <TabsTrigger
-                                    value="surat-pengantar"
-                                    className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=inactive]:bg-zinc-200 data-[state=inactive]:text-zinc-800 px-4 py-2 rounded-lg"
-                                >
-                                    Surat Pengantar
-                                </TabsTrigger>
-                                {suratHasilDoc && (
-                                    <TabsTrigger
-                                        value="surat-hasil"
-                                        className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=inactive]:bg-zinc-200 data-[state=inactive]:text-zinc-800 px-4 py-2 rounded-lg"
+                </div>
+            );
+        }
+
+        return (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Left Column — Detail & Document (3/4 width) */}
+                <div className="lg:col-span-3 space-y-6">
+                    {/* Combined Detail Surat Card */}
+                    <Card className="bg-neutral-50 border-zinc-400">
+                        <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <ClipboardList className="w-4 h-4" />
+                                Detail Surat
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {/* Info Grid - New layout */}
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                                {/* Row 1: Nomor Surat | Status */}
+                                <div className="space-y-1">
+                                    <p className="text-sm text-base-gray">Nomor Surat</p>
+                                    <p className="font-medium text-base-black">{nomorSuratValue}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm text-base-gray">Status</p>
+                                    <div>{getStatusBadge(effectiveDisplayStatus, effectiveStatus)}</div>
+                                </div>
+                                
+                                {/* Row 2: Conditional based on surat keluar with hasil doc */}
+                                {filterType === 'keluar' && hasSuratHasil ? (
+                                    <>
+                                        {/* Surat Keluar after staf creates draft: Jenis Surat | Tipe Surat */}
+                                        {kategoriValue && (
+                                            <div className="space-y-1">
+                                                <p className="text-sm text-base-gray">Jenis Surat</p>
+                                                <p className="font-medium text-base-black">{formatKategori(kategoriValue)}</p>
+                                            </div>
+                                        )}
+                                        <div className="space-y-1">
+                                            <p className="text-sm text-base-gray">Tipe Surat</p>
+                                            <p className="font-medium text-base-black">{tipeSuratLabel}</p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* Default: Tanggal Surat | Tipe Surat */}
+                                        <div className="space-y-1">
+                                            <p className="text-sm text-base-gray">Tanggal Surat</p>
+                                            <p className="font-medium text-base-black">{formatDate(tanggalSuratValue)}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-sm text-base-gray">Tipe Surat</p>
+                                            <p className="font-medium text-base-black">{tipeSuratLabel}</p>
+                                        </div>
+                                    </>
+                                )}
+                                
+                                {/* Full Width: Jenis Surat (for surat masuk after fakultas forwards) */}
+                                {!(filterType === 'keluar' && hasSuratHasil) && hasSuratPengantar && kategoriValue && (
+                                    <div className="col-span-2 space-y-1">
+                                        <p className="text-sm text-base-gray">Jenis Surat</p>
+                                        <p className="font-medium text-base-black">{formatKategori(kategoriValue)}</p>
+                                    </div>
+                                )}
+                                
+                                {/* Full Width: Judul Surat */}
+                                <div className="col-span-2 space-y-1">
+                                    <p className="text-sm text-base-gray">Judul Surat</p>
+                                    <p className="font-medium text-base-black wrap-break-word">{judulSuratForDisplay || '-'}</p>
+                                </div>
+                                
+                                {/* Full Width: Keperluan (for non-staff-created letters) */}
+                                {!isStaffCreated && submissionValues.keperluan && (
+                                    <div className="col-span-2 space-y-1">
+                                        <p className="text-sm text-base-gray">Keperluan</p>
+                                        <p className="font-medium text-base-black wrap-break-word">{submissionValues.keperluan}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Document Preview Section — always present in grid layout (form-only already returned above) */}
+                            <Separator className="my-6" />
+                            <div className="space-y-4">
+                                <h4 className="font-medium flex items-center gap-2">
+                                    <FileText className="w-4 h-4" />
+                                    Dokumen
+                                </h4>
+                                {documentViewMode === 'both' ? (
+                                    <Tabs
+                                        value={activeDocTab}
+                                        onValueChange={(value) => setActiveDocTab(value as 'surat-pengantar' | 'surat-hasil')}
                                     >
-                                        {suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
-                                    </TabsTrigger>
-                                )}
-                            </TabsList>
-                        </div>
-
-                        {/* Main Content - 2 Column Layout */}
-                        <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-6">
-                            {/* Left Column - Surat Preview with Tabs Content */}
-                            <div className="relative">
-                                <TabsContent value="surat-pengantar" className="mt-0">
-                                    {renderSuratPengantarPreview()}
-                                </TabsContent>
-                                <TabsContent value="surat-hasil" className="mt-0">
-                                    {renderSuratHasilPreview()}
-                                </TabsContent>
-                            </div>
-
-                            {/* Right Column - Info Cards */}
-                            <div className="space-y-6">
-                                {/* Riwayat Proses */}
-                                <ProcessHistory
-                                    logs={logs}
-                                    isWaiting={isWaiting}
-                                    currentActiveRole={detail.currentActiveRole}
-                                    currentStatus={detail.status}
-                                    userScope={userScope}
-                                    filterType={filterType}
-                                />
-
-                                {/* Detail Surat */}
-                                <DetailSuratInfo
-                                    jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                                    kategoriSurat={detail.category || detail.letterType?.category}
-                                    judulSurat={judulSuratForDisplay}
-                                    keperluan={submissionValues.keperluan}
-                                    isStaffCreated={isStaffCreated}
-                                />
-
-                                {/* Identitas Pemohon */}
-                                <IdentitasPemohonCard />
-
-                                {/* Lampiran */}
-                                <LampiranCard />
-
-                                {/* Lampiran Dokumen dari Staf/Supervisor */}
-                                <LampiranDokumenCard />
-
-                                {/* Tembusan Dalam Sistem */}
-                                {shouldShowTembusanCard && suratHasilDoc && (
-                                    <TembusanCard tembusanList={(suratHasilDoc.tembusan || []) as any} />
+                                        <TabsList className="bg-transparent gap-2 p-0 h-auto mb-4">
+                                            <TabsTrigger
+                                                value="surat-pengantar"
+                                                className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=inactive]:bg-zinc-200 data-[state=inactive]:text-zinc-800 px-4 py-2 rounded-lg"
+                                            >
+                                                Surat Pengantar
+                                            </TabsTrigger>
+                                            {suratHasilDoc && (
+                                                <TabsTrigger
+                                                    value="surat-hasil"
+                                                    className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=inactive]:bg-zinc-200 data-[state=inactive]:text-zinc-800 px-4 py-2 rounded-lg"
+                                                >
+                                                    {suratHasilDoc.type === 'SURAT_TUGAS' || suratHasilDoc.type === 'SURAT_TUGAS_TABEL' ? 'Surat Tugas' : 'Surat Keputusan'}
+                                                </TabsTrigger>
+                                            )}
+                                        </TabsList>
+                                        <TabsContent value="surat-pengantar" className="mt-0">
+                                            {renderSuratPengantarPreview()}
+                                        </TabsContent>
+                                        <TabsContent value="surat-hasil" className="mt-0">
+                                            {renderSuratHasilPreview()}
+                                        </TabsContent>
+                                    </Tabs>
+                                ) : (
+                                    <>
+                                        {documentViewMode === 'pengantar' && renderSuratPengantarPreview()}
+                                        {documentViewMode === 'hasil' && renderSuratHasilPreview()}
+                                    </>
                                 )}
                             </div>
-                        </div>
-                    </Tabs>
-                ) : (
-                    /* Mode pengantar-only atau hasil-only (tanpa tabs) */
-                    <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-6">
-                        {/* Left Column - Single Document Preview */}
-                        <div className="relative">
-                            {documentViewMode === 'pengantar' && renderSuratPengantarPreview()}
-                            {documentViewMode === 'hasil' && renderSuratHasilPreview()}
-                        </div>
+                        </CardContent>
+                    </Card>
 
-                        {/* Right Column - Info Cards */}
-                        <div className="space-y-6">
-                            {/* Riwayat Proses */}
-                            <ProcessHistory
-                                logs={logs}
-                                isWaiting={isWaiting}
-                                currentActiveRole={detail.currentActiveRole}
-                                currentStatus={detail.status}
-                                userScope={userScope}
-                                filterType={filterType}
-                            />
+                    {/* Identitas Pemohon */}
+                    <IdentitasPemohonCard />
 
-                            {/* Detail Surat */}
-                            <DetailSuratInfo
-                                jenisSurat={isStaffCreated && staffDerivedValues ? staffDerivedValues.jenisSurat : submissionValues.jenisSurat}
-                                kategoriSurat={detail.category || detail.letterType?.category}
-                                judulSurat={judulSuratForDisplay}
-                                keperluan={submissionValues.keperluan}
-                                isStaffCreated={isStaffCreated}
-                            />
+                    {/* Tujuan */}
+                    <TujuanCard />
 
-                            {/* Identitas Pemohon */}
-                            <IdentitasPemohonCard />
+                    {/* Lampiran Pengaju */}
+                    <LampiranCard />
 
-                            {/* Lampiran */}
-                            <LampiranCard />
+                    {/* Lampiran Dokumen dari Staf/Supervisor */}
+                    <LampiranDokumenCard />
 
-                            {/* Lampiran Dokumen dari Staf/Supervisor */}
-                            <LampiranDokumenCard />
+                    {/* Tembusan Dalam Sistem */}
+                    {shouldShowTembusanCard && suratHasilDoc && (
+                        <TembusanCard tembusanList={(suratHasilDoc.tembusan || []) as any} />
+                    )}
+                </div>
 
-                            {/* Tembusan Dalam Sistem */}
-                            {shouldShowTembusanCard && suratHasilDoc && (
-                                <TembusanCard tembusanList={(suratHasilDoc.tembusan || []) as any} />
-                            )}
-                        </div>
-                    </div>
-                )}
-            </>
+                {/* Right Column — Info Sidebar (1/4 width) */}
+                <div className="lg:col-span-1 space-y-6">
+                    {/* Riwayat Proses — collapsible, 3 terbaru */}
+                    <ProcessHistory
+                        logs={logs}
+                        isWaiting={isWaiting}
+                        currentActiveRole={detail.currentActiveRole}
+                        currentStatus={detail.status}
+                        userScope={userScope}
+                        filterType={filterType}
+                        collapsible
+                        maxVisible={3}
+                    />
+                </div>
+            </div>
         );
     };
 
     return (
         <>
             {/* Page Title */}
-            <div className="flex items-center gap-2 mb-8">
+            <div className="flex items-center gap-2 mb-6">
                 <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
                 <h1 className="text-2xl font-bold text-black">Detail</h1>
             </div>

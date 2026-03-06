@@ -194,7 +194,7 @@ export function DashboardToolbar({
                 placeholder="Cari"
                 value={filters.search}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-9 bg-white"
+                className="pl-9 bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
                 aria-label="Cari surat"
               />
             </div>
