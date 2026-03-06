@@ -52,6 +52,16 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -87,6 +97,8 @@ export function PengajuanFormValidated() {
   const [letterTypes, setLetterTypes] = useState<LetterType[]>([]);
   const [selectedProdiDetail, setSelectedProdiDetail] =
     useState<ProgramStudi | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingData, setPendingData] = useState<LetterFormData | null>(null);
 
   // Determine user role
   const userRole =
@@ -224,8 +236,17 @@ export function PengajuanFormValidated() {
   }, [files, form]);
 
   // 5. Handle form submission
-  const onSubmit = async (data: LetterFormData) => {
+  const onSubmit = (data: LetterFormData) => {
+    setPendingData(data);
+    setShowConfirmDialog(true);
+  };
+
+  const confirmSubmit = async () => {
+    if (!pendingData) return;
+
+    setShowConfirmDialog(false);
     setIsSubmitting(true);
+    const data = pendingData;
 
     try {
       const isMahasiswa = userRole === "MAHASISWA";
@@ -291,7 +312,11 @@ export function PengajuanFormValidated() {
         toast.success("Berhasil", {
           description: "Surat berhasil diajukan!",
         });
-        router.push("/dashboard");
+        if (result.data?.id) {
+          router.push(`/detail/${result.data.id}`);
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         toast.error("Error", {
           description: result.message || "Gagal mengajukan surat",
@@ -734,6 +759,32 @@ export function PengajuanFormValidated() {
             </Button>
           }
         />
+
+        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Konfirmasi Pengajuan</AlertDialogTitle>
+              <AlertDialogDescription>
+                Apakah data sudah yakin atau belum?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isSubmitting}>
+                Batal
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  confirmSubmit();
+                }}
+                disabled={isSubmitting}
+                className="bg-base-black hover:bg-base-black/90 text-white"
+              >
+                Konfirmasi
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </form>
     </Form>
   );

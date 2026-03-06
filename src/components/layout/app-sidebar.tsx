@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Mail, Plus, FilePlus, Users, Building2 } from "lucide-react";
@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { BuatSuratDialog } from "@/features/dashboard/components/buat-surat-dialog";
+import { tembusanService } from "@/services/tembusan.service";
 
 const menuItems = [
   {
@@ -69,11 +70,25 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const [buatSuratDialogOpen, setBuatSuratDialogOpen] = useState(false);
+  const [unreadTembusanCount, setUnreadTembusanCount] = useState(0);
 
   const role = user?.role?.toUpperCase() || "";
   const showAjukanSurat = PENGAJU_ROLES.includes(role);
   const showBuatSurat = STAFF_ROLES.includes(role);
   const isSuperAdmin = role === "SUPERADMIN";
+
+  useEffect(() => {
+    if (user?.id) {
+      const fetchUnreadCount = async () => {
+        const res = await tembusanService.getUnreadCount();
+        if (res.success && res.data) {
+          setUnreadTembusanCount(res.data.count);
+        }
+      };
+
+      fetchUnreadCount();
+    }
+  }, [user?.id, pathname]); // Re-fetch occasionally or on navigation
 
   return (
     <>
@@ -151,17 +166,34 @@ export function AppSidebar() {
                         tooltip={item.title}
                         size="default"
                         className={cn(
-                          "rounded-full transition-colors duration-200",
+                          "transition-colors duration-200",
+                          "group-data-[collapsible=icon]:rounded-full",
+                          "group-data-[state=expanded]:rounded-r-full group-data-[state=expanded]:rounded-l-none group-data-[state=expanded]:-ml-2 group-data-[state=expanded]:pl-4",
                           isActive
                             ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
                             : "text-sidebar-foreground hover:bg-gray-200 hover:text-base-black"
                         )}
                       >
-                        <Link href={item.href}>
-                          <item.icon className="size-4 shrink-0" />
-                          <span className="text-sm font-medium">
+                        <Link href={item.href} className="flex items-center w-full">
+                          <div className="relative flex items-center justify-center overflow-visible">
+                            <item.icon className="size-4 shrink-0" />
+                            {/* Titik merah untuk mode collapsed (hanya muncul saat ada unread dan item adalah Tembusan, disetel hidden pada group-data-[collapsible=icon]) */}
+                            {item.title === "Tembusan" && unreadTembusanCount > 0 && (
+                              <span className="absolute -top-1.5 -right-2 flex h-2 w-2 group-data-[state=expanded]:hidden z-50">
+                                <span className="absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
+                                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-sm font-medium ml-2 flex-1">
                             {item.title}
                           </span>
+                          {/* Badge angka untuk mode expanded (hanya muncul saat ada unread dan item adalah Tembusan, menggunakan warna teks dan tanpa background merah) */}
+                          {item.title === "Tembusan" && unreadTembusanCount > 0 && (
+                            <span className="ml-auto inline-flex items-center justify-center font-bold text-sm group-data-[collapsible=icon]:hidden text-gray-600 pr-4">
+                              {unreadTembusanCount > 99 ? "99+" : unreadTembusanCount}
+                            </span>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

@@ -5,6 +5,16 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, FileText, X } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
     submissionService,
     type SubmissionFormData,
     type CreateSubmissionJSON,
@@ -75,6 +85,7 @@ export function PengajuanForm() {
     const [files, setFiles] = useState<File[]>([]);
     const [letterTypes, setLetterTypes] = useState<LetterType[]>([]);
     const [selectedProdiDetail, setSelectedProdiDetail] = useState<ProgramStudi | null>(null);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
     // Initial State
     const [formState, setFormState] = useState<FormState>({
@@ -175,6 +186,11 @@ export function PengajuanForm() {
             return;
         }
 
+        setShowConfirmDialog(true);
+    };
+
+    const confirmSubmit = async () => {
+        setShowConfirmDialog(false);
         setIsSubmitting(true);
 
         try {
@@ -246,7 +262,11 @@ export function PengajuanForm() {
 
             // Handle Response
             if (result.success) {
-                router.push("/dashboard");
+                if (result.data?.id) {
+                    router.push(`/detail/${result.data.id}`);
+                } else {
+                    router.push("/dashboard");
+                }
             } else {
                 alert(result.message || "Gagal mengajukan surat");
             }
@@ -561,6 +581,32 @@ export function PengajuanForm() {
                     </Button>
                 }
             />
+
+            <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Konfirmasi Pengajuan</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah data sudah yakin atau belum?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isSubmitting}>
+                            Batal
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                confirmSubmit();
+                            }}
+                            disabled={isSubmitting}
+                            className="bg-base-black hover:bg-base-black/90 text-white"
+                        >
+                            Konfirmasi
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </form>
     );
 }
