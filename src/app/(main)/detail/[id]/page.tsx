@@ -1852,7 +1852,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         <p className="text-sm text-base-gray">Status</p>
                                         <div>{getStatusBadge(effectiveDisplayStatus, effectiveStatus)}</div>
                                     </div>
-                                    
+
                                     {/* Row 2: Tanggal Mulai | Tipe Surat */}
                                     <div className="space-y-1">
                                         <p className="text-sm text-base-gray">Tanggal Mulai</p>
@@ -1862,7 +1862,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         <p className="text-sm text-base-gray">Tipe Surat</p>
                                         <p className="font-medium text-base-black">{tipeSuratLabel}</p>
                                     </div>
-                                    
+
                                     {/* Row 3: Durasi | Lokasi */}
                                     <div className="space-y-1">
                                         <p className="text-sm text-base-gray">Durasi</p>
@@ -1872,13 +1872,13 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         <p className="text-sm text-base-gray">Lokasi</p>
                                         <p className="font-medium text-base-black wrap-break-word">{submissionValues.lokasiAcara || '-'}</p>
                                     </div>
-                                    
+
                                     {/* Full Width: Judul Surat */}
                                     <div className="col-span-2 space-y-1">
                                         <p className="text-sm text-base-gray">Judul Surat</p>
                                         <p className="font-medium text-base-black wrap-break-word">{judulSuratForDisplay || '-'}</p>
                                     </div>
-                                    
+
                                     {/* Full Width: Keperluan (for non-staff-created letters) */}
                                     {!isStaffCreated && submissionValues.keperluan && (
                                         <div className="col-span-2 space-y-1">
@@ -1946,7 +1946,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                     <p className="text-sm text-base-gray">Status</p>
                                     <div>{getStatusBadge(effectiveDisplayStatus, effectiveStatus)}</div>
                                 </div>
-                                
+
                                 {/* Row 2: Conditional based on surat keluar with hasil doc */}
                                 {filterType === 'keluar' && hasSuratHasil ? (
                                     <>
@@ -1975,7 +1975,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         </div>
                                     </>
                                 )}
-                                
+
                                 {/* Full Width: Jenis Surat (for surat masuk after fakultas forwards) */}
                                 {!(filterType === 'keluar' && hasSuratHasil) && hasSuratPengantar && kategoriValue && (
                                     <div className="col-span-2 space-y-1">
@@ -1983,13 +1983,13 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         <p className="font-medium text-base-black">{formatKategori(kategoriValue)}</p>
                                     </div>
                                 )}
-                                
+
                                 {/* Full Width: Judul Surat */}
                                 <div className="col-span-2 space-y-1">
                                     <p className="text-sm text-base-gray">Judul Surat</p>
                                     <p className="font-medium text-base-black wrap-break-word">{judulSuratForDisplay || '-'}</p>
                                 </div>
-                                
+
                                 {/* Full Width: Keperluan (for non-staff-created letters) */}
                                 {!isStaffCreated && submissionValues.keperluan && (
                                     <div className="col-span-2 space-y-1">
@@ -2144,7 +2144,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         )} */}
 
                             {/* Ajukan untuk TTD Button - Admin Prodi (after draft created) */}
-                            {permissions.canSubmitDraft && hasSuratPengantar && (
+                            {/* Show only when: draft exists AND document is NOT already signed
+                                (isSigned=true means letter was returned from Faculty – needs re-draft first) */}
+                            {permissions.canSubmitDraft && hasSuratPengantar && !suratPengantarDoc?.isSigned && (
                                 <Button
                                     onClick={handleSubmitDraft}
                                     disabled={actionLoading}
@@ -2180,8 +2182,17 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                     disabled={actionLoading}
                                     className="bg-base-black hover:bg-base-black/90 text-white gap-2"
                                 >
-                                    <FilePlus className="w-4 h-4" />
-                                    Draft Surat
+                                    {(hasSuratPengantar && !suratPengantarDoc?.isSigned) ? (
+                                        <>
+                                            <FileText className="w-4 h-4" />
+                                            Edit Surat
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FilePlus className="w-4 h-4" />
+                                            Draft Surat
+                                        </>
+                                    )}
                                 </Button>
                             )}
 
