@@ -13,6 +13,7 @@ export interface AdminUserListItem {
   unitKerja: string | null;
   identifier: string | null;
   jabatan: string | null;
+  isActive: boolean;
 }
 
 export interface MahasiswaProfile {
@@ -98,6 +99,7 @@ export interface ListUsersParams {
   limit?: number;
   search?: string;
   role?: string;
+  status?: 'active' | 'inactive';
 }
 
 // ============================================================================
@@ -160,4 +162,8 @@ export async function getAdminRoles(): Promise<RoleOption[]> {
     data: RoleOption[];
   }>("/api/admin/roles");
   return response.data.data;
+}
+
+export async function reactivateAdminUser(id: string): Promise<void> {
+  await api.post(`/api/admin/users/${id}/reactivate`);
 }

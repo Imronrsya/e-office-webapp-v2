@@ -210,7 +210,7 @@ export function UserFormDialog({
       // Build payload — only include relevant fields based on role
       const payload: any = {
         name: values.name,
-        email: values.email,
+        email: values.email.toLowerCase().trim(),
         role: values.role,
       };
 

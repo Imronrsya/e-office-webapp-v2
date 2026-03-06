@@ -2,7 +2,8 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, XCircle, AlertCircle, Shield, FileText, Calendar, User, Building2, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { XCircle, AlertCircle, Loader2 } from "lucide-react";
 
 // ============================================================================
 // TYPES
@@ -32,18 +33,130 @@ interface VerificationResult {
 }
 
 // ============================================================================
+// VERIFIED CHECK ICON — decorative rings + check
+// ============================================================================
+
+function VerifiedIcon({ size = 96 }: { size?: number }) {
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      {/* Outer orbit ring */}
+      <svg
+        className="absolute inset-0 animate-[spin_20s_linear_infinite]"
+        viewBox="0 0 96 96"
+        fill="none"
+      >
+        <circle cx="48" cy="48" r="46" stroke="#2B2B2B" strokeWidth="0.5" strokeDasharray="4 6" opacity="0.15" />
+        <circle cx="48" cy="2" r="2.5" fill="#2B2B2B" opacity="0.2" />
+        <circle cx="94" cy="48" r="2" fill="#2B2B2B" opacity="0.12" />
+        <circle cx="48" cy="94" r="1.5" fill="#2B2B2B" opacity="0.1" />
+      </svg>
+
+      {/* Middle ring */}
+      <svg
+        className="absolute inset-0 animate-[spin_30s_linear_infinite_reverse]"
+        viewBox="0 0 96 96"
+        fill="none"
+      >
+        <circle cx="48" cy="48" r="38" stroke="#2B2B2B" strokeWidth="0.5" strokeDasharray="3 8" opacity="0.1" />
+        <circle cx="10" cy="48" r="2" fill="#2B2B2B" opacity="0.15" />
+      </svg>
+
+      {/* Center circle with check */}
+      <div
+        className="absolute rounded-full bg-base-black flex items-center justify-center shadow-lg"
+        style={{
+          width: size * 0.52,
+          height: size * 0.52,
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ width: size * 0.24, height: size * 0.24 }}
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </div>
+
+      {/* Small floating accent dot */}
+      <div
+        className="absolute w-2 h-2 rounded-full bg-base-black opacity-20"
+        style={{ top: "18%", right: "12%" }}
+      />
+    </div>
+  );
+}
+
+// ============================================================================
+// PAGE SHELL — gray bg + logo top-right + centered white card
+// ============================================================================
+
+function PageShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="h-screen bg-neutral-100 relative flex flex-col items-center justify-center p-4">
+      {/* Institution header — top left */}
+      <div className="absolute top-5 left-5">
+        <InstitutionHeader />
+      </div>
+
+      {/* White card with elevation */}
+      <div className="bg-white rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-gray-100/80 w-full max-w-md overflow-hidden">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// INSTITUTION HEADER (inside card)
+// ============================================================================
+
+function InstitutionHeader() {
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <div className="relative h-9 w-7 overflow-hidden shrink-0">
+        <Image
+          src="/logo-undip.svg"
+          alt="Logo Universitas Diponegoro"
+          fill
+          className="object-contain"
+          priority
+        />
+      </div>
+      <div className="flex flex-col justify-center">
+        <span className="text-xs font-bold leading-tight text-base-black">
+          Fakultas Sains dan Matematika
+        </span>
+        <span className="text-[11px] font-normal leading-tight text-base-gray">
+          Universitas Diponegoro
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // LOADING COMPONENT
 // ============================================================================
 
 function LoadingState() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-        <Loader2 className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-gray-800 mb-2">Memverifikasi Dokumen...</h2>
-        <p className="text-gray-500">Mohon tunggu sebentar</p>
+    <PageShell>
+      <div className="flex flex-col items-center justify-center px-8 py-16">
+        <div className="mt-0 text-center">
+          <Loader2 className="w-10 h-10 text-base-black animate-spin mx-auto mb-5" />
+          <p className="text-sm font-medium text-base-black">Memverifikasi Dokumen</p>
+          <p className="text-xs text-base-gray mt-1">Mohon tunggu sebentar...</p>
+        </div>
       </div>
-    </div>
+    </PageShell>
   );
 }
 
@@ -54,7 +167,7 @@ function LoadingState() {
 function VerificationContent() {
   const searchParams = useSearchParams();
   const token = searchParams?.get("token") ?? null;
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,11 +181,11 @@ function VerificationContent() {
       }
 
       try {
-        // Panggil API backend untuk verifikasi
-        // API URL dinamis berdasarkan origin atau environment
         const apiUrl = getApiUrl();
-        const response = await fetch(`${apiUrl}/verification/verify?token=${encodeURIComponent(token)}`);
-        
+        const response = await fetch(
+          `${apiUrl}/verification/verify?token=${encodeURIComponent(token)}`
+        );
+
         if (!response.ok) {
           throw new Error("Gagal memverifikasi dokumen");
         }
@@ -90,209 +203,159 @@ function VerificationContent() {
     verifyDocument();
   }, [token]);
 
-  // Loading state
-  if (isLoading) {
-    return <LoadingState />;
-  }
+  if (isLoading) return <LoadingState />;
 
-  // Error state (no token or fetch error)
+  // ── Error state ─────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <AlertCircle className="w-10 h-10 text-red-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-3">Verifikasi Gagal</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <div className="text-sm text-gray-400">
-            <p>Silakan hubungi:</p>
-            <p className="font-medium">Fakultas Sains dan Matematika UNDIP</p>
-            <p>tu@fsm.undip.ac.id</p>
+      <PageShell>
+        <div className="flex flex-col items-center px-8 py-12">
+          <div className="mt-0 text-center max-w-sm">
+            <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-5">
+              <AlertCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <p className="text-lg font-semibold text-base-black mb-2">Verifikasi Gagal</p>
+            <p className="text-sm text-base-gray leading-relaxed">{error}</p>
+            <div className="mt-8 pt-5 border-t border-gray-100 text-center">
+              <p className="text-xs text-base-gray">Hubungi kami jika masalah berlanjut</p>
+              <p className="text-xs font-medium text-base-black mt-1">tu@fsm.undip.ac.id</p>
+            </div>
           </div>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
-  // Invalid/Not Found document
+  // ── Invalid / Not Found ─────────────────────────────────────────────
   if (result && !result.valid) {
+    const statusLabel =
+      result.status === "NOT_FOUND"
+        ? "Tidak Ditemukan"
+        : result.status === "INVALID_TOKEN"
+          ? "Token Tidak Valid"
+          : "Kedaluwarsa";
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
-          {/* Header with Warning */}
-          <div className="text-center mb-6">
-            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <XCircle className="w-14 h-14 text-red-600" />
+      <PageShell>
+        <div className="flex flex-col items-center px-8 py-12">
+          <div className="mt-0 text-center max-w-sm">
+            <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-5">
+              <XCircle className="w-8 h-8 text-red-500" />
             </div>
-            <h1 className="text-2xl font-bold text-red-700 mb-2">
-              DOKUMEN TIDAK VALID
-            </h1>
-            <div className="inline-flex items-center gap-2 bg-red-50 text-red-700 px-4 py-2 rounded-full text-sm font-medium">
-              <Shield className="w-4 h-4" />
-              {result.status === "NOT_FOUND" ? "Tidak Ditemukan" : 
-               result.status === "INVALID_TOKEN" ? "Token Tidak Valid" : 
-               "Kedaluwarsa"}
+            <p className="text-lg font-semibold text-base-black mb-1">Dokumen Tidak Valid</p>
+            <span className="inline-block text-[11px] font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full mt-1">
+              {statusLabel}
+            </span>
+            <p className="text-sm text-base-gray leading-relaxed mt-4">{result.message}</p>
+
+            <div className="mt-8 pt-5 border-t border-gray-100 text-center space-y-1">
+              <p className="text-xs text-base-gray">Jika Anda yakin dokumen ini asli, hubungi:</p>
+              <p className="text-xs font-medium text-base-black">
+                Fakultas Sains dan Matematika UNDIP
+              </p>
+              <p className="text-xs text-base-gray">tu@fsm.undip.ac.id · (024) 7474754</p>
             </div>
-          </div>
-
-          {/* Warning Message */}
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg mb-6">
-            <p className="text-red-800 font-medium">{result.message}</p>
-          </div>
-
-          {/* Action Info */}
-          <div className="bg-gray-50 rounded-xl p-4 text-center">
-            <p className="text-gray-600 text-sm mb-3">
-              Jika Anda yakin dokumen ini asli, silakan hubungi:
-            </p>
-            <div className="space-y-1">
-              <p className="font-semibold text-gray-800">Fakultas Sains dan Matematika UNDIP</p>
-              <p className="text-gray-600">📧 tu@fsm.undip.ac.id</p>
-              <p className="text-gray-600">📞 (024) 7474754</p>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-            <p className="text-xs text-gray-400">
-              E-Office FSM UNDIP - Sistem Verifikasi Dokumen Digital
-            </p>
           </div>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
-  // Valid document
+  // ── Valid document — success ────────────────────────────────────────
   if (result && result.valid && result.data) {
     const { data } = result;
-    
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-lg w-full">
-          {/* Header with Success Badge */}
-          <div className="text-center mb-6">
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-              <CheckCircle2 className="w-14 h-14 text-green-600" />
-              <div className="absolute -top-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold text-green-700 mb-2">
-              DOKUMEN ASLI
-            </h1>
-            <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm font-medium">
-              <CheckCircle2 className="w-4 h-4" />
-              Terverifikasi
-            </div>
+      <PageShell>
+        <div className="flex flex-col">
+          {/* Center: Status hero */}
+          <div className="flex flex-col items-center pt-8 pb-5 px-8">
+            <VerifiedIcon size={96} />
+
+            <p className="text-lg font-semibold text-base-black mt-5">
+              Dokumen Terverifikasi
+            </p>
+            <p className="text-xs text-base-gray mt-1">
+              {new Date().toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
           </div>
 
-          {/* Success Message */}
-          <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg mb-6">
-            <p className="text-green-800 font-medium text-sm">{result.message}</p>
-          </div>
-
-          {/* Document Details */}
-          <div className="space-y-4">
-            {/* Nomor Surat */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nomor Surat</p>
-                  <p className="font-semibold text-gray-800 break-words">{data.nomorSurat}</p>
-                </div>
+          {/* Details section */}
+          <div className="mx-5 mb-4">
+            <div className="bg-neutral-50/80 rounded-2xl px-5 py-4">
+              {/* Nomor Surat */}
+              <div className="flex items-start justify-between py-3 border-b border-gray-200/60">
+                <span className="text-xs text-base-gray shrink-0 pt-0.5">Nomor Surat</span>
+                <span className="text-sm font-semibold text-base-black text-right ml-4 wrap-break-word max-w-[60%]">
+                  {data.nomorSurat}
+                </span>
               </div>
-            </div>
 
-            {/* Tanggal & Jenis */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs text-gray-500 uppercase tracking-wide">Tanggal</span>
-                </div>
-                <p className="font-medium text-gray-800 text-sm">{data.tanggalSurat}</p>
+              {/* Tanggal */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-200/60">
+                <span className="text-xs text-base-gray">Tanggal</span>
+                <span className="text-sm font-medium text-base-black">{data.tanggalSurat}</span>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs text-gray-500 uppercase tracking-wide">Jenis</span>
-                </div>
-                <p className="font-medium text-gray-800 text-sm">{data.jenisDocument}</p>
+
+              {/* Jenis */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-200/60">
+                <span className="text-xs text-base-gray">Jenis Dokumen</span>
+                <span className="text-sm font-medium text-base-black">{data.jenisDocument}</span>
               </div>
-            </div>
 
-            {/* Perihal */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Perihal</p>
-              <p className="font-medium text-gray-800">{data.perihal}</p>
-            </div>
+              {/* Perihal */}
+              <div className="flex items-start justify-between py-3 border-b border-gray-200/60">
+                <span className="text-xs text-base-gray shrink-0 pt-0.5">Perihal</span>
+                <span className="text-sm font-medium text-base-black text-right ml-4 max-w-[65%] leading-relaxed">
+                  {data.perihal}
+                </span>
+              </div>
 
-            {/* Penandatangan */}
-            {data.penandatangan && data.penandatangan.length > 0 && (
-              <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Ditandatangani Oleh</p>
-                <div className="space-y-2">
-                  {data.penandatangan.map((signer, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-indigo-600" />
+              {/* Penandatangan */}
+              {data.penandatangan && data.penandatangan.length > 0 && (
+                <div className="flex items-start justify-between py-3 border-b border-gray-200/60">
+                  <span className="text-xs text-base-gray shrink-0 pt-1">Ditandatangani</span>
+                  <div className="flex flex-col items-end gap-1.5 ml-4">
+                    {data.penandatangan.map((signer, index) => (
+                      <div key={index} className="flex flex-col items-end">
+                        <p className="text-sm font-medium text-base-black text-right">{signer.nama}</p>
+                        <p className="text-[11px] text-base-gray text-right">{signer.jabatan}</p>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-800 text-sm">{signer.nama}</p>
-                        <p className="text-xs text-gray-500">{signer.jabatan}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Pemohon */}
-            {data.pemohon && (
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-purple-600" />
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Pemohon</p>
-                    <p className="font-medium text-gray-800">{data.pemohon.nama}</p>
+                </div>
+              )}
+
+              {/* Pemohon */}
+              {data.pemohon && (
+                <div className="flex items-start justify-between py-3">
+                  <span className="text-xs text-base-gray shrink-0 pt-0.5">Pemohon</span>
+                  <div className="text-right ml-4">
+                    <p className="text-sm font-medium text-base-black">{data.pemohon.nama}</p>
                     {data.pemohon.nim && (
-                      <p className="text-xs text-gray-500">NIM: {data.pemohon.nim}</p>
+                      <p className="text-[11px] text-base-gray">NIM: {data.pemohon.nim}</p>
                     )}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Footer */}
-          <div className="mt-6 pt-4 border-t border-gray-100">
-            <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-              <Shield className="w-3 h-3" />
-              <span>Diverifikasi pada {new Date().toLocaleDateString('id-ID', { 
-                day: 'numeric', 
-                month: 'long', 
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}</span>
-            </div>
-            <p className="text-center text-xs text-gray-400 mt-2">
-              E-Office FSM UNDIP - Sistem Verifikasi Dokumen Digital
-            </p>
+          <div className="pb-6 pt-2 text-center">
+            <p className="text-[11px] text-base-gray">E-Office FSM UNDIP · Verifikasi Dokumen Digital</p>
           </div>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
-  // Fallback
   return null;
 }
 
@@ -312,23 +375,15 @@ export default function VerifyPage() {
 // HELPER FUNCTIONS
 // ============================================================================
 
-/**
- * Get API URL dynamically
- * Supports both client-side and server-side
- */
 function getApiUrl(): string {
-  // Check environment variable first
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  
-  // Client-side: use window.location to get the host
-  if (typeof window !== 'undefined') {
+
+  if (typeof window !== "undefined") {
     const { protocol, hostname } = window.location;
-    // Backend API runs on port 3079
     return `${protocol}//${hostname}:3079`;
   }
-  
-  // Fallback
-  return 'http://localhost:3079';
+
+  return "http://localhost:3079";
 }

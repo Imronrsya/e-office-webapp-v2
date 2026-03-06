@@ -1,4 +1,13 @@
 import type { Metadata } from "next";
+import { Poppins } from "next/font/google";
+import "../globals.css";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-poppins",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Verifikasi Dokumen - E-Office FSM UNDIP",
@@ -15,7 +24,7 @@ export default function VerifyLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen">
+    <div className={`${poppins.variable} font-sans antialiased`}>
       {children}
     </div>
   );

@@ -10,6 +10,7 @@ import { AdminUserTable, AdminUserTableSkeleton } from "@/features/admin-users/c
 import { UserFormDialog } from "@/features/admin-users/components/user-form-dialog";
 import { ResetPasswordDialog } from "@/features/admin-users/components/reset-password-dialog";
 import { DeleteUserDialog } from "@/features/admin-users/components/delete-user-dialog";
+import { ReactivateUserDialog } from "@/features/admin-users/components/reactivate-user-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TablePagination } from "@/features/dashboard/components/table-pagination";
 import type {
@@ -52,6 +53,8 @@ function PenggunaContent() {
     setSearch,
     roleFilter,
     setRoleFilter,
+    statusFilter,
+    handleStatusFilterChange,
     page,
     setPage,
     limit,
@@ -61,6 +64,7 @@ function PenggunaContent() {
     handleDelete,
     handleResetPassword,
     handleGetDetail,
+    handleReactivate,
   } = useAdminUsers();
 
   // ── Dialog state ──
@@ -73,6 +77,9 @@ function PenggunaContent() {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const [reactivateOpen, setReactivateOpen] = useState(false);
+  const [reactivateTarget, setReactivateTarget] = useState<{ id: string; name: string } | null>(null);
 
   // ── Handlers ──
   const openCreateDialog = () => {
@@ -98,6 +105,11 @@ function PenggunaContent() {
   const openDeleteDialog = (id: string, name: string) => {
     setDeleteTarget({ id, name });
     setDeleteOpen(true);
+  };
+
+  const openReactivateDialog = (id: string, name: string) => {
+    setReactivateTarget({ id, name });
+    setReactivateOpen(true);
   };
 
   const handleFormSubmit = async (payload: CreateUserPayload | UpdateUserPayload) => {
@@ -126,6 +138,32 @@ function PenggunaContent() {
           </Button>
         </div>
 
+        {/* Status Toggle — Akun Aktif / Akun Nonaktif */}
+        <nav aria-label="Status akun" className="flex mb-3">
+          <Button
+            variant={statusFilter === "active" ? "default" : "ghost"}
+            onClick={() => handleStatusFilterChange("active")}
+            className={`w-[140px] rounded-r-none border ${
+              statusFilter === "active"
+                ? "bg-base-black hover:bg-base-black/90 text-white border-base-black"
+                : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
+            }`}
+          >
+            Akun Aktif
+          </Button>
+          <Button
+            variant={statusFilter === "inactive" ? "default" : "ghost"}
+            onClick={() => handleStatusFilterChange("inactive")}
+            className={`w-[160px] rounded-l-none border-l-0 border ${
+              statusFilter === "inactive"
+                ? "bg-base-black hover:bg-base-black/90 text-white border-base-black"
+                : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
+            }`}
+          >
+            Akun Nonaktif
+          </Button>
+        </nav>
+
         {/* Search + Role Filter */}
         <UserToolbar
           search={search}
@@ -152,6 +190,8 @@ function PenggunaContent() {
             onEdit={(id) => openEditDialog(id)}
             onResetPassword={(id, name) => openResetDialog(id, name)}
             onDelete={(id, name) => openDeleteDialog(id, name)}
+            statusFilter={statusFilter}
+            onReactivate={(id, name) => openReactivateDialog(id, name)}
           />
         </div>
       </div>
@@ -193,6 +233,14 @@ function PenggunaContent() {
           onOpenChange={setDeleteOpen}
           userName={deleteTarget.name}
           onConfirm={() => handleDelete(deleteTarget.id)}
+        />
+      )}
+      {reactivateTarget && (
+        <ReactivateUserDialog
+          open={reactivateOpen}
+          onOpenChange={setReactivateOpen}
+          userName={reactivateTarget.name}
+          onConfirm={() => handleReactivate(reactivateTarget.id)}
         />
       )}
     </section>

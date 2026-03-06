@@ -24,7 +24,7 @@ export default function BottomNav({ leftContent, rightContent }: BottomNavProps)
         <footer
             className="sticky bottom-0 z-10 mt-6 -mx-6 -mb-6 border-t border-gray-200 bg-white rounded-b-2xl"
         >
-            <div className="px-6 py-2">
+            <div className="px-6 pt-3 pb-4">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex-1 w-full">{leftContent}</div>
                     <div className="flex items-center gap-3 shrink-0">{rightContent}</div>

@@ -31,7 +31,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const session = await authService.getSession();
             if (session?.user) {
                 // Coba panggil /me untuk mendapatkan role dari backend
-                const meData = await authService.getMe();
+                let meData;
+                try {
+                    meData = await authService.getMe();
+                } catch (meError: any) {
+                    if ((meError as any).code === 'ACCOUNT_INACTIVE') {
+                        // Akun nonaktif - sign out dan clear state
+                        try { await authService.signOut(); } catch (_) {}
+                        localStorage.removeItem('user-role');
+                        setUser(null);
+                        return;
+                    }
+                    meData = null;
+                }
 
                 // Gunakan role dari API, atau fallback ke email mapping
                 const role = meData?.role || getRoleByEmail(session.user.email);
@@ -62,7 +74,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const response = await authService.signIn(email, password);
 
             // Coba panggil /me setelah login untuk mendapatkan role
-            const meData = await authService.getMe();
+            // Akan throw error jika akun nonaktif
+            let meData;
+            try {
+                meData = await authService.getMe();
+            } catch (meError: any) {
+                if ((meError as any).code === 'ACCOUNT_INACTIVE') {
+                    // Sign out session yang baru dibuat
+                    try { await authService.signOut(); } catch (_) {}
+                    localStorage.removeItem('user-role');
+                    setUser(null);
+                    throw meError;
+                }
+                // For other errors, continue with fallback
+                meData = null;
+            }
 
             // Gunakan role dari API, atau fallback ke email mapping
             const role = meData?.role || getRoleByEmail(email);

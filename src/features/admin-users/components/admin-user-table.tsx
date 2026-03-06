@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Pencil, KeyRound, Trash2, Users } from "lucide-react";
+import { Pencil, KeyRound, Trash2, Users, RotateCcw } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/role-mapper";
 import type { AdminUserListItem, PaginationMeta } from "@/services/adminUser.service";
 
@@ -29,6 +29,8 @@ interface AdminUserTableProps {
   onEdit: (userId: string) => void;
   onResetPassword: (userId: string, userName: string) => void;
   onDelete: (userId: string, userName: string) => void;
+  statusFilter?: 'active' | 'inactive';
+  onReactivate?: (userId: string, userName: string) => void;
 }
 
 // ============================================================================
@@ -86,6 +88,8 @@ export function AdminUserTable({
   onEdit,
   onResetPassword,
   onDelete,
+  statusFilter = 'active',
+  onReactivate,
 }: AdminUserTableProps) {
   if (isLoading) {
     return <AdminUserTableSkeleton />;
@@ -122,10 +126,14 @@ export function AdminUserTable({
                   <Users className="w-8 h-8 text-zinc-400" />
                 </div>
                 <h3 className="text-lg font-medium text-zinc-900 mb-1">
-                  Tidak ada pengguna ditemukan
+                  {statusFilter === 'inactive'
+                    ? 'Tidak ada akun nonaktif'
+                    : 'Tidak ada pengguna ditemukan'}
                 </h3>
                 <p className="text-sm text-zinc-500 max-w-md">
-                  Pengguna akan muncul di sini setelah ditambahkan melalui tombol Tambah Pengguna.
+                  {statusFilter === 'inactive'
+                    ? 'Akun yang dinonaktifkan akan muncul di sini.'
+                    : 'Pengguna akan muncul di sini setelah ditambahkan melalui tombol Tambah Pengguna.'}
                 </p>
               </div>
             </TableCell>
@@ -161,24 +169,38 @@ export function AdminUserTable({
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onResetPassword(user.id, user.name)}
-                    title="Reset Password"
-                    className="h-8 w-8 p-0"
-                  >
-                    <KeyRound className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDelete(user.id, user.name)}
-                    title="Hapus"
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {statusFilter === 'inactive' ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onReactivate?.(user.id, user.name)}
+                      title="Aktifkan Kembali"
+                      className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onResetPassword(user.id, user.name)}
+                        title="Reset Password"
+                        className="h-8 w-8 p-0"
+                      >
+                        <KeyRound className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDelete(user.id, user.name)}
+                        title="Hapus"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

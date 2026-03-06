@@ -117,7 +117,15 @@ export const authService = {
         try {
             const response = await api.get<MeResponse>('/me/');
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
+            // Check if the account has been deactivated
+            if (error?.response?.status === 403 && error?.response?.data?.error === 'ACCOUNT_INACTIVE') {
+                const inactiveError = new Error(
+                    error.response.data.message || 'Akun Anda telah dinonaktifkan. Silakan hubungi Super Admin.'
+                );
+                (inactiveError as any).code = 'ACCOUNT_INACTIVE';
+                throw inactiveError;
+            }
             console.error('Failed to get user info:', error);
             return null;
         }

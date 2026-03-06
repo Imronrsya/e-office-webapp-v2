@@ -8,6 +8,7 @@ import {
   updateAdminUser,
   deleteAdminUser,
   resetAdminUserPassword,
+  reactivateAdminUser,
   getAdminRoles,
   type AdminUserListItem,
   type AdminUserDetail,
@@ -33,6 +34,7 @@ export function useAdminUsers() {
   // Filters
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<'active' | 'inactive'>('active');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(5);
 
@@ -42,6 +44,7 @@ export function useAdminUsers() {
       const params: ListUsersParams = {
         page,
         limit,
+        status: statusFilter,
         ...(search && { search }),
         ...(roleFilter && { role: roleFilter }),
       };
@@ -54,7 +57,7 @@ export function useAdminUsers() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, limit, search, roleFilter]);
+  }, [page, limit, search, roleFilter, statusFilter]);
 
   const fetchRoles = useCallback(async () => {
     try {
@@ -106,6 +109,12 @@ export function useAdminUsers() {
     return await getAdminUser(id);
   };
 
+  const handleReactivate = async (id: string) => {
+    await reactivateAdminUser(id);
+    toast.success("Akun berhasil diaktifkan kembali");
+    await fetchUsers();
+  };
+
   return {
     users,
     meta,
@@ -115,6 +124,11 @@ export function useAdminUsers() {
     setSearch,
     roleFilter,
     setRoleFilter,
+    statusFilter,
+    handleStatusFilterChange: (status: 'active' | 'inactive') => {
+      setPage(1);
+      setStatusFilter(status);
+    },
     page,
     setPage,
     limit,
@@ -128,5 +142,6 @@ export function useAdminUsers() {
     handleDelete,
     handleResetPassword,
     handleGetDetail,
+    handleReactivate,
   };
 }

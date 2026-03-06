@@ -27,9 +27,30 @@ import {
 // Test accounts for quick login (Development only)
 // Sesuai dengan seeder data di src/db/seed.ts
 
+// Mapping dari role key ke label formal
+const ROLE_LABELS: Record<string, string> = {
+  SUPERADMIN: "Super Admin",
+  ADMIN_FAKULTAS: "Admin Fakultas",
+  DEKAN: "Dekan",
+  WADEK_1: "Wakil Dekan I",
+  WADEK_2: "Wakil Dekan II",
+  MANAJER_TU: "Manajer Tata Usaha",
+  SUPERVISOR_AKADEMIK: "Supervisor Akademik",
+  SUPERVISOR_SUMBER_DAYA: "Supervisor Sumberdaya",
+  STAF_AKADEMIK: "Staf Akademik",
+  STAF_SUMBER_DAYA: "Staf Sumberdaya",
+  UPA: "Unit Pelaksana Akademik",
+  DOSEN: "Dosen",
+  MAHASISWA: "Mahasiswa",
+  KADEP: "Ketua Departemen",
+  KAPRODI: "Ketua Program Studi",
+  ADMIN_PRODI: "Admin Program Studi",
+};
+
 type Account = { role: string; email: string; name: string; prodi?: string };
 
 const TEST_ACCOUNTS: {
+  superadmin: Account[];
   mahasiswa: Account[];
   dosen: Account[];
   kadep: Account[];
@@ -37,6 +58,9 @@ const TEST_ACCOUNTS: {
   adminProdi: Account[];
   fakultas: Account[];
 } = {
+  superadmin: [
+    { role: "SUPERADMIN", email: "superadmin@fsm.undip.ac.id", name: "Super Admin" },
+  ],
   mahasiswa: [
     { role: "MAHASISWA", email: "ahmad.budi@students.undip.ac.id", name: "Ahmad Budi Santoso", prodi: "S1 Informatika" },
     { role: "MAHASISWA", email: "dewi.sartika@students.undip.ac.id", name: "Dewi Sartika", prodi: "S1 Informatika" },
@@ -84,8 +108,8 @@ const TEST_ACCOUNTS: {
     { role: "ADMIN_PRODI", email: "admin.s1.statistika@fsm.undip.ac.id", name: "Admin Prodi S1 Statistika" },
     { role: "ADMIN_PRODI", email: "admin.s1.informatika@fsm.undip.ac.id", name: "Admin Prodi S1 Informatika" },
   ],
+  // Lingkup Fakultas (tanpa Super Admin)
   fakultas: [
-    { role: "SUPERADMIN", email: "superadmin@fsm.undip.ac.id", name: "Super Admin" },
     { role: "ADMIN_FAKULTAS", email: "admin.fakultas@fsm.undip.ac.id", name: "Bambang Wicaksono, S.E." },
     { role: "DEKAN", email: "dekan@fsm.undip.ac.id", name: "Prof. Dr. Kusworo Adi, S.Si., M.T." },
     { role: "WADEK_1", email: "wadek1@fsm.undip.ac.id", name: "Dr. Ngadiwiyana, S.Si., M.Si." },
@@ -105,6 +129,7 @@ const DEFAULT_PASSWORD = "password1234";
 // Category definitions for the sidebar
 // Split mahasiswa & adminProdi into S1/S2 sub-categories
 const DERIVED_ACCOUNTS = {
+  superadmin: TEST_ACCOUNTS.superadmin,
   mahasiswaS1: TEST_ACCOUNTS.mahasiswa.filter((a) => a.prodi?.startsWith("S1")),
   mahasiswaS2: TEST_ACCOUNTS.mahasiswa.filter((a) => a.prodi?.startsWith("S2")),
   dosen: TEST_ACCOUNTS.dosen,
@@ -118,13 +143,14 @@ const DERIVED_ACCOUNTS = {
 type CategoryKey = keyof typeof DERIVED_ACCOUNTS;
 
 const CATEGORIES: { key: CategoryKey; label: string; count: number }[] = [
+  { key: "superadmin", label: "Super Admin", count: DERIVED_ACCOUNTS.superadmin.length },
   { key: "mahasiswaS1", label: "Mahasiswa S1", count: DERIVED_ACCOUNTS.mahasiswaS1.length },
   { key: "mahasiswaS2", label: "Mahasiswa S2", count: DERIVED_ACCOUNTS.mahasiswaS2.length },
   { key: "dosen", label: "Dosen", count: DERIVED_ACCOUNTS.dosen.length },
-  { key: "kadep", label: "Kepala Departemen", count: DERIVED_ACCOUNTS.kadep.length },
+  { key: "kadep", label: "Ketua Departemen", count: DERIVED_ACCOUNTS.kadep.length },
   { key: "kaprodi", label: "Ketua Program Studi", count: DERIVED_ACCOUNTS.kaprodi.length },
-  { key: "adminProdiS1", label: "Admin Prodi S1", count: DERIVED_ACCOUNTS.adminProdiS1.length },
-  { key: "adminProdiS2", label: "Admin Prodi S2", count: DERIVED_ACCOUNTS.adminProdiS2.length },
+  { key: "adminProdiS1", label: "Admin Program Studi S1", count: DERIVED_ACCOUNTS.adminProdiS1.length },
+  { key: "adminProdiS2", label: "Admin Program Studi S2", count: DERIVED_ACCOUNTS.adminProdiS2.length },
   { key: "fakultas", label: "Lingkup Fakultas", count: DERIVED_ACCOUNTS.fakultas.length },
 ];
 
@@ -215,7 +241,7 @@ export default function QuickLoginDev({ onLogin, isLoading = false }: QuickLogin
                       {account.name}
                     </span>
                     <span className="text-xs text-zinc-400">
-                      {account.role}{account.prodi && ` • ${account.prodi}`}
+                      {ROLE_LABELS[account.role] ?? account.role}{account.prodi && ` • ${account.prodi}`}
                     </span>
                   </button>
                 ))}

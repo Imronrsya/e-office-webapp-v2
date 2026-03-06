@@ -653,8 +653,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     // For new documents, auto-fill perihalInput from submission values
                     if (detail.submissionValues?.judulAcara) {
                         setPerihalInput(detail.submissionValues.judulAcara);
-                    } else if (detail.submissionValues?.keperluan) {
-                        setPerihalInput(detail.submissionValues.keperluan);
                     }
                 }
 
@@ -708,7 +706,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         ...prev,
                         nomorSurat: (content.nomorSurat as string) || "",
                         tanggalSurat: parsedTanggalSurat ? formatTanggalIndonesia(parsedTanggalSurat) : tanggalSuratValue,
-                        perihal: (content.perihal as string) || detail.submissionValues.keperluan || "",
+                        perihal: (content.perihal as string) || detail.submissionValues.judulAcara || "",
                         namaTujuan: (content.namaTujuan as string) || "",
                         jabatanTujuan: (content.jabatanTujuan as string) || "",
                         alamatTujuan: (content.alamatTujuan as string) || "",
@@ -735,7 +733,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                     setSuratPengantarForm(prev => ({
                         ...prev,
-                        perihal: detail.submissionValues.keperluan || "",
+                        perihal: detail.submissionValues.judulAcara || "",
                         namaMahasiswa: detail.submissionValues.nama || "",
                         nimMahasiswa: detail.submissionValues.nim || detail.submissionValues.nip || "",
                         programStudi: detail.submissionValues.programStudi || "",
@@ -1886,6 +1884,16 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             const missing = required.filter(field => !suratPengantarForm[field].trim());
             if (missing.length > 0) {
                 toast.error("Lengkapi semua field yang wajib diisi");
+                return false;
+            }
+
+            // Check NIM/NIP format
+            if (isPengajuMahasiswa && nimError) {
+                toast.error(nimError);
+                return false;
+            }
+            if (!isPengajuMahasiswa && nipError) {
+                toast.error(nipError);
                 return false;
             }
 

@@ -29,7 +29,7 @@ export default function LoginForm() {
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err.response?.data?.error || "Email atau kata sandi salah");
+      setError(err.response?.data?.error || err.message || "Email atau kata sandi salah");
     } finally {
       setIsLoading(false);
     }
