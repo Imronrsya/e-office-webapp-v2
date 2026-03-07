@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getRoleLabel } from "@/lib/role-mapper";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -112,8 +113,8 @@ export default function TopNav() {
                       <span className="text-sm font-bold text-black">
                         {user?.name || ""}
                       </span>
-                      <span className="text-xs capitalize text-gray-500">
-                        {user?.role ? user.role.toLowerCase().replace(/_/g, " ") : ""}
+                      <span className="text-xs text-gray-500">
+                        {user?.role ? getRoleLabel(user.role) : ""}
                       </span>
                     </div>
                     <ChevronDown
