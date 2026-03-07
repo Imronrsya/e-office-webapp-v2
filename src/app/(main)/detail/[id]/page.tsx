@@ -1772,6 +1772,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     content={contentWithTembusan}
                     documentType={suratHasilDoc.type as 'SURAT_PENGANTAR' | 'SURAT_TUGAS' | 'SURAT_TUGAS_TABEL' | 'SURAT_KEPUTUSAN'}
                     signatures={suratHasilDoc.signatures}
+                    showDraftBadge={detail.status !== 'COMPLETED'}
                     onDownload={isCompleted ? async () => {
                         // For COMPLETED: fetch stored PDF via authenticated API, then trigger download
                         try {
