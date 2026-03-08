@@ -294,11 +294,24 @@ export function SuratTugasTableForm({ initialData }: SuratTugasTableFormProps) {
                         <Input
                           value={mhs.nim}
                           onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '');
+                            const label = (formValues.nimLabel || '').toUpperCase();
+                            const isNimOrNip = label === 'NIM' || label === 'NIP' || label === 'NIM/NIP' || label === 'NIP/NIM';
+                            let val = e.target.value;
+                            if (isNimOrNip) {
+                              val = val.replace(/\D/g, '');
+                            }
                             handleMahasiswaChange(index, 'nim', val);
                           }}
                           placeholder={formValues.nimLabel || "NIM"}
-                          maxLength={formValues.nimLabel?.toUpperCase() === 'NIP' ? 18 : 14}
+                          maxLength={
+                            (() => {
+                              const label = (formValues.nimLabel || '').toUpperCase();
+                              if (label === 'NIP') return 18;
+                              if (label === 'NIM') return 14;
+                              if (label === 'NIM/NIP' || label === 'NIP/NIM') return 18;
+                              return undefined;
+                            })()
+                          }
                           required
                         />
                         <Input

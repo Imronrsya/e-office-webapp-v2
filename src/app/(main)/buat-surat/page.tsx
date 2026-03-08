@@ -968,20 +968,29 @@ function BuatSuratContent() {
         return '';
     };
 
-    // Fungsi validasi NIM/NIP Pelaksana - wajib diisi, hanya angka, 14 digit (NIM) / 18 digit (NIP)
+    // Fungsi validasi NIM/NIP Pelaksana - wajib diisi; digit+panjang hanya untuk label NIM/NIP
     const getNimPelaksanaError = (nim: string, label?: string): string => {
         const fieldName = label || suratTugasTabelForm.nimLabel || 'NIM';
-        const isNIP = fieldName.toUpperCase() === 'NIP';
-        const requiredLength = isNIP ? 18 : 14;
+        const fieldNameUpper = fieldName.toUpperCase();
+        const isNIM = fieldNameUpper === 'NIM';
+        const isNIP = fieldNameUpper === 'NIP';
+        const isNimNip = fieldNameUpper === 'NIM/NIP' || fieldNameUpper === 'NIP/NIM';
+
         if (!nim || nim.trim() === '') {
             return `${fieldName} harus diisi!`;
         }
-        if (!/^\d+$/.test(nim.trim())) {
-            return `${fieldName} harus berupa angka!`;
+
+        if (isNIM) {
+            if (!/^\d+$/.test(nim.trim())) return `${fieldName} harus berupa angka!`;
+            if (nim.trim().length !== 14) return `${fieldName} harus tepat 14 digit angka!`;
+        } else if (isNIP) {
+            if (!/^\d+$/.test(nim.trim())) return `${fieldName} harus berupa angka!`;
+            if (nim.trim().length !== 18) return `${fieldName} harus tepat 18 digit angka!`;
+        } else if (isNimNip) {
+            if (!/^\d+$/.test(nim.trim())) return `${fieldName} harus berupa angka!`;
+            if (nim.trim().length !== 14 && nim.trim().length !== 18) return `${fieldName} harus 14 digit (NIM) atau 18 digit (NIP)!`;
         }
-        if (nim.trim().length !== requiredLength) {
-            return `${fieldName} harus tepat ${requiredLength} karakter (saat ini: ${nim.trim().length} karakter)`;
-        }
+        // Label lain (custom): hanya wajib tidak kosong (sudah dicek di atas)
         return '';
     };
 
@@ -1803,11 +1812,19 @@ function BuatSuratContent() {
                                                                     <Input
                                                                         value={p.nim}
                                                                         onChange={(e) => {
-                                                                            const val = e.target.value.replace(/\D/g, '');
+                                                                            const nimLabel = (suratTugasTabelForm.nimLabel || '').toUpperCase();
+                                                                            const isNimOrNip = nimLabel === 'NIM' || nimLabel === 'NIP' || nimLabel === 'NIM/NIP' || nimLabel === 'NIP/NIM';
+                                                                            const val = isNimOrNip ? e.target.value.replace(/\D/g, '') : e.target.value;
                                                                             updatePelaksana(p.key, "nim", val);
                                                                         }}
                                                                         placeholder={suratTugasTabelForm.nimLabel || "NIM"}
-                                                                        maxLength={suratTugasTabelForm.nimLabel?.toUpperCase() === 'NIP' ? 18 : 14}
+                                                                        maxLength={(() => {
+                                                                            const nimLabel = (suratTugasTabelForm.nimLabel || '').toUpperCase();
+                                                                            if (nimLabel === 'NIP') return 18;
+                                                                            if (nimLabel === 'NIM') return 14;
+                                                                            if (nimLabel === 'NIM/NIP' || nimLabel === 'NIP/NIM') return 18;
+                                                                            return undefined;
+                                                                        })()}
                                                                         className={`h-9 ${errors?.nimError ? 'border-red-500' : ''}`}
                                                                     />
                                                                     {errors?.nimError && (

@@ -84,6 +84,16 @@ function getActionLabel(action: string, actorRole?: string): string {
         return 'Diteruskan';
     }
 
+    // Special handling for staff verification (Diverifikasi -> Diajukan)
+    if (action.toUpperCase() === 'VERIFY' && actorRole && ['STAF_AKADEMIK', 'STAF_SUMBER_DAYA', 'ADMIN_PRODI'].includes(actorRole)) {
+        return 'Diajukan';
+    }
+
+    // Special handling for supervisor approval (Disetujui -> Diverifikasi)
+    if (action.toUpperCase() === 'APPROVE' && actorRole && ['SUPERVISOR_AKADEMIK', 'SUPERVISOR_SUMBER_DAYA'].includes(actorRole)) {
+        return 'Diverifikasi';
+    }
+
     const actionLabels: Record<string, string> = {
         'SUBMIT': 'Pengajuan Dibuat',
         'RESUBMIT': 'Pengajuan Ulang',
@@ -255,8 +265,8 @@ export function ProcessHistory({ logs, isWaiting, currentActiveRole, currentStat
     const shouldHideWaiting =
         userScope === 'FAKULTAS' &&
         filterType === 'masuk' &&
-        displayLogs.some(log => 
-            log.action === 'DRAFT_CREATE' && 
+        displayLogs.some(log =>
+            log.action === 'DRAFT_CREATE' &&
             log.fromStatus?.toUpperCase().includes('SURAT_DIBUAT')
         );
 
