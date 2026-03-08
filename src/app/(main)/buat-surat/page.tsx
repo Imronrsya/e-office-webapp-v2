@@ -72,6 +72,7 @@ import { toast } from "sonner";
 import BottomNav from "@/components/layout/bottom-nav";
 import { Checkbox } from "@/components/ui/checkbox";
 import { suratService } from "@/services/surat.service";
+import { getProdiList } from "@/services/masterData.service";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format as formatDate } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -180,21 +181,7 @@ interface SuratKeputusanForm {
 // CONSTANTS
 // ============================================================================
 
-// Program Studi list for FSM UNDIP
-const PROGRAM_STUDI_LIST = [
-    "S1 Matematika",
-    "S2 Matematika",
-    "S1 Biologi",
-    "S1 Bioteknologi",
-    "S2 Biologi",
-    "S1 Fisika",
-    "S2 Fisika",
-    "Profesi Fisikawan Medik",
-    "S1 Kimia",
-    "S2 Kimia",
-    "S1 Statistika",
-    "S1 Informatika",
-];
+// Program Studi list for FSM UNDIP (now fetched dynamically)
 
 const ALL_SIGNER_ROLES = [
     { value: "KAPRODI", label: "Ketua Prodi" },
@@ -382,7 +369,13 @@ function BuatSuratContent() {
     const [prodiSearch, setProdiSearch] = useState('');
     const prodiSearchRef = useRef<HTMLInputElement>(null);
 
-    const filteredProdiList = PROGRAM_STUDI_LIST.filter((p) =>
+    // Pejabat list for autofill nama dan NIP
+    const [pejabatList, setPejabatList] = useState<Array<{ role: string; name: string; nip?: string }>>([]);
+
+    // Program Studi list
+    const [programStudiList, setProgramStudiList] = useState<string[]>([]);
+
+    const filteredProdiList = programStudiList.filter((p) =>
         p.toLowerCase().includes(prodiSearch.toLowerCase())
     );
 
@@ -450,9 +443,6 @@ function BuatSuratContent() {
     const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
 
-    // Pejabat list for autofill nama dan NIP
-    const [pejabatList, setPejabatList] = useState<Array<{ role: string; name: string; nip?: string }>>([]);
-
     // Redirect if no valid params
     useEffect(() => {
         if (!categoryParam || !suratType || (categoryParam !== 'AKADEMIK' && categoryParam !== 'SUMBER_DAYA' && categoryParam !== 'UMUM')) {
@@ -479,6 +469,27 @@ function BuatSuratContent() {
             }
         }
         loadPejabatList();
+    }, []);
+
+    // Fetch Program Studi list
+    useEffect(() => {
+        async function loadProdiList() {
+            try {
+                const prodis = await getProdiList();
+                // Exclude 'Fakultas' from the dropdown options
+                const validProdis = prodis.filter(p => !p.name.toLowerCase().includes('fakultas'));
+                const formattedProdis = validProdis.map(p => {
+                    const isProfesi = p.jenjang === 'PROFESI';
+                    const hasJenjangInName = p.name.toLowerCase().includes(p.jenjang.toLowerCase()) || (isProfesi && p.name.toLowerCase().includes('profesi'));
+                    const formatPrefix = isProfesi ? 'Profesi ' : `${p.jenjang} `;
+                    return hasJenjangInName ? p.name : `${formatPrefix}${p.name}`;
+                });
+                setProgramStudiList(formattedProdis);
+            } catch (error) {
+                console.error('❌ Error loading prodi list:', error);
+            }
+        }
+        loadProdiList();
     }, []);
 
 
