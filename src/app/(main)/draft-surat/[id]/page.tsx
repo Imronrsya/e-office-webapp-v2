@@ -218,9 +218,26 @@ function formatTanggalIndonesia(date: Date | string | null | undefined): string 
  * Parse a date string or Date to Date object
  * Handles ISO strings, formatted strings, and Date objects
  */
+const INDONESIAN_MONTHS: Record<string, number> = {
+    'januari': 0, 'februari': 1, 'maret': 2, 'april': 3, 'mei': 4, 'juni': 5,
+    'juli': 6, 'agustus': 7, 'september': 8, 'oktober': 9, 'november': 10, 'desember': 11
+};
+
 function parseToDate(value: string | Date | null | undefined): Date | undefined {
     if (!value) return undefined;
-    if (value instanceof Date) return value;
+    if (value instanceof Date) return isNaN(value.getTime()) ? undefined : value;
+    // Try parsing Indonesian date format: "5 Mei 2026"
+    const parts = value.trim().split(' ');
+    if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = INDONESIAN_MONTHS[parts[1].toLowerCase()];
+        const year = parseInt(parts[2], 10);
+        if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+            const d = new Date(year, month, day);
+            if (!isNaN(d.getTime())) return d;
+        }
+    }
+    // Fallback to native parsing (ISO strings, etc.)
     const d = new Date(value);
     return isNaN(d.getTime()) ? undefined : d;
 }
