@@ -49,6 +49,8 @@ import {
     User,
     ClipboardList,
     Paperclip,
+    GraduationCap,
+    Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -301,6 +303,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             setError("Gagal memuat data pengajuan");
         } finally {
             setLoading(false);
+            // Notify sidebar to refresh its waiting-action count
+            window.dispatchEvent(new Event('dashboard-refresh'));
         }
     }, [resolvedParams.id]);
 
@@ -1900,7 +1904,40 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         {/* Lampiran Dokumen */}
                         <LampiranDokumenCard />
 
-                        {/* Tembusan */}
+                        {/* QR Code Card */}
+                        {suratHasilDoc?.qrCodeUrl && (
+                            <Card className="bg-neutral-50 border-zinc-400">
+                                <CardHeader>
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <QrCode className="w-4 h-4" />
+                                        QR Code Verifikasi
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-start gap-6">
+                                        <div className="flex-shrink-0">
+                                            <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-sm">
+                                                <img
+                                                    src={suratHasilDoc.qrCodeUrl}
+                                                    alt="QR Code Verifikasi"
+                                                    className="w-32 h-32 object-contain"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <p className="text-sm text-zinc-600">
+                                                Scan QR Code ini untuk memverifikasi keaslian dokumen.
+                                            </p>
+                                            <p className="text-xs text-zinc-400">
+                                                QR Code tertanam dalam dokumen dan dapat di-scan menggunakan kamera smartphone.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Tembusan Dalam Sistem */}
                         {shouldShowTembusanCard && suratHasilDoc && (
                             <TembusanCard tembusanList={(suratHasilDoc.tembusan || []) as any} />
                         )}
@@ -2005,7 +2042,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                             <div className="space-y-4">
                                 <h4 className="font-medium flex items-center gap-2">
                                     <FileText className="w-4 h-4" />
-                                    Dokumen
+                                    Preview Surat
                                 </h4>
                                 {documentViewMode === 'both' ? (
                                     <Tabs
@@ -2056,6 +2093,39 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                     {/* Lampiran Dokumen dari Staf/Supervisor */}
                     <LampiranDokumenCard />
+
+                    {/* QR Code Card */}
+                    {suratHasilDoc?.qrCodeUrl && (
+                        <Card className="bg-neutral-50 border-zinc-400">
+                            <CardHeader>
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <QrCode className="w-4 h-4" />
+                                    QR Code Verifikasi
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex items-start gap-6">
+                                    <div className="flex-shrink-0">
+                                        <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-sm">
+                                            <img
+                                                src={suratHasilDoc.qrCodeUrl}
+                                                alt="QR Code Verifikasi"
+                                                className="w-32 h-32 object-contain"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                        <p className="text-sm text-zinc-600">
+                                            Scan QR Code ini untuk memverifikasi keaslian dokumen.
+                                        </p>
+                                        <p className="text-xs text-zinc-400">
+                                            QR Code tertanam dalam dokumen dan dapat di-scan menggunakan kamera smartphone.
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* Tembusan Dalam Sistem */}
                     {shouldShowTembusanCard && suratHasilDoc && (
@@ -2255,10 +2325,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                             {/* Stamp Selection Modal */}
                             <Dialog open={stampModalOpen} onOpenChange={setStampModalOpen}>
-                                <DialogContent className="sm:max-w-md">
+                                <DialogContent className="sm:max-w-md" hideCloseButton>
                                     <DialogHeader>
                                         <DialogTitle className="flex items-center gap-2">
-                                            <Stamp className="w-5 h-5" />
                                             Pilih Penerima Stempel
                                         </DialogTitle>
                                         <DialogDescription>
@@ -2268,7 +2337,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                     <div className="py-4">
                                         <Label className="text-sm font-medium mb-2 block">Penandatangan</Label>
                                         <Select value={selectedStampRole} onValueChange={setSelectedStampRole}>
-                                            <SelectTrigger>
+                                            <SelectTrigger className="w-full">
                                                 <SelectValue placeholder="Pilih pejabat" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -2295,11 +2364,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                             disabled={actionLoading || !selectedStampRole}
                                             className="bg-base-black hover:bg-base-black/90 text-white gap-2"
                                         >
-                                            {actionLoading ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : (
-                                                <Stamp className="w-4 h-4" />
-                                            )}
+                                            {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                                             Bubuhkan
                                         </Button>
                                     </DialogFooter>
@@ -2783,42 +2848,57 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
             {/* Supervisor Selection Modal - untuk kategori UMUM saat ajukan verifikasi */}
             <Dialog open={supervisorModalOpen} onOpenChange={setSupervisorModalOpen}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md" hideCloseButton>
                     <DialogHeader>
                         <DialogTitle>Pilih Supervisor Tujuan</DialogTitle>
                         <DialogDescription>
                             Surat dengan kategori UMUM harus ditujukan ke salah satu supervisor untuk verifikasi.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4">
-                        <RadioGroup
-                            value={selectedSupervisor || ''}
-                            onValueChange={(value) => setSelectedSupervisor(value as 'SUPERVISOR_AKADEMIK' | 'SUPERVISOR_SUMBER_DAYA')}
-                            className="space-y-3"
-                        >
-                            <div className="flex items-center space-x-3 border border-zinc-300 rounded-lg p-4 hover:bg-zinc-50 cursor-pointer">
-                                <RadioGroupItem value="SUPERVISOR_AKADEMIK" id="supervisor_akademik" />
-                                <Label htmlFor="supervisor_akademik" className="flex-1 cursor-pointer">
-                                    <span className="font-medium">Supervisor Akademik</span>
-                                    <p className="text-sm text-zinc-500">Untuk surat terkait akademik, mahasiswa, dan pendidikan</p>
-                                </Label>
+                    <div className="py-2">
+                        <div className="grid grid-cols-1 gap-3">
+                            <div
+                                onClick={() => setSelectedSupervisor('SUPERVISOR_AKADEMIK')}
+                                className={cn(
+                                    "flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                                    selectedSupervisor === 'SUPERVISOR_AKADEMIK'
+                                        ? "border-[#2B2B2B] bg-neutral-50"
+                                        : "border-[#E1DFE0] bg-white hover:border-[#2B2B2B]/40 hover:bg-neutral-50/50"
+                                )}
+                            >
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3">
+                                        <GraduationCap className="w-5 h-5 text-[#2B2B2B]" />
+                                        <span className="font-semibold text-[#2B2B2B]">Supervisor Akademik</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center space-x-3 border border-zinc-300 rounded-lg p-4 hover:bg-zinc-50 cursor-pointer">
-                                <RadioGroupItem value="SUPERVISOR_SUMBER_DAYA" id="supervisor_sumber_daya" />
-                                <Label htmlFor="supervisor_sumber_daya" className="flex-1 cursor-pointer">
-                                    <span className="font-medium">Supervisor Sumber Daya</span>
-                                    <p className="text-sm text-zinc-500">Untuk surat terkait SDM, keuangan, dan fasilitas</p>
-                                </Label>
+                            <div
+                                onClick={() => setSelectedSupervisor('SUPERVISOR_SUMBER_DAYA')}
+                                className={cn(
+                                    "flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                                    selectedSupervisor === 'SUPERVISOR_SUMBER_DAYA'
+                                        ? "border-[#2B2B2B] bg-neutral-50"
+                                        : "border-[#E1DFE0] bg-white hover:border-[#2B2B2B]/40 hover:bg-neutral-50/50"
+                                )}
+                            >
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3">
+                                        <Building2 className="w-5 h-5 text-[#2B2B2B]" />
+                                        <span className="font-semibold text-[#2B2B2B]">Supervisor Sumber Daya</span>
+                                    </div>
+                                </div>
                             </div>
-                        </RadioGroup>
+                        </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="flex gap-2 sm:gap-2 mt-2">
                         <Button
                             variant="outline"
                             onClick={() => {
                                 setSupervisorModalOpen(false);
                                 setSelectedSupervisor(null);
                             }}
+                            className="flex-1 sm:flex-none border-[#E1DFE0] text-[#2B2B2B]"
                         >
                             Batal
                         </Button>
@@ -2831,7 +2911,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 }
                             }}
                             disabled={!selectedSupervisor || actionLoading}
-                            className="bg-green-600 hover:bg-green-700"
+                            className="flex-1 sm:flex-none bg-success text-success-foreground hover:bg-success/90"
                         >
                             {actionLoading ? "Memproses..." : "Ajukan Verifikasi"}
                         </Button>

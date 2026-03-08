@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useRef } from "react";
+import { use, useEffect, useState, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -353,6 +353,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const [submitting, setSubmitting] = useState(false);
     const [currentStep, setCurrentStep] = useState<Step>("form");
 
+    // Leave Confirmation State
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+    const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+
+    // Submit Confirmation State
+    const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+
     // Form states for each surat type
     const [suratPengantarForm, setSuratPengantarForm] = useState<SuratPengantarForm>({
         nomorSurat: "",
@@ -412,6 +419,55 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
     // Track which Surat Tugas fields have been touched (for showing inline errors)
     const [stTouchedFields, setStTouchedFields] = useState<Record<string, boolean>>({});
+
+    // Derived dirty state to detect if user has inputted anything
+    const isDirty = useMemo(() => {
+        if (perihalInput.trim() !== "") return true;
+        if (suratType === "SURAT_TUGAS") {
+            if (suratTugasForm.namaLengkap.trim() !== "" || suratTugasForm.keperluan.trim() !== "" || suratTugasForm.nimNip.trim() !== "") return true;
+        }
+        if (suratType === "SURAT_TUGAS_TABEL") {
+            if (suratTugasTabelForm.keperluan.trim() !== "" || (suratTugasTabelForm.pelaksana[0]?.nama && suratTugasTabelForm.pelaksana[0].nama.trim() !== "")) return true;
+        }
+        if (suratType === "SURAT_KEPUTUSAN") {
+            if (suratKeputusanForm.tentang.trim() !== "" || (suratKeputusanForm.menimbang[0] && suratKeputusanForm.menimbang[0].trim() !== "")) return true;
+        }
+        return false;
+    }, [perihalInput, suratTugasForm, suratTugasTabelForm, suratKeputusanForm, suratType]);
+
+    // Handle client-side navigation clicks (Sidebar menu, etc)
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            const target = (e.target as Element).closest("a");
+            if (target && target.href && !target.hasAttribute("download") && target.target !== "_blank") {
+                try {
+                    const url = new URL(target.href);
+                    // Check if it's changing the path
+                    if (url.origin === window.location.origin && url.pathname !== window.location.pathname) {
+                        if (isDirty && !submitting) {
+                            e.preventDefault();
+                            setPendingUrl(target.href);
+                            setShowLeaveConfirm(true);
+                        }
+                    }
+                } catch (err) {
+                    // Ignore invalid URLs
+                }
+            }
+        };
+        // Use capture phase to intercept before Next.js Link handles it
+        document.addEventListener("click", handleClick, { capture: true });
+        return () => document.removeEventListener("click", handleClick, { capture: true });
+    }, [isDirty, submitting]);
+
+    const handleConfirmLeave = () => {
+        setShowLeaveConfirm(false);
+        if (pendingUrl === "BACK") {
+            router.back();
+        } else if (pendingUrl) {
+            window.location.href = pendingUrl;
+        }
+    };
 
     // Program Studi combobox state
     const [prodiOpen, setProdiOpen] = useState(false);
@@ -547,6 +603,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     // Kategori surat - untuk filter pejabat penandatangan
     const [suratCategory, setSuratCategory] = useState<"AKADEMIK" | "SUMBER_DAYA" | "UMUM" | null>(null);
 
+    // Kategori/Tipe asal yang direquest oleh pengaju
+    const [requestedTipeSurat, setRequestedTipeSurat] = useState<string | null>(null);
+
     // Flag hasKaprodi from Program Studi - determines available signature roles for surat pengantar
     // If true: program has KAPRODI, show both KAPRODI and KADEP options
     // If false: program has only KADEP, show only KADEP option
@@ -666,6 +725,10 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 if (suratType !== "SURAT_PENGANTAR" && detail.category) {
                     setSuratCategory(detail.category);
                     console.log('📋 Surat category:', detail.category);
+                }
+
+                if (detail.letterType?.name) {
+                    setRequestedTipeSurat(detail.letterType.name);
                 }
 
                 // Set hasKaprodi flag from submission detail - determines signature roles for surat pengantar
@@ -955,9 +1018,9 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     users.push({
                                         userId: item.userId,
                                         name: item.name || '',
-                                        email: item.description || item.email || '',
+                                        email: item.email || (item.description?.includes('@') ? item.description : ''),
                                         type: (item.type || 'pegawai') as 'mahasiswa' | 'pegawai',
-                                        description: item.description || '',
+                                        description: item.description?.includes('@') ? '' : (item.description || ''),
                                     });
                                 } else {
                                     // This is a text-only tembusan
@@ -2171,11 +2234,11 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 tembusanList.push(item.text);
             });
 
-            // Build tembusan users - untuk akses sistem
             const tembusanUsersList = tembusanUsers.map(u => ({
                 userId: u.userId,
                 name: u.name,
                 email: u.email,
+                description: u.description || '',
             }));
 
             // Add special "__PENGAJU__" marker if checkbox is checked
@@ -2185,6 +2248,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     userId: '__PENGAJU__', // Special marker (not a real userId)
                     name: 'Pengaju Surat',
                     email: '',
+                    description: '',
                 });
             }
 
@@ -2222,7 +2286,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     // Combine text tembusan and user tembusan
                     const combinedTembusan = [
                         ...tembusanUsersList,
-                        ...tembusanList.map(text => ({ userId: '', name: text, description: '' }))
+                        ...tembusanList.map(text => ({ userId: '', name: text, email: '', description: '' }))
                     ];
 
                     response = await suratService.updateDraftAsSupervisor(
@@ -2239,7 +2303,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     // Combine text tembusan and user tembusan
                     const combinedTembusan = [
                         ...tembusanUsersList,
-                        ...tembusanList.map(text => ({ userId: '', name: text, description: '' }))
+                        ...tembusanList.map(text => ({ userId: '', name: text, email: '', description: '' }))
                     ];
 
                     response = await suratService.updateDraftSuratHasil(
@@ -2257,7 +2321,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     // Combine text tembusan and user tembusan
                     const combinedTembusan = [
                         ...tembusanUsersList,
-                        ...tembusanList.map(text => ({ userId: '', name: text, description: '' }))
+                        ...tembusanList.map(text => ({ userId: '', name: text, email: '', description: '' }))
                     ];
 
                     response = await suratService.createDraftSuratHasil(
@@ -2444,7 +2508,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             </div>
 
             {/* Content */}
-            <div>
+            <div className="flex-1 flex flex-col mb-6">
                 {/* Step 1: Form */}
                 {currentStep === "form" && (
                     <div className="space-y-6">
@@ -3149,6 +3213,30 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         <CardDescription>Tambahkan daftar orang yang akan ditugaskan dalam format tabel</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
+                                        {/* Kolom Wajib - Editable Labels */}
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-medium text-muted-foreground">Kolom Wajib:</Label>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <Input
+                                                    value={suratTugasTabelForm.namaLabel}
+                                                    onChange={(e) => updateSuratTugasTabel("namaLabel", e.target.value)}
+                                                    placeholder="Nama"
+                                                    className="h-9"
+                                                />
+                                                <Input
+                                                    value={suratTugasTabelForm.nimLabel}
+                                                    onChange={(e) => updateSuratTugasTabel("nimLabel", e.target.value)}
+                                                    placeholder="NIM"
+                                                    className="h-9"
+                                                />
+                                                <Input
+                                                    value={suratTugasTabelForm.prodiLabel}
+                                                    onChange={(e) => updateSuratTugasTabel("prodiLabel", e.target.value)}
+                                                    placeholder="Prodi"
+                                                    className="h-9"
+                                                />
+                                            </div>
+                                        </div>
                                         {/* Custom Columns Management */}
                                         {suratTugasTabelForm.customColumns.length > 0 && (
                                             <div className="space-y-2">
@@ -3722,7 +3810,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 Tentukan siapa saja yang akan menerima tembusan surat ini.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-6">
                             <div className="flex items-center space-x-3 p-4 bg-white rounded-lg border border-border shadow-sm transition-colors hover:border-gray-300">
                                 <Checkbox
                                     id="pengaju"
@@ -3744,7 +3832,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                             {/* Section 1: Akun Pengguna untuk Akses Sistem */}
                             <div className="space-y-4">
-                                <div className="space-y-2">
+                                <div className="space-y-2 relative">
                                     <Label className="text-sm font-medium text-[#2B2B2B]">
                                         1. Pilih Akun Pengguna (Dalam Sistem)
                                     </Label>
@@ -3790,16 +3878,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                             onClick={() => handleSelectUser(user)}
                                                         >
                                                             <div className={cn(
-                                                                "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-                                                                user.type === 'mahasiswa' ? 'bg-blue-100' : 'bg-purple-100'
+                                                                "w-10 h-10 rounded-full flex items-center justify-center shrink-0 border",
+                                                                "bg-neutral-50 border-neutral-200 text-neutral-600"
                                                             )}>
-                                                                <User className={cn(
-                                                                    "h-5 w-5",
-                                                                    user.type === 'mahasiswa' ? 'text-blue-700' : 'text-purple-700'
-                                                                )} />
+                                                                <User className="h-5 w-5" />
                                                             </div>
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="font-medium text-sm truncate">{user.name}</p>
+                                                                <p className="font-medium text-sm text-[#2B2B2B] group-hover:text-black transition-colors truncate">{user.name}</p>
                                                                 <p className="text-xs text-muted-foreground truncate">
                                                                     {user.type === 'mahasiswa'
                                                                         ? `${user.identifier} • ${user.programStudi || 'Mahasiswa'}`
@@ -3807,7 +3892,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                                     }
                                                                 </p>
                                                             </div>
-                                                            <Badge variant="outline" className="text-xs shrink-0">
+                                                            <Badge variant="outline" className="text-[10px] shrink-0 border-border text-muted-foreground font-normal">
                                                                 {user.type === 'mahasiswa' ? 'Mahasiswa' : 'Pegawai'}
                                                             </Badge>
                                                         </button>
@@ -3827,27 +3912,27 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 {/* List selected users */}
                                 {tembusanUsers.length > 0 && (
                                     <div className="space-y-2">
-                                        <Label className="text-sm font-medium">Akun Terpilih ({tembusanUsers.length})</Label>
-                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                        <Label className="text-sm font-medium text-[#2B2B2B] flex items-center justify-between">
+                                            <span>Akun Terpilih ({tembusanUsers.length})</span>
+                                            <span className="text-xs font-normal text-muted-foreground">Akan dapat mengakses dan mendownload surat</span>
+                                        </Label>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                                             {tembusanUsers.map((user) => (
                                                 <div
                                                     key={user.userId}
                                                     className="flex items-center gap-3 p-3 bg-white rounded-lg border border-border group hover:border-gray-300 transition-all"
                                                 >
                                                     <div className={cn(
-                                                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                                                        user.type === 'mahasiswa' ? 'bg-blue-100' : 'bg-purple-100'
+                                                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border",
+                                                        "bg-neutral-50 border-neutral-200 text-neutral-600"
                                                     )}>
-                                                        <User className={cn(
-                                                            "h-4 w-4",
-                                                            user.type === 'mahasiswa' ? 'text-blue-700' : 'text-purple-700'
-                                                        )} />
+                                                        <User className="h-4 w-4" />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-sm truncate">{user.name}</p>
+                                                        <p className="font-medium text-sm text-[#2B2B2B] truncate">{user.name}</p>
                                                         <p className="text-xs text-muted-foreground truncate">{user.description}</p>
                                                     </div>
-                                                    <Badge variant="secondary" className="text-xs shrink-0">
+                                                    <Badge variant="secondary" className="text-[10px] bg-neutral-100 text-muted-foreground border-neutral-200 shrink-0 font-normal">
                                                         Dalam Sistem
                                                     </Badge>
                                                     <Button
@@ -3913,13 +3998,13 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                             {tembusanTexts.map((item, index) => (
                                                 <div
                                                     key={item.id}
-                                                    className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200"
+                                                    className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200"
                                                 >
-                                                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-700 shrink-0">
+                                                    <div className="w-6 h-6 rounded-full bg-neutral-100 flex items-center justify-center text-xs font-medium text-neutral-700 shrink-0">
                                                         {index + 1}
                                                     </div>
-                                                    <span className="flex-1 text-sm">{item.text}</span>
-                                                    <Badge variant="outline" className="text-xs border-green-300 text-green-700 shrink-0">
+                                                    <span className="flex-1 text-sm font-medium text-[#2B2B2B]">{item.text}</span>
+                                                    <Badge variant="secondary" className="text-[10px] bg-neutral-100 text-muted-foreground border-neutral-200 shrink-0 font-normal">
                                                         Tertulis di Surat
                                                     </Badge>
                                                     <Button
@@ -3937,23 +4022,25 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 )}
                             </div>
 
-                            <Alert className="mt-4 bg-blue-50/30 border-blue-100 text-[#2B2B2B]">
-                                <Info className="h-4 w-4 text-blue-600/80" />
-                                <AlertDescription className="text-sm ml-2">
-                                    <span className="font-semibold block mb-1">Panduan Pengisian:</span>
-                                    <div className="grid grid-cols-1 gap-1 text-muted-foreground">
-                                        <span className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Pengaju</strong>: Untuk arsip pribadi (tidak di PDF).
-                                        </span>
-                                        <span className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Akun Sistem</strong>: Untuk notifikasi & download (tidak di PDF).
-                                        </span>
-                                        <span className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Text Tertulis</strong>: Hanya text di bagian "Tembusan" PDF.
-                                        </span>
-                                    </div>
-                                </AlertDescription>
-                            </Alert>
+                            <div className="mt-4 p-4 rounded-lg bg-neutral-50/50 border border-neutral-300 flex items-start gap-3">
+                                <div className="flex h-5 items-center justify-center shrink-0">
+                                    <Info className="h-4 w-4 text-neutral-600" />
+                                </div>
+                                <div className="text-sm text-neutral-600">
+                                    <div className="font-semibold text-[#2B2B2B] leading-5 mb-2">Panduan Pengisian:</div>
+                                    <ul className="space-y-1.5 list-disc list-outside ml-4">
+                                        <li>
+                                            <strong className="text-[#2B2B2B]">Pengajuan Surat:</strong> Pengaju otomatis akan mendapatkan akses dan bisa mendownload surat setelah selesai (tidak tertulis di PDF).
+                                        </li>
+                                        <li>
+                                            <strong className="text-[#2B2B2B]">Pilih Akun Pengguna (Dalam Sistem):</strong> Akun yang dipilih akan dapat mengakses dan mendownload surat setelah selesai (tidak tertulis di PDF).
+                                        </li>
+                                        <li>
+                                            <strong className="text-[#2B2B2B]">Tambah Text Tembusan (Tertulis di Surat):</strong> Nama atau teks yang diketik akan tertulis di bagian "Tembusan" pada dokumen PDF surat.
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 )}
@@ -3964,7 +4051,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center gap-2">
                                 <Paperclip className="w-5 h-5" />
-                                Lampiran
+                                Lampiran (Opsional)
                             </CardTitle>
                             <CardDescription>
                                 Upload file lampiran dalam format PDF, JPG, atau PNG. Maksimal 5MB per file, total maksimal 5 file.
@@ -4154,9 +4241,124 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
+                                <div className="space-y-3 bg-white rounded-lg border p-4">
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">Tipe Surat</Label>
+                                        <p className="font-medium text-sm">
+                                            {suratType === "SURAT_PENGANTAR" && requestedTipeSurat
+                                                ? requestedTipeSurat
+                                                : SURAT_TYPE_LABELS[suratType]
+                                            }
+                                        </p>
+                                    </div>
+                                    {suratCategory && (
+                                        <>
+                                            <Separator className="my-1" />
+                                            <div>
+                                                <Label className="text-xs text-muted-foreground">Jenis Surat</Label>
+                                                <p className="font-medium text-sm">
+                                                    {suratCategory === 'SUMBER_DAYA' ? 'Sumber Daya' :
+                                                        suratCategory === 'AKADEMIK' ? 'Akademik' : 'Umum'}
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                <Separator />
+
+                                {/* Informasi Formulir */}
                                 <div>
-                                    <Label className="text-sm text-muted-foreground">Jenis Surat</Label>
-                                    <p className="font-medium">{SURAT_TYPE_LABELS[suratType]}</p>
+                                    <Label className="text-sm text-muted-foreground mb-3 block font-semibold">
+                                        Informasi Formulir
+                                    </Label>
+                                    <div className="space-y-3 bg-white rounded-lg border p-4">
+                                        {/* Judul Surat - shared across all types */}
+                                        <div>
+                                            <Label className="text-xs text-muted-foreground">Judul Surat</Label>
+                                            <p className="font-medium text-sm">{perihalInput || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                        </div>
+
+                                        {suratType === "SURAT_PENGANTAR" && (
+                                            <>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Perihal</Label>
+                                                    <p className="font-medium text-sm">{suratPengantarForm.perihal || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Nomor Surat</Label>
+                                                    <p className="font-medium text-sm">{suratPengantarForm.nomorSurat || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Tanggal Surat</Label>
+                                                    <p className="font-medium text-sm">{suratPengantarForm.tanggalSurat || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {suratType === "SURAT_TUGAS" && (
+                                            <>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Keperluan</Label>
+                                                    <p className="font-medium text-sm">{suratTugasForm.keperluan || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Judul/Topik Kegiatan</Label>
+                                                    <p className="font-medium text-sm">{suratTugasForm.judulSurat || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {suratType === "SURAT_TUGAS_TABEL" && (
+                                            <>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Keperluan</Label>
+                                                    <p className="font-medium text-sm">{suratTugasTabelForm.keperluan || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Judul/Topik Kegiatan</Label>
+                                                    <p className="font-medium text-sm">{suratTugasTabelForm.judulSurat || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Tanggal Mulai</Label>
+                                                    <p className="font-medium text-sm">{suratTugasTabelForm.tanggalMulai || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Tanggal Selesai</Label>
+                                                    <p className="font-medium text-sm">{suratTugasTabelForm.tanggalSelesai || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {suratType === "SURAT_KEPUTUSAN" && (
+                                            <>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Tentang</Label>
+                                                    <p className="font-medium text-sm">{suratKeputusanForm.tentang || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Tanggal Ditetapkan</Label>
+                                                    <p className="font-medium text-sm">
+                                                        {suratKeputusanForm.tanggalDitetapkan
+                                                            ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
+                                                            : <span className="italic text-muted-foreground">Belum diisi</span>
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <Separator />
@@ -4171,7 +4373,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                                 key={signer.id}
                                                 className="flex items-center gap-3 p-3 bg-white rounded-lg border"
                                             >
-                                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium">
+                                                <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center font-medium">
                                                     {index + 1}
                                                 </div>
                                                 <div className="flex-1">
@@ -4194,41 +4396,39 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                         <>
                                             <div>
                                                 <Label className="text-sm text-muted-foreground mb-2 block">
-                                                    Tembusan ({tembusanTexts.length + tembusanUsers.length + (includePengaju ? 1 : 0)} dalam sistem)
+                                                    Tembusan ({(includePengaju ? 1 : 0) + tembusanUsers.length} Dalam Sistem, {tembusanTexts.length} Tertulis di Surat)
                                                 </Label>
                                                 <div className="space-y-2">
                                                     {includePengaju && (
-                                                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                                            <Users className="w-5 h-5 text-blue-600" />
-                                                            <div className="flex-1">
-                                                                <span className="font-medium">Pengaju Surat</span>
-                                                                <p className="text-xs text-muted-foreground">Dalam sistem saja</p>
-                                                            </div>
+                                                        <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200">
+                                                            <User className="w-5 h-5 text-neutral-500" />
+                                                            <span className="flex-1 font-medium text-[#2B2B2B] text-sm">Pengaju Surat</span>
+                                                            <Badge variant="secondary" className="text-xs bg-neutral-100 text-neutral-600 border-neutral-200">Dalam Sistem</Badge>
                                                         </div>
                                                     )}
                                                     {tembusanUsers.map((user) => (
                                                         <div
                                                             key={user.userId}
-                                                            className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                                            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200"
                                                         >
-                                                            <User className="w-5 h-5 text-blue-600" />
+                                                            <User className="w-5 h-5 text-neutral-500" />
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="font-medium text-sm truncate">{user.name}</p>
-                                                                <p className="text-xs text-muted-foreground truncate">{user.description}</p>
+                                                                <p className="font-medium text-[#2B2B2B] text-sm truncate">{user.name}</p>
+                                                                {user.description && (
+                                                                    <p className="text-xs text-muted-foreground truncate">{user.description}</p>
+                                                                )}
                                                             </div>
-                                                            <Badge variant="secondary" className="text-xs">Dalam Sistem</Badge>
+                                                            <Badge variant="secondary" className="text-xs bg-neutral-100 text-neutral-600 border-neutral-200">Dalam Sistem</Badge>
                                                         </div>
                                                     ))}
-                                                    {tembusanTexts.map((item, index) => (
+                                                    {tembusanTexts.map((item) => (
                                                         <div
                                                             key={item.id}
-                                                            className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200"
+                                                            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200"
                                                         >
-                                                            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-700">
-                                                                {index + 1}
-                                                            </div>
-                                                            <span className="flex-1 text-sm">{item.text}</span>
-                                                            <Badge variant="outline" className="text-xs border-green-300 text-green-700">Tertulis di Surat</Badge>
+                                                            <FileText className="w-5 h-5 text-neutral-500" />
+                                                            <span className="flex-1 font-medium text-[#2B2B2B] text-sm">{item.text}</span>
+                                                            <Badge variant="secondary" className="text-xs bg-neutral-100 text-neutral-600 border-neutral-200">Tertulis di Surat</Badge>
                                                         </div>
                                                     ))}
                                                     {!includePengaju && tembusanTexts.length === 0 && tembusanUsers.length === 0 && (
@@ -4371,7 +4571,18 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 leftContent={
                     <Button
                         variant="outline"
-                        onClick={currentStep === "form" ? () => router.back() : goToPrevStep}
+                        onClick={() => {
+                            if (currentStep === "form") {
+                                if (isDirty && !submitting) {
+                                    setPendingUrl("BACK");
+                                    setShowLeaveConfirm(true);
+                                } else {
+                                    router.back();
+                                }
+                            } else {
+                                goToPrevStep();
+                            }
+                        }}
                         className="border-zinc-800 text-zinc-800 gap-2"
                     >
                         <ArrowLeft className="w-4 h-4" />
@@ -4381,10 +4592,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                 rightContent={
                     currentStep === "review" ? (
                         <Button
-                            onClick={() => {
-                                setSaveMode('patch');
-                                handleSubmit();
-                            }}
+                            onClick={() => setShowSubmitConfirm(true)}
                             disabled={submitting}
                             className="bg-emerald-600 hover:bg-emerald-700 gap-2"
                         >
@@ -4463,6 +4671,54 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                 </>
                             ) : (
                                 'Ya, Hapus'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Leave Confirmation Dialog */}
+            <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Konfirmasi Meninggalkan Halaman</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah Anda yakin ingin meninggalkan halaman ini? Data yang telah Anda ubah atau perubahan yang telah Anda lakukan akan hilang dan Anda harus mengubahnya dari awal.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batalkan</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmLeave} className="bg-base-black hover:bg-base-black/90 text-white">
+                            Ya, Tinggalkan
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Submit Confirmation Dialog */}
+            <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Konfirmasi Pembuatan Draft</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah data yang dimasukkan sudah benar dan sesuai? Draft surat akan disimpan ke dalam sistem.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={submitting}>Batalkan</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                setShowSubmitConfirm(false);
+                                setSaveMode('patch');
+                                handleSubmit();
+                            }}
+                            disabled={submitting}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                            {submitting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                "Ya, Konfirmasi"
                             )}
                         </AlertDialogAction>
                     </AlertDialogFooter>

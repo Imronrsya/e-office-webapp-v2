@@ -331,7 +331,7 @@ export function SignatureModal({
         theme="dark"
         showToolbar={true}
         showStatusBadge={false}
-        className="!h-full !min-h-0 !rounded-none"
+        className="!h-full !min-h-0"
         minHeight={0}
       />
     );
@@ -342,7 +342,14 @@ export function SignatureModal({
     <>
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as TabValue)}
+        onValueChange={(v) => {
+          setActiveTab(v as TabValue);
+          // Clear all temporary signatures when switching tabs
+          setDrawnSignature(null);
+          setUploadedSignature(null);
+          setSelectedSavedUrl(null);
+          setSaveSignature(false);
+        }}
         className="w-full"
       >
         <TabsList className="grid w-full grid-cols-3">
@@ -423,37 +430,28 @@ export function SignatureModal({
         <DialogContent hideCloseButton className="sm:max-w-[1400px] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
           <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
             {/* Left: Live Document Preview - takes full remaining height */}
-            <div className="lg:w-[60%] flex flex-col min-h-0">
-              <div className="flex items-center gap-2 px-6 py-2 border-b bg-muted/30">
-                <Eye className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">
-                  Preview Surat
-                </span>
-                {currentTempSignature && (
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                    Tanda tangan diterapkan
-                  </span>
-                )}
-              </div>
-              <div className="flex-1 overflow-hidden bg-zinc-100 relative flex flex-col min-h-0">
-                {renderPreview()}
+            <div className="lg:w-[60%] flex flex-col min-h-0 pl-6 py-6 pr-3">
+              <div className="flex-1 overflow-hidden relative flex flex-col min-h-0">
+                <div className="w-full h-full shadow-sm ring-1 ring-zinc-200 rounded-xl overflow-hidden flex flex-col">
+                  {renderPreview()}
+                </div>
               </div>
             </div>
 
             {/* Separator */}
-            <Separator orientation="vertical" className="hidden lg:block" />
+            <Separator orientation="vertical" className="hidden lg:block my-6" />
 
             {/* Right: Signature Input */}
             <div className="lg:w-[40%] flex flex-col min-h-0 overflow-hidden">
-              <DialogHeader className="px-6 pt-6 pb-4 text-left">
+              <DialogHeader className="pl-3 pr-6 pt-6 pb-4 text-left">
                 <DialogTitle className="text-xl">{title}</DialogTitle>
                 <DialogDescription>{description}</DialogDescription>
               </DialogHeader>
-              <div className="flex-1 overflow-y-auto px-6 pb-2">
+              <div className="flex-1 overflow-y-auto pl-3 pr-6 pb-2">
                 {renderSignatureInput()}
               </div>
               {/* Footer integrated inside right panel - no border separator */}
-              <div className="flex justify-end gap-2 px-6 py-4">
+              <div className="flex justify-end gap-2 pl-3 pr-6 pt-4 pb-6">
                 <Button
                   variant="outline"
                   onClick={() => handleOpenChange(false)}

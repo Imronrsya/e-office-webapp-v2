@@ -132,37 +132,38 @@ function PenggunaContent() {
             <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
             <h1 className="text-2xl font-bold text-black">Manajemen Pengguna</h1>
           </div>
-          <Button onClick={openCreateDialog}>
+        </div>
+
+        {/* Status Toggle & Action Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <nav aria-label="Status akun" className="flex">
+            <Button
+              variant={statusFilter === "active" ? "default" : "ghost"}
+              onClick={() => handleStatusFilterChange("active")}
+              className={`w-[140px] rounded-r-none border ${statusFilter === "active"
+                ? "bg-base-black hover:bg-base-black/90 text-white border-base-black"
+                : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
+                }`}
+            >
+              Akun Aktif
+            </Button>
+            <Button
+              variant={statusFilter === "inactive" ? "default" : "ghost"}
+              onClick={() => handleStatusFilterChange("inactive")}
+              className={`w-[160px] rounded-l-none border-l-0 border ${statusFilter === "inactive"
+                ? "bg-base-black hover:bg-base-black/90 text-white border-base-black"
+                : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
+                }`}
+            >
+              Akun Nonaktif
+            </Button>
+          </nav>
+
+          <Button onClick={openCreateDialog} className="w-full sm:w-[220px]">
             <Plus className="mr-2 size-4" />
             Tambah Pengguna
           </Button>
         </div>
-
-        {/* Status Toggle — Akun Aktif / Akun Nonaktif */}
-        <nav aria-label="Status akun" className="flex mb-3">
-          <Button
-            variant={statusFilter === "active" ? "default" : "ghost"}
-            onClick={() => handleStatusFilterChange("active")}
-            className={`w-[140px] rounded-r-none border ${
-              statusFilter === "active"
-                ? "bg-base-black hover:bg-base-black/90 text-white border-base-black"
-                : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
-            }`}
-          >
-            Akun Aktif
-          </Button>
-          <Button
-            variant={statusFilter === "inactive" ? "default" : "ghost"}
-            onClick={() => handleStatusFilterChange("inactive")}
-            className={`w-[160px] rounded-l-none border-l-0 border ${
-              statusFilter === "inactive"
-                ? "bg-base-black hover:bg-base-black/90 text-white border-base-black"
-                : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
-            }`}
-          >
-            Akun Nonaktif
-          </Button>
-        </nav>
 
         {/* Search + Role Filter */}
         <UserToolbar
@@ -258,11 +259,18 @@ function PenggunaSkeleton() {
             <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
             <h1 className="text-2xl font-bold text-black">Manajemen Pengguna</h1>
           </div>
-          <Skeleton className="h-10 w-40 bg-zinc-200" />
         </div>
-        <div className="flex flex-col sm:flex-row gap-4">
+
+        {/* Status Toggle & Action Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <Skeleton className="h-10 w-[300px] bg-zinc-200" />
+          <Skeleton className="h-10 w-full sm:w-[220px] bg-zinc-200" />
+        </div>
+
+        {/* Search + Role Filter */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <Skeleton className="h-10 flex-1 bg-zinc-200" />
-          <Skeleton className="h-10 w-[180px] bg-zinc-200" />
+          <Skeleton className="h-10 w-full sm:w-[220px] bg-zinc-200" />
         </div>
       </div>
 

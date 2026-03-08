@@ -50,11 +50,11 @@ export function SignatureSaved({ onSelect, selectedId }: SignatureSavedProps) {
 
     setDeletingId(signatureToDelete.id);
     const success = await signatureService.deleteSignature(signatureToDelete.id);
-    
+
     if (success) {
       setSignatures((prev) => prev.filter((s) => s.id !== signatureToDelete.id));
     }
-    
+
     setDeletingId(null);
     setShowDeleteDialog(false);
     setSignatureToDelete(null);
@@ -120,8 +120,8 @@ export function SignatureSaved({ onSelect, selectedId }: SignatureSavedProps) {
             <Card
               key={signature.id}
               className={cn(
-                "relative p-3 cursor-pointer transition-all hover:border-primary",
-                isSelected && "border-primary bg-primary/5 ring-1 ring-primary",
+                "relative p-3 cursor-pointer transition-all border border-zinc-200 shadow-none hover:bg-zinc-100 hover:border-zinc-300",
+                isSelected && "bg-zinc-100 border-zinc-300",
                 isDeleting && "opacity-50 pointer-events-none"
               )}
               onClick={() => handleSelect(signature)}

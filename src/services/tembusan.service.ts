@@ -32,6 +32,7 @@ export interface TembusanDetail extends TembusanInboxItem {
     id: string;
     name: string;
     code: string;
+    category?: string;
   };
   // Document type for frontend template selection
   documentType: 'SURAT_TUGAS' | 'SURAT_KEPUTUSAN' | 'SURAT_TUGAS_TABEL' | 'SURAT_PENGANTAR';

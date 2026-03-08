@@ -136,9 +136,9 @@ export function SuperAdminDashboard() {
   const uniqueRolesCount = stats?.users.byRole.length || 0;
 
   return (
-    <section aria-label="Dashboard Super Admin" className="space-y-6">
+    <section aria-label="Dashboard Super Admin" className="flex flex-col flex-1 h-full min-h-[500px] gap-6">
       {/* Header Section */}
-      <div className="flex items-start sm:items-center justify-between mb-8">
+      <div className="flex items-start sm:items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
           <h1 className="text-2xl font-bold text-black">
@@ -148,7 +148,7 @@ export function SuperAdminDashboard() {
       </div>
 
       {/* 4 KPI Cards - Simetris dan Modern */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 shrink-0">
         <Card className="shadow-sm border-slate-200 bg-slate-50/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">
@@ -207,10 +207,10 @@ export function SuperAdminDashboard() {
       </div>
 
       {/* Detail Panels - Symmetrical 2 Columns */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 flex-1 min-h-0">
         {/* Panel 1: Pengguna */}
-        <Card className="shadow-sm border-slate-200 bg-neutral-50 flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-slate-200">
+        <Card className="shadow-sm border-slate-200 bg-neutral-50 flex flex-col min-h-0 overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-slate-200 shrink-0">
             <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Users className="w-5 h-5 text-slate-700" />
               Manajemen Pengguna
@@ -225,9 +225,9 @@ export function SuperAdminDashboard() {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </CardHeader>
-          <CardContent className="pt-6 flex-1">
+          <CardContent className="pt-6 pb-6 flex-1 overflow-y-auto custom-scrollbar">
             {/* Scrollable container for roles if there are many */}
-            <div className="space-y-3 max-h-[224px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-3">
               {stats?.users.byRole
                 .sort((a, b) => {
                   const indexA = ROLE_ORDER.indexOf(a.role);
@@ -268,8 +268,8 @@ export function SuperAdminDashboard() {
         </Card>
 
         {/* Panel 2: Departemen */}
-        <Card className="shadow-sm border-slate-200 bg-neutral-50 flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-slate-200">
+        <Card className="shadow-sm border-slate-200 bg-neutral-50 flex flex-col min-h-0 overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-slate-200 shrink-0">
             <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Building2 className="w-5 h-5 text-slate-700" />
               Pengaturan Departemen
@@ -284,8 +284,8 @@ export function SuperAdminDashboard() {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </CardHeader>
-          <CardContent className="pt-6 flex-1">
-            <div className="space-y-3 max-h-[224px] overflow-y-auto pr-2 custom-scrollbar">
+          <CardContent className="pt-6 pb-6 flex-1 overflow-y-auto custom-scrollbar">
+            <div className="space-y-3">
               {departments
                 .filter((dept) => dept.code !== "FSM")
                 .map((dept) => (

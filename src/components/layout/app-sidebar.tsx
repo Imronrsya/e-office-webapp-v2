@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Mail, Plus, FilePlus, Users, Building2 } from "lucide-react";
@@ -38,7 +38,6 @@ const menuItems = [
   },
 ];
 
-// Menu untuk SUPERADMIN: urutan Dashboard → Manajemen Pengguna → Pengaturan Departemen → Tembusan
 const superAdminMenuItems = [
   {
     title: "Dashboard",
@@ -54,11 +53,6 @@ const superAdminMenuItems = [
     title: "Pengaturan Departemen",
     href: "/pengaturan",
     icon: Building2,
-  },
-  {
-    title: "Tembusan",
-    href: "/tembusan",
-    icon: Mail,
   },
 ];
 
@@ -79,26 +73,33 @@ export function AppSidebar() {
   const showBuatSurat = STAFF_ROLES.includes(role);
   const isSuperAdmin = role === "SUPERADMIN";
 
-  useEffect(() => {
-    if (user?.id) {
-      const fetchUnreadCounts = async () => {
-        const [tembusanRes, dashboardRes] = await Promise.all([
-          tembusanService.getUnreadCount(),
-          dashboardService.getUnreadCount()
-        ]);
+  const fetchUnreadCounts = useCallback(async () => {
+    if (!user?.id) return;
+    const [tembusanRes, dashboardRes] = await Promise.all([
+      tembusanService.getUnreadCount(),
+      dashboardService.getUnreadCount()
+    ]);
 
-        if (tembusanRes.success && tembusanRes.data) {
-          setUnreadTembusanCount(tembusanRes.data.count);
-        }
-
-        if (dashboardRes.success && dashboardRes.data) {
-          setUnreadDashboardCount(dashboardRes.data.count);
-        }
-      };
-
-      fetchUnreadCounts();
+    if (tembusanRes.success && tembusanRes.data) {
+      setUnreadTembusanCount(tembusanRes.data.count);
     }
-  }, [user?.id, pathname]); // Re-fetch occasionally or on navigation
+
+    if (dashboardRes.success && dashboardRes.data) {
+      setUnreadDashboardCount(dashboardRes.data.count);
+    }
+  }, [user?.id]);
+
+  // Re-fetch on navigation
+  useEffect(() => {
+    fetchUnreadCounts();
+  }, [fetchUnreadCounts, pathname]);
+
+  // Re-fetch when an action on the detail page triggers 'dashboard-refresh'
+  useEffect(() => {
+    const handler = () => { fetchUnreadCounts(); };
+    window.addEventListener('dashboard-refresh', handler);
+    return () => window.removeEventListener('dashboard-refresh', handler);
+  }, [fetchUnreadCounts]);
 
   return (
     <>

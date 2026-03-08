@@ -337,9 +337,16 @@ export function PDFPreview({
             const url = URL.createObjectURL(pdfBlob);
 
             if (currentRenderId === renderIdRef.current) {
-                if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-                setPdfUrl(url);
+                setPdfUrl(prevUrl => {
+                    if (prevUrl) {
+                        // Delay revocation to prevent strict mode or rapid update crashes
+                        setTimeout(() => URL.revokeObjectURL(prevUrl), 2000);
+                    }
+                    return url;
+                });
                 onPdfReady?.(url);
+            } else {
+                URL.revokeObjectURL(url);
             }
         } catch (err) {
             console.error('PDF generation error:', err);
@@ -354,17 +361,24 @@ export function PDFPreview({
         }
     }, [htmlContent]);
 
+    // Cleanup latest PDF URL on unmount with a delay
+    const latestPdfUrl = useRef<string | null>(null);
+    latestPdfUrl.current = pdfUrl;
+
+    useEffect(() => {
+        return () => {
+            const url = latestPdfUrl.current;
+            if (url) {
+                setTimeout(() => URL.revokeObjectURL(url), 2000);
+            }
+        };
+    }, []);
+
     useEffect(() => {
         // Debounce slightly to prevent flicker on rapid updates, but keep it snappy
         const timer = setTimeout(() => generatePDF(), 100);
         return () => clearTimeout(timer);
     }, [generatePDF]);
-
-    useEffect(() => {
-        return () => {
-            if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-        };
-    }, [pdfUrl]);
 
     const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
         setNumPages(numPages);

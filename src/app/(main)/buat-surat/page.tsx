@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
     ArrowLeft,
@@ -262,11 +272,19 @@ function BuatSuratContent() {
     const { user } = useAuth();
 
     // Get params from URL
+    // Transform category from URL
     const categoryParam = searchParams?.get("category") as Category | null;
     const typeParam = searchParams?.get("type");
     const suratType = typeParam ? TYPE_MAP[typeParam] : null;
 
-    // State
+    // Leave Confirmation State
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+    const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+
+    // Submit Confirmation State
+    const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+
+    // Form Navigation States
     const [submitting, setSubmitting] = useState(false);
     const [currentStep, setCurrentStep] = useState<Step>("form");
 
@@ -311,6 +329,53 @@ function BuatSuratContent() {
 
     // Track which fields have been touched (for showing inline errors)
     const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+    // Derived dirty state to detect if user has inputted anything
+    const isDirty = useMemo(() => {
+        if (perihalInput.trim() !== "") return true;
+        if (suratType === "SURAT_TUGAS") {
+            if (suratTugasForm.namaLengkap.trim() !== "" || suratTugasForm.keperluan.trim() !== "" || suratTugasForm.nimNip.trim() !== "") return true;
+        }
+        if (suratType === "SURAT_TUGAS_TABEL") {
+            if (suratTugasTabelForm.keperluan.trim() !== "" || (suratTugasTabelForm.pelaksana[0]?.nama && suratTugasTabelForm.pelaksana[0].nama.trim() !== "")) return true;
+        }
+        if (suratType === "SURAT_KEPUTUSAN") {
+            if (suratKeputusanForm.tentang.trim() !== "" || (suratKeputusanForm.menimbang[0] && suratKeputusanForm.menimbang[0].trim() !== "")) return true;
+        }
+        return false;
+    }, [perihalInput, suratTugasForm, suratTugasTabelForm, suratKeputusanForm, suratType]);
+
+    // Handle client-side navigation clicks (Sidebar menu, etc)
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            const target = (e.target as Element).closest("a");
+            if (target && target.href && !target.hasAttribute("download") && target.target !== "_blank") {
+                try {
+                    const url = new URL(target.href);
+                    // intercept only internal routing differences
+                    if (url.origin === window.location.origin && url.pathname !== window.location.pathname) {
+                        if (isDirty && !submitting) {
+                            e.preventDefault(); // Stop Next.js Link
+                            setPendingUrl(target.href);
+                            setShowLeaveConfirm(true);
+                        }
+                    }
+                } catch (err) {
+                    // Ignore invalid URLs
+                }
+            }
+        };
+        // Capture phase to catch it before React / Next Link router
+        document.addEventListener("click", handleClick, { capture: true });
+        return () => document.removeEventListener("click", handleClick, { capture: true });
+    }, [isDirty, submitting]);
+
+    const handleConfirmLeave = () => {
+        setShowLeaveConfirm(false);
+        if (pendingUrl) {
+            window.location.href = pendingUrl; // Force normal navigation to safely clear state
+        }
+    };
 
     // Program Studi combobox state
     const [prodiOpen, setProdiOpen] = useState(false);
@@ -1162,15 +1227,16 @@ function BuatSuratContent() {
                 userId: u.userId,
                 name: u.name,
                 email: u.email,
+                description: u.description,
             }));
 
             // Combine all tembusan into single array for API:
             // 1. User accounts (akses sistem)
             // 2. Text entries (tertulis di PDF, converted to object format)
             // 3. __PENGAJU__ marker if checkbox checked (resolved to createdById in backend)
-            const combinedTembusan: Array<{ userId: string; name: string; description?: string }> = [
-                ...tembusanUsersList.map(u => ({ userId: u.userId, name: u.name, description: u.email || '' })),
-                ...tembusanTextsList.map(text => ({ userId: '', name: text, description: '' })),
+            const combinedTembusan: Array<{ userId: string; name: string; description?: string; email?: string }> = [
+                ...tembusanUsersList.map(u => ({ userId: u.userId, name: u.name, email: u.email, description: u.description || '' })),
+                ...tembusanTextsList.map(text => ({ userId: '', name: text, email: '', description: '' })),
             ];
             if (includePengaju) {
                 combinedTembusan.push({
@@ -1281,7 +1347,7 @@ function BuatSuratContent() {
             </div>
 
             {/* Content */}
-            <div>
+            <div className="flex-1 flex flex-col mb-6">
                 {/* Step 1: Form */}
                 {currentStep === "form" && (
                     <div className="space-y-6">
@@ -2412,9 +2478,9 @@ function BuatSuratContent() {
                                             {tembusanTexts.map((item, index) => (
                                                 <div
                                                     key={item.id}
-                                                    className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200"
+                                                    className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200"
                                                 >
-                                                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-700 shrink-0">
+                                                    <div className="w-6 h-6 rounded-full bg-neutral-100 flex items-center justify-center text-xs font-medium text-neutral-700 shrink-0">
                                                         {index + 1}
                                                     </div>
                                                     <span className="flex-1 text-sm font-medium text-[#2B2B2B]">{item.text}</span>
@@ -2436,23 +2502,25 @@ function BuatSuratContent() {
                                 )}
                             </div>
 
-                            <Alert className="mt-4 bg-blue-50/30 border-blue-100 text-[#2B2B2B]">
-                                <Info className="h-4 w-4 text-blue-600/80" />
-                                <AlertDescription className="text-sm ml-2">
-                                    <span className="font-semibold block mb-1">Panduan Pengisian:</span>
-                                    <div className="grid grid-cols-1 gap-1 text-muted-foreground">
-                                        <span className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Pengaju</strong>: Untuk arsip pribadi (tidak di PDF).
-                                        </span>
-                                        <span className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Akun Sistem</strong>: Untuk notifikasi & download (tidak di PDF).
-                                        </span>
-                                        <span className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span> <strong>Text Tertulis</strong>: Hanya text di bagian "Tembusan" PDF.
-                                        </span>
-                                    </div>
-                                </AlertDescription>
-                            </Alert>
+                            <div className="mt-4 p-4 rounded-lg bg-neutral-50/50 border border-neutral-300 flex items-start gap-3">
+                                <div className="flex h-5 items-center justify-center shrink-0">
+                                    <Info className="h-4 w-4 text-neutral-600" />
+                                </div>
+                                <div className="text-sm text-neutral-600">
+                                    <div className="font-semibold text-[#2B2B2B] leading-5 mb-2">Panduan Pengisian:</div>
+                                    <ul className="space-y-1.5 list-disc list-outside ml-4">
+                                        <li>
+                                            <strong className="text-[#2B2B2B]">Pengajuan Surat:</strong> Pengaju otomatis akan mendapatkan akses dan bisa mendownload surat setelah selesai (tidak tertulis di PDF).
+                                        </li>
+                                        <li>
+                                            <strong className="text-[#2B2B2B]">Pilih Akun Pengguna (Dalam Sistem):</strong> Akun yang dipilih akan dapat mengakses dan mendownload surat setelah selesai (tidak tertulis di PDF).
+                                        </li>
+                                        <li>
+                                            <strong className="text-[#2B2B2B]">Tambah Text Tembusan (Tertulis di Surat):</strong> Nama atau teks yang diketik akan tertulis di bagian "Tembusan" pada dokumen PDF surat.
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 )}
@@ -2500,14 +2568,91 @@ function BuatSuratContent() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-3 bg-white rounded-lg border p-4">
                                     <div>
-                                        <Label className="text-sm text-muted-foreground">Jenis Surat</Label>
-                                        <p className="font-medium">{SURAT_TYPE_LABELS[suratType]}</p>
+                                        <Label className="text-xs text-muted-foreground">Tipe Surat</Label>
+                                        <p className="font-medium text-sm">{SURAT_TYPE_LABELS[suratType]}</p>
                                     </div>
+                                    <Separator className="my-1" />
                                     <div>
-                                        <Label className="text-sm text-muted-foreground">Kategori</Label>
-                                        <p className="font-medium">{CATEGORY_LABELS[categoryParam]}</p>
+                                        <Label className="text-xs text-muted-foreground">Jenis Surat</Label>
+                                        <p className="font-medium text-sm">{CATEGORY_LABELS[categoryParam]}</p>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* Informasi Formulir */}
+                                <div>
+                                    <Label className="text-sm text-muted-foreground mb-3 block font-semibold">
+                                        Informasi Formulir
+                                    </Label>
+                                    <div className="space-y-3 bg-white rounded-lg border p-4">
+                                        {/* Judul Surat - shared across all types */}
+                                        <div>
+                                            <Label className="text-xs text-muted-foreground">Judul Surat</Label>
+                                            <p className="font-medium text-sm">{perihalInput || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                        </div>
+
+                                        {suratType === "SURAT_TUGAS" && (
+                                            <>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Keperluan</Label>
+                                                    <p className="font-medium text-sm">{suratTugasForm.keperluan || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Judul/Topik Kegiatan</Label>
+                                                    <p className="font-medium text-sm">{suratTugasForm.judulSurat || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {suratType === "SURAT_TUGAS_TABEL" && (
+                                            <>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Keperluan</Label>
+                                                    <p className="font-medium text-sm">{suratTugasTabelForm.keperluan || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Judul/Topik Kegiatan</Label>
+                                                    <p className="font-medium text-sm">{suratTugasTabelForm.judulSurat || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Tanggal Mulai</Label>
+                                                    <p className="font-medium text-sm">{suratTugasTabelForm.tanggalMulai || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Tanggal Selesai</Label>
+                                                    <p className="font-medium text-sm">{suratTugasTabelForm.tanggalSelesai || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {suratType === "SURAT_KEPUTUSAN" && (
+                                            <>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Tentang</Label>
+                                                    <p className="font-medium text-sm">{suratKeputusanForm.tentang || <span className="italic text-muted-foreground">Belum diisi</span>}</p>
+                                                </div>
+                                                <Separator className="my-1" />
+                                                <div>
+                                                    <Label className="text-xs text-muted-foreground">Tanggal Ditetapkan</Label>
+                                                    <p className="font-medium text-sm">
+                                                        {suratKeputusanForm.tanggalDitetapkan
+                                                            ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
+                                                            : <span className="italic text-muted-foreground">Belum diisi</span>
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 
@@ -2523,7 +2668,7 @@ function BuatSuratContent() {
                                                 key={signer.id}
                                                 className="flex items-center gap-3 p-3 bg-white rounded-lg border"
                                             >
-                                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-medium">
+                                                <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center font-medium">
                                                     {index + 1}
                                                 </div>
                                                 <div className="flex-1">
@@ -2541,34 +2686,39 @@ function BuatSuratContent() {
 
                                 <div>
                                     <Label className="text-sm text-muted-foreground mb-2 block">
-                                        Tembusan ({(includePengaju ? 1 : 0) + tembusanTexts.length + tembusanUsers.length} dalam sistem)
+                                        Tembusan ({(includePengaju ? 1 : 0) + tembusanUsers.length} Dalam Sistem, {tembusanTexts.length} Tertulis di Surat)
                                     </Label>
                                     <div className="space-y-2">
                                         {includePengaju && (
-                                            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                                <User className="w-5 h-5 text-blue-600" />
-                                                <span className="flex-1">Pengaju Surat</span>
-                                                <Badge variant="secondary" className="text-xs">Dalam Sistem</Badge>
+                                            <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200">
+                                                <User className="w-5 h-5 text-neutral-500" />
+                                                <span className="flex-1 font-medium text-[#2B2B2B] text-sm">Pengaju Surat</span>
+                                                <Badge variant="secondary" className="text-xs bg-neutral-100 text-neutral-600 border-neutral-200">Dalam Sistem</Badge>
                                             </div>
                                         )}
                                         {tembusanUsers.map((user) => (
                                             <div
                                                 key={user.userId}
-                                                className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                                className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200"
                                             >
-                                                <User className="w-5 h-5 text-blue-600" />
-                                                <span className="flex-1">{user.name}</span>
-                                                <Badge variant="secondary" className="text-xs">Dalam Sistem</Badge>
+                                                <User className="w-5 h-5 text-neutral-500" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-[#2B2B2B] text-sm truncate">{user.name}</p>
+                                                    {user.description && (
+                                                        <p className="text-xs text-muted-foreground truncate">{user.description}</p>
+                                                    )}
+                                                </div>
+                                                <Badge variant="secondary" className="text-xs bg-neutral-100 text-neutral-600 border-neutral-200">Dalam Sistem</Badge>
                                             </div>
                                         ))}
                                         {tembusanTexts.map((item) => (
                                             <div
                                                 key={item.id}
-                                                className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200"
+                                                className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200"
                                             >
-                                                <FileText className="w-5 h-5 text-green-600" />
-                                                <span className="flex-1">{item.text}</span>
-                                                <Badge variant="outline" className="text-xs border-green-300 text-green-700">Tertulis di Surat</Badge>
+                                                <FileText className="w-5 h-5 text-neutral-500" />
+                                                <span className="flex-1 font-medium text-[#2B2B2B] text-sm">{item.text}</span>
+                                                <Badge variant="secondary" className="text-xs bg-neutral-100 text-neutral-600 border-neutral-200">Tertulis di Surat</Badge>
                                             </div>
                                         ))}
                                         {!includePengaju && tembusanTexts.length === 0 && tembusanUsers.length === 0 && (
@@ -2664,7 +2814,13 @@ function BuatSuratContent() {
                         variant="outline"
                         onClick={currentStep === "form" ? () => {
                             const redirectPath = user?.role ? getPostDraftRedirectPath(user.role) : '/dashboard';
-                            router.push(redirectPath);
+                            if (isDirty && !submitting) {
+                                // Convert relative path to absolute URL for pendingUrl
+                                setPendingUrl(window.location.origin + redirectPath);
+                                setShowLeaveConfirm(true);
+                            } else {
+                                router.push(redirectPath);
+                            }
                         } : goToPrevStep}
                         className="border-zinc-800 text-zinc-800 gap-2"
                     >
@@ -2675,7 +2831,7 @@ function BuatSuratContent() {
                 rightContent={
                     currentStep === "review" ? (
                         <Button
-                            onClick={handleSubmit}
+                            onClick={() => setShowSubmitConfirm(true)}
                             disabled={submitting}
                             className="bg-emerald-600 hover:bg-emerald-700 gap-2"
                         >
@@ -2697,6 +2853,53 @@ function BuatSuratContent() {
                     )
                 }
             />
+
+            {/* Leave Confirmation Dialog */}
+            <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Konfirmasi Meninggalkan Halaman</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah Anda yakin ingin meninggalkan halaman ini? Data yang telah Anda isi akan hilang dan Anda harus mengisi ulang dari awal.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batalkan</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmLeave} className="bg-base-black hover:bg-base-black/90 text-white">
+                            Ya, Tinggalkan
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Submit Confirmation Dialog */}
+            <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Konfirmasi Pembuatan Surat</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah data yang dimasukkan sudah benar dan sesuai? Surat akan dibuat ke dalam sistem.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={submitting}>Batalkan</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                setShowSubmitConfirm(false);
+                                handleSubmit();
+                            }}
+                            disabled={submitting}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                            {submitting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                "Ya, Konfirmasi"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }

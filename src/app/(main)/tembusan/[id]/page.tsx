@@ -497,7 +497,15 @@ export default function TembusanDetailPage({
                     <p className="text-sm text-[#6D6D6D]">
                       Jenis Surat
                     </p>
-                    <p className="font-medium text-[#2B2B2B]">{detail.letterType.name}</p>
+                    <p className="font-medium text-[#2B2B2B]">
+                      {detail.letterType.category === "AKADEMIK"
+                        ? "Akademik"
+                        : detail.letterType.category === "SUMBER_DAYA"
+                          ? "Sumber Daya"
+                          : detail.letterType.category === "UMUM"
+                            ? "Umum"
+                            : detail.letterType.category || "-"}
+                    </p>
                   </div>
                 </div>
 
@@ -507,7 +515,7 @@ export default function TembusanDetailPage({
                 <div className="space-y-4">
                   <h4 className="font-medium flex items-center gap-2">
                     <FileText className="w-4 h-4" />
-                    Dokumen
+                    Preview Surat
                   </h4>
 
                   {htmlContent ? (
@@ -721,32 +729,6 @@ export default function TembusanDetailPage({
                     Tidak ada penandatangan
                   </p>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Tembusan Info Card */}
-            <Card className="bg-neutral-50 border-zinc-400">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Informasi Penerimaan
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-zinc-500">Diterima Sebagai</p>
-                    <Badge variant="secondary" className="mt-1">
-                      Tembusan
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-sm text-zinc-500">Tanggal Diterima</p>
-                    <p className="font-medium text-sm">
-                      {formatDateTime(detail.diterimaTanggal)}
-                    </p>
-                  </div>
-                </div>
               </CardContent>
             </Card>
 

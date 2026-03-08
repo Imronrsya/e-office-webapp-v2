@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -100,6 +100,10 @@ export function PengajuanFormValidated() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingData, setPendingData] = useState<LetterFormData | null>(null);
 
+  // Leave Confirmation State
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+
   // Determine user role
   const userRole =
     user?.role?.toUpperCase() === "MAHASISWA" ? "MAHASISWA" : "DOSEN";
@@ -122,6 +126,55 @@ export function PengajuanFormValidated() {
       attachments: [],
     },
   });
+
+  // Derived dirty state
+  const watchedJenisSurat = form.watch("jenisSurat");
+  const watchedJudulSurat = form.watch("judulSurat");
+  const watchedKeperluan = form.watch("keperluan");
+  const watchedTanggal = form.watch("tanggalAcara");
+  const watchedLokasi = form.watch("lokasiAcara");
+
+  const isDirty = useMemo(() => {
+    if (watchedJenisSurat) return true;
+    if (watchedJudulSurat?.trim() !== "") return true;
+    if (watchedKeperluan?.trim() !== "") return true;
+    if (watchedTanggal) return true;
+    if (watchedLokasi?.trim() !== "") return true;
+    if (files.length > 0) return true;
+    return false;
+  }, [watchedJenisSurat, watchedJudulSurat, watchedKeperluan, watchedTanggal, watchedLokasi, files]);
+
+  // Handle client-side navigation clicks
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = (e.target as Element).closest("a");
+      if (target && target.href && !target.hasAttribute("download") && target.target !== "_blank") {
+        try {
+          const url = new URL(target.href);
+          if (url.origin === window.location.origin && url.pathname !== window.location.pathname) {
+            if (isDirty && !isSubmitting) {
+              e.preventDefault();
+              setPendingUrl(target.href);
+              setShowLeaveConfirm(true);
+            }
+          }
+        } catch (err) {
+          // Ignore
+        }
+      }
+    };
+    document.addEventListener("click", handleClick, { capture: true });
+    return () => document.removeEventListener("click", handleClick, { capture: true });
+  }, [isDirty, isSubmitting]);
+
+  const handleConfirmLeave = () => {
+    setShowLeaveConfirm(false);
+    if (pendingUrl === "BACK") {
+      router.back();
+    } else if (pendingUrl) {
+      window.location.href = pendingUrl;
+    }
+  };
 
   // Fetch master data
   const { data: departemenList, isLoading: isDeptLoading } =
@@ -741,7 +794,14 @@ export function PengajuanFormValidated() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.back()}
+              onClick={() => {
+                if (isDirty && !isSubmitting) {
+                  setPendingUrl("BACK");
+                  setShowLeaveConfirm(true);
+                } else {
+                  router.back();
+                }
+              }}
               className="bg-white hover:bg-gray-50 text-base-black font-medium"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -752,7 +812,7 @@ export function PengajuanFormValidated() {
             <Button
               type="submit"
               disabled={isSubmitting || !form.formState.isValid}
-              className="bg-base-black hover:bg-base-black/90 text-white"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               <FileText className="mr-2 h-4 w-4" />
               {isSubmitting ? "Mengajukan..." : "Ajukan Surat"}
@@ -765,12 +825,12 @@ export function PengajuanFormValidated() {
             <AlertDialogHeader>
               <AlertDialogTitle>Konfirmasi Pengajuan</AlertDialogTitle>
               <AlertDialogDescription>
-                Apakah data sudah yakin atau belum?
+                Apakah data yang dimasukkan sudah benar dan sesuai? Pengajuan akan diproses ke dalam sistem.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={isSubmitting}>
-                Batal
+                Batalkan
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={(e) => {
@@ -778,9 +838,27 @@ export function PengajuanFormValidated() {
                   confirmSubmit();
                 }}
                 disabled={isSubmitting}
-                className="bg-base-black hover:bg-base-black/90 text-white"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                Konfirmasi
+                Ya, Konfirmasi
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Leave Confirmation Dialog */}
+        <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Konfirmasi Meninggalkan Halaman</AlertDialogTitle>
+              <AlertDialogDescription>
+                Apakah Anda yakin ingin meninggalkan halaman ini? Data yang telah Anda isi akan hilang dan Anda harus mengisi ulang dari awal.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Batalkan</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmLeave} className="bg-base-black hover:bg-base-black/90 text-white">
+                Ya, Tinggalkan
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

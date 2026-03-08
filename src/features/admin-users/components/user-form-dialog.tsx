@@ -29,6 +29,7 @@ import type {
   UpdateUserPayload,
   RoleOption,
 } from "@/services/adminUser.service";
+import { Info } from "lucide-react";
 import { toast } from "sonner";
 
 // ============================================================================
@@ -248,17 +249,23 @@ export function UserFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-lg overflow-hidden p-0"
+        hideCloseButton
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <div className="flex flex-col max-h-[90vh]">
+        <div className="overflow-y-auto flex-1 p-6">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "Tambah Pengguna Baru" : "Edit Pengguna"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <form id="user-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 mt-4">
           {/* Name */}
           <div className="space-y-1.5">
-            <Label htmlFor="name">Nama Lengkap *</Label>
+            <Label htmlFor="name">Nama Lengkap <span className="text-red-500">*</span></Label>
             <Input
               id="name"
               {...form.register("name")}
@@ -273,7 +280,7 @@ export function UserFormDialog({
 
           {/* Email */}
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email *</Label>
+            <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
             <Input
               id="email"
               type="email"
@@ -289,7 +296,7 @@ export function UserFormDialog({
 
           {/* Role */}
           <div className="space-y-1.5">
-            <Label>Role *</Label>
+            <Label>Role <span className="text-red-500">*</span></Label>
             <Select
               value={watchedRole}
               onValueChange={(val) => {
@@ -299,10 +306,10 @@ export function UserFormDialog({
                 form.setValue("programStudiId", "");
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih role" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent side="bottom" avoidCollisions={false}>
                 {roles.map((r) => (
                   <SelectItem key={r.id} value={r.name}>
                     {ROLE_LABELS[r.name] || r.name}
@@ -322,7 +329,7 @@ export function UserFormDialog({
           {/* NIM (Mahasiswa only) */}
           {showNim && (
             <div className="space-y-1.5">
-              <Label htmlFor="nim">NIM * (14 digit)</Label>
+              <Label htmlFor="nim">NIM <span className="text-red-500">*</span> (14 digit)</Label>
               <Input
                 id="nim"
                 {...form.register("nim")}
@@ -352,7 +359,7 @@ export function UserFormDialog({
           {/* NIP (Pegawai roles) */}
           {showNip && (
             <div className="space-y-1.5">
-              <Label htmlFor="nip">NIP * (18 digit)</Label>
+              <Label htmlFor="nip">NIP <span className="text-red-500">*</span> (18 digit)</Label>
               <Input
                 id="nip"
                 {...form.register("nip")}
@@ -394,7 +401,7 @@ export function UserFormDialog({
           {/* Departemen (Departemen-level roles only) */}
           {showDepartemen && (
             <div className="space-y-1.5">
-              <Label>Departemen *</Label>
+              <Label>Departemen <span className="text-red-500">*</span></Label>
               <Select
                 value={form.watch("departemenId") || ""}
                 onValueChange={(val) => {
@@ -402,10 +409,10 @@ export function UserFormDialog({
                   form.setValue("programStudiId", "");
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Pilih departemen" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent side="bottom" avoidCollisions={false}>
                   {departemenList.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
                       {dept.name}
@@ -425,7 +432,7 @@ export function UserFormDialog({
           {showProdi && (
             <div className="space-y-1.5">
               <Label>
-                Program Studi *
+                Program Studi <span className="text-red-500">*</span>
                 {watchedRole === "KAPRODI" && (
                   <span className="text-xs text-muted-foreground ml-1">
                     (hanya prodi yang memiliki slot Kaprodi)
@@ -437,11 +444,12 @@ export function UserFormDialog({
                 onValueChange={(val) =>
                   form.setValue("programStudiId", val, { shouldValidate: true })
                 }
+                disabled={!watchedDeptId}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih program studi" />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={watchedDeptId ? "Pilih program studi" : "Pilih departemen terlebih dahulu"} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent side="top" avoidCollisions={false}>
                   {availableProdi.length === 0 ? (
                     <div className="p-2 text-sm text-muted-foreground">
                       {watchedDeptId
@@ -467,11 +475,19 @@ export function UserFormDialog({
 
           {/* Fakultas-level info */}
           {isFakultasLevel && (
-            <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
-              Unit kerja otomatis ditetapkan ke <strong>Fakultas Sains dan Matematika</strong>.
+            <div className="rounded-lg bg-neutral-50/50 border border-neutral-300 p-3 flex items-start gap-3">
+              <div className="flex h-5 items-center justify-center shrink-0">
+                <Info className="h-4 w-4 text-neutral-600" />
+              </div>
+              <p className="text-sm text-neutral-600">
+                Unit kerja otomatis ditetapkan ke <strong className="text-base-black">Fakultas Sains dan Matematika</strong>.
+              </p>
             </div>
           )}
 
+        </form>
+        </div>
+        <div className="border-t bg-background px-6 py-4">
           <DialogFooter>
             <Button
               type="button"
@@ -481,7 +497,7 @@ export function UserFormDialog({
             >
               Batal
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" form="user-form" disabled={isSubmitting}>
               {isSubmitting
                 ? "Menyimpan..."
                 : mode === "create"
@@ -489,7 +505,8 @@ export function UserFormDialog({
                 : "Simpan Perubahan"}
             </Button>
           </DialogFooter>
-        </form>
+        </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

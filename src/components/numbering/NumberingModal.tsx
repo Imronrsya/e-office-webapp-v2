@@ -265,15 +265,18 @@ export function NumberingModal({
           {/* Preview */}
           {nomorSurat && (
             <div className="rounded-lg border border-[#E1DFE0] bg-neutral-50 px-4 py-3">
-              <p className="text-xs text-[#6D6D6D] mb-1">Preview</p>
-              <p className="font-mono text-lg font-medium text-[#2B2B2B]">
-                Nomor: {nomorSurat}
-              </p>
-              <p className="text-sm text-[#6D6D6D] mt-1">
-                Tanggal: {tanggalSurat ? format(tanggalSurat, "dd MMMM yyyy", { locale: id }) : "-"}
-              </p>
+              <p className="text-xs font-medium text-[#6D6D6D] mb-2">Preview</p>
+
+              <div className="grid grid-cols-[65px_auto] gap-x-2 gap-y-1 items-start font-mono text-[15px] font-medium text-zinc-900 leading-tight">
+                <div>Nomor</div>
+                <div>: {nomorSurat}</div>
+
+                <div>Tanggal</div>
+                <div>: {tanggalSurat ? format(tanggalSurat, "dd MMMM yyyy", { locale: id }) : "-"}</div>
+              </div>
+
               {documentType !== "SURAT_KEPUTUSAN" && (
-                <p className="text-xs text-[#6D6D6D] mt-2 italic">
+                <p className="text-xs text-[#6D6D6D] mt-3 italic">
                   Format dokumen: "Semarang, {tanggalSurat ? format(tanggalSurat, "dd MMMM yyyy", { locale: id }) : "[tanggal]"}"
                 </p>
               )}
@@ -288,15 +291,17 @@ export function NumberingModal({
           )}
 
           {/* Format Reference */}
-          <div className="flex items-start gap-2.5 rounded-lg border border-[#E1DFE0] bg-neutral-50 px-4 py-3">
-            <Info className="h-4 w-4 text-[#6D6D6D] mt-0.5 shrink-0" />
-            <div>
-              <p className="text-xs font-medium text-[#6D6D6D] mb-1">Format Penomoran:</p>
-              <ul className="text-xs text-[#6D6D6D] space-y-0.5">
-                <li>• Dengan bulan: XXX/UN7.5/ST/I/YYYY</li>
-                <li>• Tanpa bulan: XXX/UN7.5/SK/YYYY</li>
+          <div className="flex items-start gap-3 rounded-lg border border-neutral-300 bg-neutral-50/50 px-4 py-4">
+            <div className="flex h-5 items-center justify-center shrink-0">
+              <Info className="h-4 w-4 text-neutral-600" />
+            </div>
+            <div className="text-sm text-neutral-600">
+              <div className="font-semibold text-[#2B2B2B] leading-5 mb-2">Format Penomoran:</div>
+              <ul className="space-y-1.5 list-disc list-outside ml-4">
+                <li><strong className="text-[#2B2B2B]">Dengan bulan:</strong> XXX/UN7.5/ST/I/YYYY</li>
+                <li><strong className="text-[#2B2B2B]">Tanpa bulan:</strong> XXX/UN7.5/SK/YYYY</li>
               </ul>
-              <p className="text-xs text-[#6D6D6D] mt-1 italic">
+              <p className="text-xs text-neutral-500 mt-2 italic">
                 Kode jenis: ST (Surat Tugas), SK (Surat Keputusan)
               </p>
             </div>
