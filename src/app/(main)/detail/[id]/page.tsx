@@ -1811,7 +1811,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         // For surat masuk: when suratHasilDoc is primary, its tanggalSurat is null (set only on penomoran).
         // Fall back to suratPengantarDoc?.tanggalSurat which holds the actual date.
         const tanggalSuratValue = primaryDocument?.tanggalSurat || suratPengantarDoc?.tanggalSurat || null;
-        const kategoriValue = detail.category || detail.letterType?.category || null;
+        // Only show kategoriValue if explicitly set by Admin Fakultas (not just letterType default)
+        const kategoriValue = detail.category || null;
         const tipeSuratLabel = (() => {
             if (isStaffCreated && staffDerivedValues) {
                 return staffDerivedValues.jenisSurat === 'SURAT_KEPUTUSAN' ? 'Surat Keputusan' : 'Surat Tugas';
