@@ -146,7 +146,7 @@ export function SuratPreview({
             namaMahasiswa: submissionData.nama,
             nimMahasiswa: submissionData.nim || submissionData.nip || "-",
             programStudi: submissionData.programStudi,
-            departemen: submissionData.departemen || "Informatika",
+            departemen: submissionData.departemen || "-",
             judulAcara: submissionData.judulAcara,
             tanggalMulai: formatTanggalIndonesia(submissionData.tanggalAcara),
             lokasiAcara: submissionData.lokasiAcara,

@@ -1667,7 +1667,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             nim: submissionValues.nim,
             nip: submissionValues.nip,
             programStudi: submissionValues.programStudi,
-            departemen: "Informatika", // Default departemen
+            departemen: submissionValues.departemen || "-", // Use dynamic departemen from submission values
             keperluan: submissionValues.keperluan,
             judulAcara: submissionValues.judulAcara,
             tanggalAcara: submissionValues.tanggalAcara,

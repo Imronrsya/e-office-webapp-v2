@@ -271,7 +271,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
             page-break-inside: avoid;
         }
         
-        /* JIKA DUA TTD: kiri & kanan */
+        /* JIKA DUA TTD: kya 2iri & kanan */
         .ttd-container.dua {
             justify-content: space-between;
         }
@@ -388,6 +388,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
                 <h3>KEMENTERIAN PENDIDIKAN TINGGI, SAINS,<br>DAN TEKNOLOGI</h3>
                 <h2 style="color: #3e4ba8;">UNIVERSITAS DIPONEGORO</h2>
                 <h2 style="color: #3e4ba8;">FAKULTAS SAINS DAN MATEMATIKA</h2>
+                ${departemen ? `<h2 style="color: #3e4ba8; text-transform: uppercase; font-weight: bold;">${departemen.toUpperCase().startsWith('DEPARTEMEN') ? departemen.toUpperCase() : `DEPARTEMEN ${departemen.toUpperCase()}`}</h2>` : ''}
             </div>
             <div class="alamat-kontak">
                 <p>Jalan Prof. Sudarto, S.H Tembalang Semarang<br>
