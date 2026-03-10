@@ -29,7 +29,7 @@ export function SuratKeputusanForm({ initialData }: SuratKeputusanFormProps) {
     mengingat: existingData?.mengingat || initialData?.mengingat || [''],
     menetapkan: existingData?.menetapkan || initialData?.menetapkan || '',
     keputusan: existingData?.keputusan || initialData?.keputusan || [{ label: 'KESATU', content: '' }],
-    tanggalDitetapkan: existingData?.tanggalDitetapkan || initialData?.tanggalDitetapkan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+    tanggalDitetapkan: existingData?.tanggalDitetapkan || initialData?.tanggalDitetapkan || '',
     lampiran: existingData?.lampiran ?? initialData?.lampiran ?? false,
     dataPeserta: existingData?.dataPeserta || initialData?.dataPeserta || [{ nama: '', nim: '' }],
   });
@@ -144,7 +144,7 @@ export function SuratKeputusanForm({ initialData }: SuratKeputusanFormProps) {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nomorSurat">Nomor Surat</Label>
                   <Input
@@ -152,16 +152,6 @@ export function SuratKeputusanForm({ initialData }: SuratKeputusanFormProps) {
                     value={formValues.nomorSurat}
                     onChange={(e) => handleChange('nomorSurat', e.target.value)}
                     placeholder="xxx/UN7.F8/HK/IX/2025"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tanggalDitetapkan">Tanggal Ditetapkan</Label>
-                  <Input
-                    id="tanggalDitetapkan"
-                    value={formValues.tanggalDitetapkan}
-                    onChange={(e) => handleChange('tanggalDitetapkan', e.target.value)}
-                    placeholder="26 September 2025"
                     required
                   />
                 </div>

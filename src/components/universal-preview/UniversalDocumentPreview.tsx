@@ -198,6 +198,12 @@ export function UniversalDocumentPreview({
                         sealTargetRole: (contentData.sealTargetRole as string) || undefined,
                         qrCodeDataUrl,
                         showDraftWatermark: showDraftBadge,
+                        // Format tanggal ditetapkan if available from numbering (tanggalSurat) or already in content
+                        tanggalDitetapkan: (contentData.tanggalDitetapkan as string) || (
+                            (contentData.tanggalSurat as string)
+                                ? formatTanggalIndonesia(contentData.tanggalSurat as string)
+                                : undefined
+                        )
                     };
                     return suratKeputusanTemplate(data);
                 }

@@ -27,6 +27,7 @@ interface NumberingModalProps {
   content?: Record<string, unknown> | null; // Kept for backwards compatibility but no longer used
   signatures?: unknown[]; // Kept for backwards compatibility but no longer used
   nomorSuggestion?: string;
+  tanggalSuggestion?: string | Date | null;
   onSuccess: () => void;
 }
 
@@ -46,10 +47,13 @@ export function NumberingModal({
   documentId,
   documentType,
   nomorSuggestion,
+  tanggalSuggestion,
   onSuccess,
 }: NumberingModalProps) {
   const [nomorSurat, setNomorSurat] = useState(nomorSuggestion || "");
-  const [tanggalSurat, setTanggalSurat] = useState<Date | undefined>(new Date());
+  const [tanggalSurat, setTanggalSurat] = useState<Date | undefined>(
+    tanggalSuggestion ? new Date(tanggalSuggestion) : new Date()
+  );
   const [checkResult, setCheckResult] = useState<CheckResult>({ status: "idle" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,11 +62,11 @@ export function NumberingModal({
   useEffect(() => {
     if (open) {
       setNomorSurat(nomorSuggestion || "");
-      setTanggalSurat(new Date());
+      setTanggalSurat(tanggalSuggestion ? new Date(tanggalSuggestion) : new Date());
       setCheckResult({ status: "idle" });
       setError(null);
     }
-  }, [open, nomorSuggestion]);
+  }, [open, nomorSuggestion, tanggalSuggestion]);
 
   // Debounced check for nomor surat availability
   const checkNomorSurat = useCallback(async (nomor: string) => {
@@ -244,23 +248,23 @@ export function NumberingModal({
             </div>
           </div>
 
-          {/* Tanggal Surat Input - Hanya untuk Surat Tugas */}
-          {documentType !== "SURAT_KEPUTUSAN" && (
-            <div className="space-y-2">
-              <Label htmlFor="tanggalSurat" className="flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4" />
-                Tanggal Surat
-              </Label>
-              <DatePicker
-                value={tanggalSurat}
-                onChange={(date) => setTanggalSurat(date)}
-                placeholder="Pilih tanggal surat"
-              />
-              <p className="text-xs text-zinc-500">
-                Tanggal ini akan mengisi bagian "Semarang, ______" pada surat.
-              </p>
-            </div>
-          )}
+          {/* Tanggal Surat Input */}
+          <div className="space-y-2">
+            <Label htmlFor="tanggalSurat" className="flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4" />
+              {documentType === "SURAT_KEPUTUSAN" ? "Tanggal Ditetapkan" : "Tanggal Surat"}
+            </Label>
+            <DatePicker
+              value={tanggalSurat}
+              onChange={(date) => setTanggalSurat(date)}
+              placeholder={documentType === "SURAT_KEPUTUSAN" ? "Pilih tanggal ditetapkan" : "Pilih tanggal surat"}
+            />
+            <p className="text-xs text-zinc-500">
+              {documentType === "SURAT_KEPUTUSAN"
+                ? 'Tanggal ini akan mengisi bagian "Ditetapkan di Semarang pada tanggal ______" pada surat.'
+                : 'Tanggal ini akan mengisi bagian "Semarang, ______" pada surat.'}
+            </p>
+          </div>
 
           {/* Preview */}
           {nomorSurat && (
@@ -275,11 +279,11 @@ export function NumberingModal({
                 <div>: {tanggalSurat ? format(tanggalSurat, "dd MMMM yyyy", { locale: id }) : "-"}</div>
               </div>
 
-              {documentType !== "SURAT_KEPUTUSAN" && (
-                <p className="text-xs text-[#6D6D6D] mt-3 italic">
-                  Format dokumen: "Semarang, {tanggalSurat ? format(tanggalSurat, "dd MMMM yyyy", { locale: id }) : "[tanggal]"}"
-                </p>
-              )}
+              <p className="text-xs text-[#6D6D6D] mt-3 italic">
+                Format dokumen: {documentType === "SURAT_KEPUTUSAN"
+                  ? `"Ditetapkan di Semarang pada tanggal ${tanggalSurat ? format(tanggalSurat, "dd MMMM yyyy", { locale: id }) : "[tanggal]"}"`
+                  : `"Semarang, ${tanggalSurat ? format(tanggalSurat, "dd MMMM yyyy", { locale: id }) : "[tanggal]"}"`}
+              </p>
             </div>
           )}
 

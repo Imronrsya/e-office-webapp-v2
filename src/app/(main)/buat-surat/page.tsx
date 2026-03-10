@@ -847,10 +847,7 @@ function BuatSuratContent() {
         if (!val || val.trim() === '') return 'Tentang wajib diisi.';
         return '';
     };
-    const getSKTanggalError = (val: Date | undefined): string => {
-        if (!val) return 'Tanggal Ditetapkan wajib diisi.';
-        return '';
-    };
+
     const getSKMenimbangError = (items: string[]): string => {
         if (items.filter(m => m.trim()).length === 0) return 'Menimbang wajib diisi (minimal 1 item).';
         const emptyIdx = items.findIndex(m => !m.trim());
@@ -877,7 +874,7 @@ function BuatSuratContent() {
     // Hitung error SK secara langsung dari state
     const skPerihalError = suratType === "SURAT_KEPUTUSAN" ? getSKPerihalError(perihalInput) : '';
     const skTentangError = suratType === "SURAT_KEPUTUSAN" ? getSKTentangError(suratKeputusanForm.tentang) : '';
-    const skTanggalError = suratType === "SURAT_KEPUTUSAN" ? getSKTanggalError(suratKeputusanForm.tanggalDitetapkan) : '';
+
     const skMenimbangError = suratType === "SURAT_KEPUTUSAN" ? getSKMenimbangError(suratKeputusanForm.menimbang) : '';
     const skMengingatError = suratType === "SURAT_KEPUTUSAN" ? getSKMengingatError(suratKeputusanForm.mengingat) : '';
     const skMenetapkanError = suratType === "SURAT_KEPUTUSAN" ? getSKMenetapkanError(suratKeputusanForm.menetapkan) : '';
@@ -1124,7 +1121,7 @@ function BuatSuratContent() {
             markAllSKTouched();
             if (skPerihalError) { toast.error(skPerihalError); return false; }
             if (skTentangError) { toast.error(skTentangError); return false; }
-            if (skTanggalError) { toast.error(skTanggalError); return false; }
+
             if (skMenimbangError) { toast.error(skMenimbangError); return false; }
             if (skMengingatError) { toast.error(skMengingatError); return false; }
             if (skMenetapkanError) { toast.error(skMenetapkanError); return false; }
@@ -1210,15 +1207,11 @@ function BuatSuratContent() {
                     nomorSurat: '',
                     keterangan: suratTugasTabelForm.keperluan || '',
                 };
-            } else if (suratType === "SURAT_KEPUTUSAN") {
-                // Format tanggalDitetapkan ke bahasa Indonesia
-                const tanggalDitetapkanFormatted = suratKeputusanForm.tanggalDitetapkan
-                    ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
-                    : "";
 
+
+            } else if (suratType === "SURAT_KEPUTUSAN") {
                 content = {
                     ...suratKeputusanForm,
-                    tanggalDitetapkan: tanggalDitetapkanFormatted,
                     menimbang: suratKeputusanForm.menimbang.filter(m => m.trim()),
                     mengingat: suratKeputusanForm.mengingat.filter(m => m.trim()),
                     keputusan: suratKeputusanForm.keputusan.filter(k => k.content.trim()).map(({ key, ...rest }) => rest),
@@ -1947,24 +1940,7 @@ function BuatSuratContent() {
                                                 </p>
                                             )}
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="tanggalDitetapkan">Tanggal Ditetapkan <span className="text-red-500">*</span></Label>
-                                            <DatePicker
-                                                value={suratKeputusanForm.tanggalDitetapkan}
-                                                onChange={(date) => { updateSuratKeputusan("tanggalDitetapkan", date); markTouched('skTanggal'); }}
-                                                placeholder="Pilih tanggal ditetapkan"
-                                            />
-                                            {touchedFields.skTanggal && skTanggalError && (
-                                                <p className="text-sm text-red-500 flex items-center gap-1">
-                                                    <span className="font-medium">⚠</span> {skTanggalError}
-                                                </p>
-                                            )}
-                                            {!skTanggalError && suratKeputusanForm.tanggalDitetapkan && (
-                                                <p className="text-sm text-green-600 flex items-center gap-1">
-                                                    <span>✓</span> Tanggal Ditetapkan valid
-                                                </p>
-                                            )}
-                                        </div>
+
                                     </CardContent>
                                 </Card>
 
@@ -2293,9 +2269,6 @@ function BuatSuratContent() {
                                                 // Format tanggalDitetapkan untuk preview
                                                 {
                                                     ...suratKeputusanForm,
-                                                    tanggalDitetapkan: suratKeputusanForm.tanggalDitetapkan
-                                                        ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
-                                                        : ""
                                                 }
                                     }
                                     tembusan={tembusanTexts.map(t => ({ name: t.text }))}
@@ -2671,13 +2644,8 @@ function BuatSuratContent() {
                                                 </div>
                                                 <Separator className="my-1" />
                                                 <div>
-                                                    <Label className="text-xs text-muted-foreground">Tanggal Ditetapkan</Label>
-                                                    <p className="font-medium text-sm">
-                                                        {suratKeputusanForm.tanggalDitetapkan
-                                                            ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
-                                                            : <span className="italic text-muted-foreground">Belum diisi</span>
-                                                        }
-                                                    </p>
+                                                    <Label className="text-xs text-muted-foreground">Keterangan</Label>
+                                                    <p className="font-medium text-sm text-muted-foreground italic">Tanggal ditetapkan akan diset saat penomoran UPA</p>
                                                 </div>
                                             </>
                                         )}
@@ -2818,12 +2786,8 @@ function BuatSuratContent() {
                                         formData={
                                             suratType === "SURAT_TUGAS" ? suratTugasForm :
                                                 suratType === "SURAT_TUGAS_TABEL" ? suratTugasTabelForm :
-                                                    // Format tanggalDitetapkan untuk preview
                                                     {
                                                         ...suratKeputusanForm,
-                                                        tanggalDitetapkan: suratKeputusanForm.tanggalDitetapkan
-                                                            ? formatDate(suratKeputusanForm.tanggalDitetapkan, "dd MMMM yyyy", { locale: idLocale })
-                                                            : ""
                                                     }
                                         }
                                         tembusan={tembusanTexts.map(t => ({ name: t.text }))}

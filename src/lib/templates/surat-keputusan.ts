@@ -676,7 +676,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     <div class="footer-section-wrapper">
       <div class="tanggal-ditetapkan" style="text-align: right; margin-top: 30px; margin-bottom: 20px;">
         <p style="margin: 0;">Ditetapkan di Semarang</p>
-        <p style="margin: 0;">pada tanggal ${data.tanggalDitetapkan}</p>
+        <p style="margin: 0;">pada tanggal ${data.tanggalDitetapkan || '__ ________ ____'}</p>
       </div>
       
       <div class="ttd-section">

@@ -68,7 +68,6 @@ export interface SuratKeputusanFormData {
   mengingat: string[];
   menetapkan: string;
   keputusan: { label: string; content: string }[];
-  tanggalDitetapkan: string;
   lampiran: boolean;
   dataPeserta: { nama: string; nim: string }[];
 }
