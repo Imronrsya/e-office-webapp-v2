@@ -83,7 +83,7 @@ import { userService } from "@/services/user.service";
 // Universal Preview - Single Source of Truth
 import { TemplatePreview } from "@/components/universal-preview";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { getPostDraftRedirectPath } from "@/lib/role-mapper";
+import { getPostDraftRedirectPath, getRoleScope } from "@/lib/role-mapper";
 import { FileUpload } from "@/features/pengajuan/components/file-upload";
 import { departmentApprovalService } from "@/services/department-approval.service";
 import { Stepper, StepperSkeleton } from "@/components/ui/stepper";
@@ -358,6 +358,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useAuth();
+    const isFaculty = getRoleScope(user?.role || '') === 'FAKULTAS';
 
     // Get type from query params
     const suratType = searchParams?.get("type") as SuratType | null;
@@ -1866,11 +1867,15 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             pejabat = pejabatList.find(p => p.role === role);
         }
 
+        // Auto-set prefix: faculty scope → DEKAN=empty, others='a.n Dekan'; departemen scope → always empty
+        const defaultPrefix = isFaculty ? (role === 'DEKAN' ? '' : 'a.n Dekan') : '';
+
         setSigners(signers.map(s => s.id === id ? {
             ...s,
             role,
             name: pejabat?.name || roleLabel,
-            nip: pejabat?.nip || ""
+            nip: pejabat?.nip || "",
+            prefix: defaultPrefix
         } : s));
     };
 
@@ -3746,7 +3751,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                                     <Button
                                         variant="outline"
                                         onClick={addSigner}
-                                        className="w-full"
+                                        className={`w-full${isFaculty ? ' hidden' : ''}`}
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
                                         Tambah Penanda Tangan

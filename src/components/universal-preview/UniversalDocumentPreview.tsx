@@ -202,7 +202,7 @@ export function UniversalDocumentPreview({
                         tanggalDitetapkan: (contentData.tanggalDitetapkan as string) || (
                             (contentData.tanggalSurat as string)
                                 ? formatTanggalIndonesia(contentData.tanggalSurat as string)
-                                : undefined
+                                : ""
                         )
                     };
                     return suratKeputusanTemplate(data);

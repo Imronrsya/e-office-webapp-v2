@@ -29,7 +29,6 @@ export function SuratKeputusanForm({ initialData }: SuratKeputusanFormProps) {
     mengingat: existingData?.mengingat || initialData?.mengingat || [''],
     menetapkan: existingData?.menetapkan || initialData?.menetapkan || '',
     keputusan: existingData?.keputusan || initialData?.keputusan || [{ label: 'KESATU', content: '' }],
-    tanggalDitetapkan: existingData?.tanggalDitetapkan || initialData?.tanggalDitetapkan || '',
     lampiran: existingData?.lampiran ?? initialData?.lampiran ?? false,
     dataPeserta: existingData?.dataPeserta || initialData?.dataPeserta || [{ nama: '', nim: '' }],
   });
@@ -116,7 +115,7 @@ export function SuratKeputusanForm({ initialData }: SuratKeputusanFormProps) {
     nextStep();
   };
 
-  const previewHtml = suratKeputusanTemplate(formValues);
+  const previewHtml = suratKeputusanTemplate({ ...formValues, tanggalDitetapkan: '' });
 
   return (
     <div className="space-y-6">

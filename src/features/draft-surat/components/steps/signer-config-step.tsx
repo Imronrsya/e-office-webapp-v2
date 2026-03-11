@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDraftSurat } from '../../context/draft-surat-context';
 import { ChevronLeft, ChevronRight, Plus, Trash2, User } from 'lucide-react';
+import { useAuth } from '@/features/auth/hooks/use-auth';
+import { getRoleScope } from '@/lib/role-mapper';
 
 // Use proper role constants that match backend ROLES
 const JABATAN_OPTIONS = [
@@ -20,6 +22,12 @@ const JABATAN_OPTIONS = [
 
 export function SignerConfigStep() {
   const { state, addSigner, removeSigner, updateSigner, nextStep, prevStep } = useDraftSurat();
+  const { user } = useAuth();
+  
+  // Determine if user is in faculty scope
+  const userRole = user?.role || '';
+  const userScope = getRoleScope(userRole);
+  const isFaculty = userScope === 'FAKULTAS';
 
   const handleAddSigner = () => {
     if (state.signers.length >= 4) {
@@ -54,7 +62,11 @@ export function SignerConfigStep() {
             Tambahkan pejabat yang akan menandatangani surat ini
           </p>
         </div>
-        <Button onClick={handleAddSigner} disabled={state.signers.length >= 4}>
+        <Button 
+          onClick={handleAddSigner} 
+          disabled={state.signers.length >= 4}
+          className={isFaculty ? 'hidden' : ''}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Tambah Penandatangan
         </Button>
@@ -122,7 +134,11 @@ export function SignerConfigStep() {
                   <Label>Jabatan *</Label>
                   <Select
                     value={signer.role}
-                    onValueChange={(value) => updateSigner(signer.id, { role: value })}
+                    onValueChange={(value) => {
+                      // Set default prefix only for faculty scope
+                      const defaultPrefix = isFaculty ? (value === 'DEKAN' ? '' : 'a.n Dekan') : '';
+                      updateSigner(signer.id, { role: value, prefix: defaultPrefix });
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih jabatan" />

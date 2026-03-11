@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 
 // Dynamically import the DraftSuratPage to avoid SSR issues with react-pdf
 const DraftSuratPage = dynamic(
@@ -18,7 +19,8 @@ const DraftSuratPage = dynamic(
 );
 
 export default function DraftSuratPageRoute() {
-  // In production, you would get the user role from auth context
-  // For now, default to 'staf' to show all template options
-  return <DraftSuratPage userRole="staf" />;
+  const { user } = useAuth();
+  // Get user role from auth context, fallback to 'staf' if not available
+  const userRole = (user?.role?.toLowerCase() || 'staf') as 'admin-prodi' | 'staf' | 'supervisor';
+  return <DraftSuratPage userRole={userRole} />;
 }

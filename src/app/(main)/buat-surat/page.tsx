@@ -80,7 +80,7 @@ import { id as idLocale } from "date-fns/locale";
 import { TemplatePreview } from "@/components/universal-preview";
 import { Suspense } from "react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { getPostDraftRedirectPath } from "@/lib/role-mapper";
+import { getPostDraftRedirectPath, getRoleScope } from "@/lib/role-mapper";
 import { FileUpload } from "@/features/pengajuan/components/file-upload";
 import { Stepper } from "@/components/ui/stepper";
 
@@ -257,6 +257,7 @@ function BuatSuratContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useAuth();
+    const isFaculty = getRoleScope(user?.role || '') === 'FAKULTAS';
 
     // Get params from URL
     // Transform category from URL
@@ -679,11 +680,15 @@ function BuatSuratContent() {
             willFillNip: pejabat?.nip || ""
         });
 
+        // Auto-set prefix: faculty scope → DEKAN=empty, others='a.n Dekan'; departemen scope → always empty
+        const defaultPrefix = isFaculty ? (role === 'DEKAN' ? '' : 'a.n Dekan') : '';
+
         setSigners(signers.map(s => s.id === id ? {
             ...s,
             role,
             name: pejabat?.name || roleLabel,
-            nip: pejabat?.nip || ""
+            nip: pejabat?.nip || "",
+            prefix: defaultPrefix
         } : s));
     };
 
@@ -2233,7 +2238,7 @@ function BuatSuratContent() {
                                     <Button
                                         variant="outline"
                                         onClick={addSigner}
-                                        className="w-full"
+                                        className={`w-full${isFaculty ? ' hidden' : ''}`}
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
                                         Tambah Penanda Tangan
