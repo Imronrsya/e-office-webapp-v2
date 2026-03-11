@@ -487,7 +487,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         <div class="ttd-container ttd-count-${Math.min(data.signatures!.length, 3)}">
             ${data.signatures!.map(sig => `
             <div class="ttd-box">
-                ${sig.prefix ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${sig.prefix}</p>` : ''}
+                ${sig.prefix ? `<p class="prefix-ttd" style="margin-bottom: 5px;">${sig.prefix}</p>` : ''}
                 <p class="jabatan-ttd">${getRoleDisplayLabel(sig.signerRole)}</p>
                 <div class="signature-area">
                     ${sig.signatureUrl ? `<img src="${sig.signatureUrl}" alt="TTD" class="signature-img" />` : ''}
@@ -503,7 +503,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         
             ${tingkatTTD === "dua" ? `
             <div class="ttd-box kaprodi">
-                ${prefixKaprodi ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKaprodi}</p>` : ''}
+                ${prefixKaprodi ? `<p class="prefix-ttd" style="margin-bottom: 5px;">${prefixKaprodi}</p>` : ''}
                 <p class="jabatan-ttd">Ketua Program Studi</p>
                 <div class="signature-area">
                     ${signatureKaprodi ? `<img src="${signatureKaprodi}" alt="TTD Kaprodi" class="signature-img" />` : ''}
@@ -512,7 +512,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
                 <p class="nip-pejabat">${nipKaprodi ? `NIP. ${nipKaprodi}` : ''}</p>
             </div>
             <div class="ttd-box kadep">
-                ${prefixKadep ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKadep}</p>` : ''}
+                ${prefixKadep ? `<p class="prefix-ttd" style="margin-bottom: 5px;">${prefixKadep}</p>` : ''}
                 <p class="jabatan-ttd">Ketua Departemen</p>
                 <div class="signature-area">
                     ${signatureKadep ? `<img src="${signatureKadep}" alt="TTD Kadep" class="signature-img" />` : ''}
@@ -524,7 +524,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         
             ${tingkatTTD === "kaprodi" ? `
             <div class="ttd-box kaprodi">
-                ${prefixKaprodi ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKaprodi}</p>` : ''}
+                ${prefixKaprodi ? `<p class="prefix-ttd" style="margin-bottom: 5px;">${prefixKaprodi}</p>` : ''}
                 <p class="jabatan-ttd">Ketua Program Studi</p>
                 <div class="signature-area">
                     ${signatureKaprodi ? `<img src="${signatureKaprodi}" alt="TTD Kaprodi" class="signature-img" />` : ''}
@@ -536,7 +536,7 @@ export function generateSuratPengantarHTML(data: SuratPengantarData): string {
         
             ${tingkatTTD === "kadep" ? `
             <div class="ttd-box kadep">
-                ${prefixKadep ? `<p class="prefix-ttd" style="font-style: italic; margin-bottom: 5px;">${prefixKadep}</p>` : ''}
+                ${prefixKadep ? `<p class="prefix-ttd" style="margin-bottom: 5px;">${prefixKadep}</p>` : ''}
                 <p class="jabatan-ttd">Ketua Departemen</p>
                 <div class="signature-area">
                     ${signatureKadep ? `<img src="${signatureKadep}" alt="TTD Kadep" class="signature-img" />` : ''}

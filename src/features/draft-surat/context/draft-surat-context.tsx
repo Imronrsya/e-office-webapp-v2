@@ -66,6 +66,7 @@ export interface SuratKeputusanFormData {
   tentang: string;
   menimbang: string[];
   mengingat: string[];
+  memperhatikan?: string[];
   menetapkan: string;
   keputusan: { label: string; content: string }[];
   lampiran: boolean;

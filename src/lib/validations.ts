@@ -9,6 +9,7 @@ export const submissionFormSchema = z.object({
   judul: z.string().min(1, "Judul wajib diisi"),
   menimbang: z.array(z.string()).optional(),
   mengingat: z.array(z.string()).optional(),
+  memperhatikan: z.array(z.string()).optional(),
   menetapkan: z.array(z.string()).optional(),
   poinMenetapkanLebihLanjut: z.boolean().default(false),
   salinan: z.array(z.string()).optional(),

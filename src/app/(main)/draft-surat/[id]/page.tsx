@@ -66,11 +66,11 @@ import {
     Send,
     Scale,
     BookOpen,
+    Eye,
     FileCheck,
     ListChecks,
     Check,
     ChevronsUpDown,
-    Eye,
 } from "lucide-react";
 import { format as formatDate, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -195,7 +195,7 @@ interface SuratKeputusanForm {
     tentang: string;
     menimbang: string[];
     mengingat: string[];
-    menetapkan: string;
+    memperhatikan?: string[];
     keputusan: KeputusanItem[];
 }
 
@@ -425,7 +425,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         tentang: "",
         menimbang: [""],
         mengingat: [""],
-        menetapkan: "",
+        memperhatikan: [""],
         keputusan: [{ key: "1", label: "KESATU", content: "" }],
     });
 
@@ -518,7 +518,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             skTentang: true,
             skMenimbang: true,
             skMengingat: true,
-            skMenetapkan: true,
+            skMemperhatikan: true,
             skKeputusan: true,
         });
     };
@@ -1248,10 +1248,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         if (emptyIdx !== -1 && items.length > 1) return `Item mengingat ${emptyIdx + 1} kosong. Isi atau hapus item tersebut.`;
         return '';
     };
-    const getSKMenetapkanError = (val: string): string => {
-        if (!val || val.trim() === '') return 'Menetapkan wajib diisi.';
-        return '';
-    };
     const getSKKeputusanError = (items: KeputusanItem[]): string => {
         if (items.filter(k => k.content.trim()).length === 0) return 'Keputusan wajib diisi (minimal 1 item).';
         const emptyItem = items.find(k => !k.content.trim());
@@ -1264,7 +1260,6 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
     const skTentangError = suratType === "SURAT_KEPUTUSAN" ? getSKTentangError(suratKeputusanForm.tentang) : '';
     const skMenimbangError = suratType === "SURAT_KEPUTUSAN" ? getSKMenimbangError(suratKeputusanForm.menimbang) : '';
     const skMengingatError = suratType === "SURAT_KEPUTUSAN" ? getSKMengingatError(suratKeputusanForm.mengingat) : '';
-    const skMenetapkanError = suratType === "SURAT_KEPUTUSAN" ? getSKMenetapkanError(suratKeputusanForm.menetapkan) : '';
     const skKeputusanError = suratType === "SURAT_KEPUTUSAN" ? getSKKeputusanError(suratKeputusanForm.keputusan) : '';
 
     // Hitung error Nama secara langsung dari state
@@ -1777,6 +1772,24 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
         }));
     };
 
+    const addMemperhatikan = () => {
+        setSuratKeputusanForm(prev => ({ ...prev, memperhatikan: [...(prev.memperhatikan || []), ""] }));
+    };
+
+    const updateMemperhatikan = (index: number, value: string) => {
+        setSuratKeputusanForm(prev => ({
+            ...prev,
+            memperhatikan: (prev.memperhatikan || []).map((item, i) => i === index ? value : item)
+        }));
+    };
+
+    const removeMemperhatikan = (index: number) => {
+        setSuratKeputusanForm(prev => ({
+            ...prev,
+            memperhatikan: (prev.memperhatikan || []).filter((_, i) => i !== index)
+        }));
+    };
+
     // Keputusan handlers for SK
     const addKeputusan = () => {
         const labels = ["KESATU", "KEDUA", "KETIGA", "KEEMPAT", "KELIMA", "KEENAM", "KETUJUH", "KEDELAPAN", "KESEMBILAN", "KESEPULUH"];
@@ -2062,7 +2075,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
             if (skTentangError) { toast.error(skTentangError); return false; }
             if (skMenimbangError) { toast.error(skMenimbangError); return false; }
             if (skMengingatError) { toast.error(skMengingatError); return false; }
-            if (skMenetapkanError) { toast.error(skMenetapkanError); return false; }
+            
             if (skKeputusanError) { toast.error(skKeputusanError); return false; }
         }
         return true;
@@ -2219,6 +2232,7 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
                     ...suratKeputusanForm,
                     menimbang: suratKeputusanForm.menimbang.filter(m => m.trim()),
                     mengingat: suratKeputusanForm.mengingat.filter(m => m.trim()),
+                    memperhatikan: (suratKeputusanForm.memperhatikan || []).filter(m => m.trim()),
                     keputusan: suratKeputusanForm.keputusan.filter(k => k.content.trim()).map(({ key, ...rest }) => rest),
                 };
             }
@@ -3556,30 +3570,35 @@ export default function DraftSuratPage({ params }: { params: Promise<{ id: strin
 
                                 <Card className="bg-neutral-50 border-zinc-400">
                                     <CardHeader>
-                                        <CardTitle className="text-lg flex items-center gap-2">
-                                            <FileCheck className="w-5 h-5" />
-                                            Menetapkan <span className="text-red-500">*</span>
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <Textarea
-                                            value={suratKeputusanForm.menetapkan}
-                                            onChange={(e) => updateSuratKeputusan("menetapkan", e.target.value)}
-                                            onBlur={() => markStTouched('skMenetapkan')}
-                                            placeholder="Isi bagian menetapkan"
-                                            rows={3}
-                                            className={stTouchedFields.skMenetapkan && skMenetapkanError ? 'border-red-500' : ''}
-                                        />
-                                        {stTouchedFields.skMenetapkan && skMenetapkanError && (
-                                            <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
-                                                <span className="font-medium">⚠</span> {skMenetapkanError}
-                                            </p>
-                                        )}
-                                        {!skMenetapkanError && suratKeputusanForm.menetapkan && (
-                                            <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                                                <span>✓</span> Menetapkan valid
-                                            </p>
-                                        )}
+                                            <CardTitle className="text-lg flex items-center gap-2">
+                                                <Eye className="w-5 h-5" />
+                                                Memperhatikan <span className="text-gray-400 font-normal text-xs">(Opsional)</span>
+                                            </CardTitle>
+                                        </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        {(suratKeputusanForm.memperhatikan || []).map((item, index) => (
+                                            <div key={index} className="flex gap-2">
+                                                <Textarea
+                                                    value={item}
+                                                    onChange={(e) => updateMemperhatikan(index, e.target.value)}
+                                                    placeholder={`Item memperhatikan ${index + 1}`}
+                                                    rows={2}
+                                                    className="flex-1"
+                                                />
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => removeMemperhatikan(index)}
+                                                    className="text-destructive hover:text-destructive"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                        <Button variant="outline" onClick={addMemperhatikan} className="w-full">
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Tambah Item Memperhatikan
+                                        </Button>
                                     </CardContent>
                                 </Card>
 

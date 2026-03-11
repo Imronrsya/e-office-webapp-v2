@@ -56,6 +56,7 @@ export interface SKDekanContent {
   tentang: string;      // Judul SK Kapital
   menimbang: string[];  // Poin a, b, c...
   mengingat: string[];  // UU No...
+  memperhatikan?: string[]; // Opsional
   memutuskan: {
     menetapkan: string; // "KEPUTUSAN DEKAN TENTANG..."
     kesatu: string;     // "Mengangkat..."

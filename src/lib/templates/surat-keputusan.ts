@@ -36,6 +36,7 @@ export interface SuratKeputusanData {
   tentang: string;
   menimbang: string[];
   mengingat: string[];
+  memperhatikan?: string[];
   menetapkan: string;
   keputusan: KeputusanItem[];
   tanggalDitetapkan: string;
@@ -129,7 +130,7 @@ const renderSignatureBlock = (signature: SignatureBlock, stempelUrl?: string, sh
 
   return `
     <div class="signature-block" style="text-align: center; min-width: 200px; position: relative;">
-      ${signature.prefix ? `<p style="margin: 0 0 5px 0; font-style: italic;">${signature.prefix}</p>` : ''}
+      ${signature.prefix ? `<p style="margin: 0 0 5px 0;">${signature.prefix}</p>` : ''}
       <p style="margin: 0 0 5px 0;">${getRoleDisplayLabel(signature.signerRole)}</p>
       <div style="position: relative; display: inline-block; margin-top: 20px;">
         ${stempelOverlay}
@@ -604,7 +605,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     
     <div class="tentang">
       <p><b>TENTANG</b></p>
-      <p style="font-style: italic;">${data.tentang}</p>
+      <p>${data.tentang}</p>
     </div>
     
     <div class="section-title">
@@ -645,6 +646,25 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
       </div>
     </div>
     
+    ${data.memperhatikan && data.memperhatikan.length > 0 && data.memperhatikan.some(item => item.trim() !== '') ? `
+    <div class="content-section">
+      <div class="section-header">
+        <div class="section-label">Memperhatikan</div>
+        <div class="section-colon">:</div>
+        <div class="section-content">
+          <div class="point-list">
+            ${data.memperhatikan.filter(item => item.trim() !== '').map((item, index) => `
+            <div class="point-item">
+              <div class="point-number">${index + 1}.</div>
+              <div class="point-content">${item}</div>
+            </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+    
     <div class="memutuskan-wrapper">
       <div class="section-title">
         <p>MEMUTUSKAN</p>
@@ -655,7 +675,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
           <div class="section-label">Menetapkan</div>
           <div class="section-colon">:</div>
           <div class="section-content">
-            <p style="margin: 0; text-align: justify;">${data.menetapkan}</p>
+            <p style="margin: 0; text-align: justify;">KEPUTUSAN DEKAN FAKULTAS SAINS DAN MATEMATIKA UNIVERSITAS DIPONEGORO TENTANG ${data.tentang.toUpperCase()}</p>
           </div>
         </div>
       </div>
@@ -663,7 +683,7 @@ export const suratKeputusanTemplate = (data: SuratKeputusanData): string => `<!D
     
     <div class="keputusan-section">
       ${data.keputusan.map((item) => `
-      <div class="keputusan-point">
+      <div class="keputusan-point" style="margin-bottom: 30px;">
         <div style="display: flex; align-items: flex-start; max-width: 100%;">
           <div style="min-width: 120px; flex-shrink: 0;"><span class="keputusan-label">${item.label}</span></div>
           <div style="min-width: 20px; flex-shrink: 0;">:</div>

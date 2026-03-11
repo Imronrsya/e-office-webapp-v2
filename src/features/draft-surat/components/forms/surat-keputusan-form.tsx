@@ -27,6 +27,7 @@ export function SuratKeputusanForm({ initialData }: SuratKeputusanFormProps) {
     tentang: existingData?.tentang || initialData?.tentang || '',
     menimbang: existingData?.menimbang || initialData?.menimbang || [''],
     mengingat: existingData?.mengingat || initialData?.mengingat || [''],
+    memperhatikan: existingData?.memperhatikan || initialData?.memperhatikan || [],
     menetapkan: existingData?.menetapkan || initialData?.menetapkan || '',
     keputusan: existingData?.keputusan || initialData?.keputusan || [{ label: 'KESATU', content: '' }],
     lampiran: existingData?.lampiran ?? initialData?.lampiran ?? false,
@@ -37,25 +38,25 @@ export function SuratKeputusanForm({ initialData }: SuratKeputusanFormProps) {
     setFormValues(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleArrayChange = (field: 'menimbang' | 'mengingat', index: number, value: string) => {
+  const handleArrayChange = (field: 'menimbang' | 'mengingat' | 'memperhatikan', index: number, value: string) => {
     setFormValues(prev => ({
       ...prev,
-      [field]: prev[field].map((item, i) => i === index ? value : item),
+      [field]: prev[field]!.map((item, i) => i === index ? value : item),
     }));
   };
 
-  const addArrayItem = (field: 'menimbang' | 'mengingat') => {
+  const addArrayItem = (field: 'menimbang' | 'mengingat' | 'memperhatikan') => {
     setFormValues(prev => ({
       ...prev,
-      [field]: [...prev[field], ''],
+      [field]: [...(prev[field] || []), ''],
     }));
   };
 
-  const removeArrayItem = (field: 'menimbang' | 'mengingat', index: number) => {
-    if (formValues[field].length <= 1) return;
+  const removeArrayItem = (field: 'menimbang' | 'mengingat' | 'memperhatikan', index: number) => {
+    if (field !== 'memperhatikan' && formValues[field]!.length <= 1) return;
     setFormValues(prev => ({
       ...prev,
-      [field]: prev[field].filter((_, i) => i !== index),
+      [field]: prev[field]!.filter((_, i) => i !== index),
     }));
   };
 
@@ -244,18 +245,42 @@ export function SuratKeputusanForm({ initialData }: SuratKeputusanFormProps) {
                 </div>
               </div>
 
-              {/* Menetapkan */}
+              {/* Memperhatikan Section */}
               <div className="border-t pt-4 mt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-5 h-5 text-muted-foreground" />
+                    <h4 className="font-medium">Memperhatikan <span className="text-gray-400 text-sm font-normal">(Opsional)</span></h4>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={() => addArrayItem('memperhatikan')}>
+                    <Plus className="w-4 h-4 mr-1" />
+                    Tambah
+                  </Button>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="menetapkan">Menetapkan</Label>
-                  <Textarea
-                    id="menetapkan"
-                    value={formValues.menetapkan}
-                    onChange={(e) => handleChange('menetapkan', e.target.value)}
-                    placeholder="KEPUTUSAN DEKAN FAKULTAS SAINS DAN MATEMATIKA UNIVERSITAS DIPONEGORO TENTANG ..."
-                    rows={3}
-                    required
-                  />
+                  {(formValues.memperhatikan || []).map((item, index) => (
+                    <div key={index} className="flex gap-2">
+                      <span className="text-sm font-medium text-gray-500 pt-2 w-6">
+                        {index + 1}.
+                      </span>
+                      <Textarea
+                        value={item}
+                        onChange={(e) => handleArrayChange('memperhatikan', index, e.target.value)}
+                        placeholder="Memperhatikan surat / instruksi ..."
+                        rows={2}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeArrayItem('memperhatikan', index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </div>
 
