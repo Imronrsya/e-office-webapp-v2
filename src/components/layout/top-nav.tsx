@@ -58,7 +58,7 @@ export default function TopNav() {
           <div className="flex items-center gap-3 ml-2">
             <div className="relative h-12 w-10 overflow-hidden">
               <Image
-                src="/logo-undip.svg"
+                src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logo-undip.svg`}
                 alt="Logo Universitas Diponegoro"
                 fill
                 className="object-contain"
@@ -101,7 +101,7 @@ export default function TopNav() {
                   <>
                     <Avatar className="h-10 w-10 border border-gray-200 bg-white">
                       <AvatarImage
-                        src={user?.image || "/default-avatar.svg"}
+                        src={user?.image || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/default-avatar.svg`}
                         alt={user?.name || "User Avatar"}
                         className="object-cover"
                       />

@@ -56,7 +56,7 @@ export default function LoginForm() {
       <div className="absolute left-8 top-8 flex items-center gap-3">
         <div className="relative h-12 w-10 overflow-hidden">
           <Image
-            src="/logo-undip.svg"
+            src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logo-undip.svg`}
             alt="Logo Universitas Diponegoro"
             fill
             className="object-contain"
@@ -141,6 +141,26 @@ export default function LoginForm() {
             {/* QUICK LOGIN DEV COMPONENT (Hapus untuk production)      */}
             {/* ========================================================= */}
             <QuickLoginDev onLogin={handleQuickLoginWrapper} isLoading={isLoading} />
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-400">atau</span>
+              </div>
+            </div>
+
+            <a
+              href="https://apps-fsm.undip.ac.id/sso_api/users/login-with-sso-undip"
+              className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+            >
+              {/* Logo UNDIP mini */}
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="#1a56db" strokeWidth="2"/>
+                <path d="M12 6v6l4 2" stroke="#1a56db" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Masuk dengan SSO UNDIP
+            </a>
           </CardContent>
         </Card>
       </div>

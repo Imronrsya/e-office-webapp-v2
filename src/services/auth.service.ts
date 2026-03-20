@@ -130,4 +130,8 @@ export const authService = {
             return null;
         }
     },
+    async updateProfile(data: any): Promise<{ success: boolean; message: string }> {
+        const response = await api.post<{ success: boolean; message: string }>('/me/profile', data);
+        return response.data;
+    },
 };

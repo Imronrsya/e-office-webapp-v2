@@ -1,29 +1,32 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3079';
-let apiHost = 'localhost';
+const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:20092';
+let backendHost = 'localhost';
 try {
-  apiHost = new URL(apiUrl).hostname;
+  backendHost = new URL(backendUrl).hostname;
 } catch (e) {
-  console.warn("Format URL API di .env salah, default ke localhost");
+  console.warn("Format URL Backend di .env salah, default ke localhost");
 }
 
 const nextConfig: NextConfig = {
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  skipTrailingSlashRedirect: true,
+
   turbopack: {
-    root: path.resolve(process.cwd()) 
+    root: path.resolve(process.cwd())
   },
   images: {
     remotePatterns: [
       {
         protocol: 'http',
-        hostname: 'localhost', 
+        hostname: 'localhost',
         port: '9000',
         pathname: '/e-office-storage/**',
       },
       {
         protocol: 'http',
-        hostname: apiHost, 
+        hostname: backendHost,
         port: '9000',
         pathname: '/e-office-storage/**',
       },
@@ -37,17 +40,21 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        source: '/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
+      },
+      {
+        // Proxy MinIO untuk asset gambar
         source: '/minio-proxy/:path*',
-        // Next.js di server akan menembak langsung ke localhost MinIO
-        destination: 'http://localhost:9000/:path*', 
+        destination: 'http://localhost:9000/:path*',
       },
     ];
   },
 
   ...(process.env.NODE_ENV === 'development' && {
     allowedDevOrigins: [
-      apiHost,      
-      'localhost',   
+      backendHost,
+      'localhost',
     ],
   }),
 };

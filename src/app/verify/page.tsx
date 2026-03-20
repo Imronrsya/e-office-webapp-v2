@@ -123,7 +123,7 @@ function InstitutionHeader() {
     <div className="flex items-center justify-center gap-3">
       <div className="relative h-9 w-7 overflow-hidden shrink-0">
         <Image
-          src="/logo-undip.svg"
+          src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logo-undip.svg`}
           alt="Logo Universitas Diponegoro"
           fill
           className="object-contain"

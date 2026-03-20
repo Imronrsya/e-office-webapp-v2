@@ -45,12 +45,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     meData = null;
                 }
 
-                // Gunakan role dari API, atau fallback ke email mapping
                 const role = meData?.role || getRoleByEmail(session.user.email);
+                const roles = (meData?.roles && meData.roles.length > 0) ? meData.roles : [role];
+
                 setUser({
                     ...session.user,
                     role,
-                    roles: meData?.roles || [role],
+                    roles: roles,
                     profile: meData?.profile,
                     departemen: meData?.departemen,
                     programStudi: meData?.programStudi?.name,
@@ -73,8 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(true);
             const response = await authService.signIn(email, password);
 
-            // Coba panggil /me setelah login untuk mendapatkan role
-            // Akan throw error jika akun nonaktif
             let meData;
             try {
                 meData = await authService.getMe();
@@ -90,13 +89,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 meData = null;
             }
 
-            // Gunakan role dari API, atau fallback ke email mapping
             const role = meData?.role || getRoleByEmail(email);
+            const roles = (meData?.roles && meData.roles.length > 0) ? meData.roles : [role];
 
             const userWithRole: User = {
                 ...response.user,
                 role,
-                roles: meData?.roles || [role],
+                roles: roles,
                 profile: meData?.profile,
                 departemen: meData?.departemen,
                 programStudi: meData?.programStudi?.name,

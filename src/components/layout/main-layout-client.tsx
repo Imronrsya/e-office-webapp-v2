@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import TopNav from "@/components/layout/top-nav";
+import { CompleteProfileModal } from "@/features/auth/components/complete-profile-modal";
 
 export function MainLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -30,6 +31,7 @@ export function MainLayoutClient({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider defaultOpen={false} className="!bg-gray-100 !overflow-hidden">
+      <CompleteProfileModal />
       <TopNav />
       <AppSidebar />
       <div className="relative flex w-full flex-1 flex-col h-screen overflow-hidden">
