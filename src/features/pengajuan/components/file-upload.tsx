@@ -152,7 +152,7 @@ export function FileUpload({
     };
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-hidden">
             {/* Drop Zone */}
             <div
                 className={cn(
@@ -200,7 +200,7 @@ export function FileUpload({
                     {files.map((file, index) => (
                         <div
                             key={`${file.name}-${index}`}
-                            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-[#E1DFE0] group"
+                            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-[#E1DFE0] group min-w-0 overflow-hidden"
                         >
                             <div
                                 className="flex items-center gap-3 min-w-0 flex-1 p-1"

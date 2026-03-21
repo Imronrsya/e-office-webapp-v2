@@ -403,9 +403,9 @@ export function PengajuanFormValidated() {
       >
         <div className="w-full">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center gap-3 mb-6 sm:mb-8">
             <div className="w-2 h-8 bg-base-black rounded-full" />
-            <h1 className="text-2xl font-bold text-gray-900">Pengajuan</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Pengajuan</h1>
           </div>
 
           <div className="space-y-6">
@@ -426,14 +426,14 @@ export function PengajuanFormValidated() {
                       <FormLabel>
                         Tipe Surat <span className="text-red-500">*</span>
                       </FormLabel>
-                      <div className="flex gap-4">
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                         {/* SK Button */}
                         <Button
                           type="button"
                           variant="ghost"
                           onClick={() => field.onChange("SURAT_KEPUTUSAN")}
                           className={cn(
-                            "h-auto p-3 rounded-xl border transition-all justify-start min-w-[200px]",
+                            "h-auto p-3 rounded-xl border transition-all justify-start w-full sm:min-w-[200px] sm:w-auto",
                             field.value === "SURAT_KEPUTUSAN"
                               ? "bg-base-black border-base-black text-white hover:bg-base-black/90 hover:text-white"
                               : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300"
@@ -462,7 +462,7 @@ export function PengajuanFormValidated() {
                           variant="ghost"
                           onClick={() => field.onChange("SURAT_TUGAS")}
                           className={cn(
-                            "h-auto p-3 rounded-xl border transition-all justify-start min-w-[200px]",
+                            "h-auto p-3 rounded-xl border transition-all justify-start w-full sm:min-w-[200px] sm:w-auto",
                             field.value === "SURAT_TUGAS"
                               ? "bg-base-black border-base-black text-white hover:bg-base-black/90 hover:text-white"
                               : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300"

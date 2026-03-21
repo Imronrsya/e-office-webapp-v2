@@ -34,11 +34,11 @@ export function MainLayoutClient({ children }: { children: React.ReactNode }) {
       <CompleteProfileModal />
       <TopNav />
       <AppSidebar />
-      <div className="relative flex w-full flex-1 flex-col h-screen overflow-hidden">
-        <main className="flex flex-1 flex-col px-2 pb-2 pt-[88px] overflow-hidden">
+      <div className="relative flex w-full flex-1 flex-col h-dvh overflow-hidden">
+        <main className="flex flex-1 flex-col px-2 pb-2 pt-[72px] sm:pt-[88px] overflow-hidden">
           <div className="flex flex-1 flex-col overflow-hidden rounded-2xl bg-white shadow-sm">
             <div ref={scrollRef} className="flex flex-1 flex-col overflow-auto">
-              <div className="flex flex-1 flex-col p-6 min-h-0">
+              <div className="flex flex-1 flex-col p-3 sm:p-6 min-h-0">
                 {children}
               </div>
             </div>

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -62,9 +63,22 @@ export function PDFPreview({
     const [showSidebar, setShowSidebar] = useState(true);
     const [internalZoom, setInternalZoom] = useState(100);
     const [rotation, setRotation] = useState(0);
-    const [isFullscreen, setIsFullscreen] = useState(false);
+    // Expanded state — true when either browser fullscreen OR CSS fallback is active
+    const [isExpanded, setIsExpanded] = useState(false);
+    // Track whether we're using real browser fullscreen (hides address bar) vs CSS fallback
+    const isBrowserFullscreenRef = useRef(false);
+    // Auto-fit page width for mobile: track available width of the main view container
+    const [fitPageWidth, setFitPageWidth] = useState<number | undefined>(undefined);
+    const isMobile = useIsMobile();
 
-    // Listen for fullscreen changes to toggle icon and styles correctly
+    // Auto-hide sidebar on mobile
+    useEffect(() => {
+        if (isMobile) {
+            setShowSidebar(false);
+        }
+    }, [isMobile]);
+
+    // Sync state when user exits browser fullscreen via Escape key or browser controls
     useEffect(() => {
         const onFsChange = () => {
             const isFs = !!(
@@ -76,21 +90,29 @@ export function PDFPreview({
                 // @ts-ignore
                 document.msFullscreenElement
             );
-            setIsFullscreen(isFs);
+            if (!isFs && isBrowserFullscreenRef.current) {
+                // User exited browser fullscreen (Escape key, swipe, etc.)
+                isBrowserFullscreenRef.current = false;
+                setIsExpanded(false);
+            }
         };
-
         document.addEventListener('fullscreenchange', onFsChange);
         document.addEventListener('webkitfullscreenchange', onFsChange);
-        document.addEventListener('mozfullscreenchange', onFsChange);
-        document.addEventListener('MSFullscreenChange', onFsChange);
-
         return () => {
             document.removeEventListener('fullscreenchange', onFsChange);
             document.removeEventListener('webkitfullscreenchange', onFsChange);
-            document.removeEventListener('mozfullscreenchange', onFsChange);
-            document.removeEventListener('MSFullscreenChange', onFsChange);
         };
     }, []);
+
+    // Lock body scroll when using CSS fallback expand
+    useEffect(() => {
+        if (isExpanded && !isBrowserFullscreenRef.current) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [isExpanded]);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const mainViewRef = useRef<HTMLDivElement>(null);
@@ -104,6 +126,24 @@ export function PDFPreview({
         fillContainer ? `modal-${Math.random().toString(36).slice(2, 8)}-page-` : 'page-'
     );
     const pageIdPrefix = instanceIdRef.current;
+
+    // ResizeObserver: measure main view container width for auto-fit on narrow screens
+    useEffect(() => {
+        if (!mainViewRef.current) return;
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const w = Math.floor(entry.contentRect.width);
+                if (w > 0 && w < 700) {
+                    // Narrow screen: fit page to available width (subtract p-6 padding = 48px)
+                    setFitPageWidth(Math.max(200, w - 48));
+                } else {
+                    setFitPageWidth(undefined); // wide screen: use zoom/scale normally
+                }
+            }
+        });
+        observer.observe(mainViewRef.current);
+        return () => observer.disconnect();
+    }, []);
 
     // Use external zoom if provided, otherwise internal
     const zoom = externalZoom ?? internalZoom;
@@ -408,28 +448,43 @@ export function PDFPreview({
     const handleZoomOut = () => setZoom(Math.max(zoom - 25, 50));
     const handleRotate = () => setRotation((rotation + 90) % 360);
 
-    const handleFullscreen = () => {
-        if (containerRef.current) {
-            const isFs = document.fullscreenElement ||
-                // @ts-ignore
-                document.webkitFullscreenElement ||
-                // @ts-ignore
-                document.mozFullScreenElement;
-
-            if (isFs) {
+    const handleFullscreen = async () => {
+        if (isExpanded) {
+            // Exit: if browser fullscreen is active, exit it; otherwise just toggle CSS
+            if (isBrowserFullscreenRef.current) {
                 if (document.exitFullscreen) document.exitFullscreen();
                 // @ts-ignore
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                // @ts-ignore
-                else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+                // fullscreenchange listener will set isExpanded to false
             } else {
-                if (containerRef.current.requestFullscreen) containerRef.current.requestFullscreen();
-                // @ts-ignore
-                else if (containerRef.current.webkitRequestFullscreen) containerRef.current.webkitRequestFullscreen();
-                // @ts-ignore
-                else if (containerRef.current.mozRequestFullScreen) containerRef.current.mozRequestFullScreen();
+                setIsExpanded(false);
+            }
+            return;
+        }
+
+        // Enter: try browser Fullscreen API first (hides address bar)
+        if (containerRef.current) {
+            try {
+                const el = containerRef.current as any;
+                if (el.requestFullscreen) {
+                    await el.requestFullscreen();
+                } else if (el.webkitRequestFullscreen) {
+                    await el.webkitRequestFullscreen();
+                } else {
+                    throw new Error('not supported');
+                }
+                // Browser fullscreen succeeded — address bar hidden
+                isBrowserFullscreenRef.current = true;
+                setIsExpanded(true);
+                return;
+            } catch {
+                // Browser fullscreen failed — fall through to CSS fallback
             }
         }
+
+        // CSS fallback (iOS Safari, or when browser API fails)
+        isBrowserFullscreenRef.current = false;
+        setIsExpanded(true);
     };
 
     const handlePrint = async () => {
@@ -579,26 +634,15 @@ export function PDFPreview({
             ref={containerRef}
             className={cn(
                 "flex flex-col bg-zinc-800 relative pdf-preview-root",
-                fillContainer && "h-full",
-                isFullscreen ? "rounded-none" : "rounded-xl overflow-hidden",
-                className
+                isExpanded
+                    ? isBrowserFullscreenRef.current
+                        ? "w-screen h-screen rounded-none overflow-hidden"  // browser fullscreen: fills screen
+                        : "fixed inset-0 z-[9999] rounded-none overflow-hidden"  // CSS fallback: fills viewport
+                    : cn(fillContainer && "h-full", "rounded-xl overflow-hidden", className)
             )}
-            style={fillContainer ? undefined : { height: '75vh', minHeight: '800px' }}
+            style={isExpanded ? undefined : (fillContainer ? undefined : { height: '75vh', minHeight: '800px' })}
         >
-            {/* Fullscreen global style override to prevent underlying scrollbar */}
-            {isFullscreen && (
-                <style>{`
-                    html, body { overflow: hidden !important; }
-                    .pdf-preview-root { 
-                        width: 100vw !important; 
-                        height: 100vh !important; 
-                        max-width: none !important; 
-                        margin: 0 !important; 
-                        padding: 0 !important; 
-                    }
-                `}</style>
-            )}
-            {/* ... rest of the component ... */}
+            {/* Body scroll lock is handled via useEffect above */}
             {/* Loading Overlay when updating */}
             {isGenerating && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
@@ -610,22 +654,22 @@ export function PDFPreview({
             )}
 
             {/* Toolbar */}
-            <div className="flex items-center justify-between bg-zinc-700 px-3 py-2 text-white text-sm border-b border-zinc-600">
+            <div className="flex items-center justify-between bg-zinc-700 px-2 sm:px-3 py-2 text-white text-sm border-b border-zinc-600">
                 {/* Left section: Menu & filename & page nav */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 min-w-0">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setShowSidebar(!showSidebar)}
-                        className="text-white hover:bg-zinc-600 h-8 w-8"
+                        className="text-white hover:bg-zinc-600 h-8 w-8 shrink-0 hidden sm:flex"
                         title={showSidebar ? "Hide sidebar" : "Show sidebar"}
                     >
                         {showSidebar ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />}
                     </Button>
 
-                    <span className="truncate max-w-[150px] font-medium">{fileName}</span>
+                    <span className="truncate max-w-[80px] sm:max-w-[150px] font-medium">{fileName}</span>
 
-                    <span className="text-zinc-400 mx-2">|</span>
+                    <span className="text-zinc-400 mx-1 sm:mx-2">|</span>
 
                     {/* Page navigation */}
                     <div className="flex items-center gap-1">
@@ -638,7 +682,7 @@ export function PDFPreview({
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </Button>
-                        <span className="min-w-[60px] text-center">
+                        <span className="min-w-[40px] sm:min-w-[60px] text-center text-xs sm:text-sm">
                             {currentPage} / {numPages}
                         </span>
                         <Button
@@ -654,31 +698,34 @@ export function PDFPreview({
                 </div>
 
                 {/* Right section: Zoom & actions */}
-                <div className="flex items-center gap-1">
-                    {/* Zoom controls */}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleZoomOut}
-                        disabled={zoom <= 50}
-                        className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
-                        title="Zoom out"
-                    >
-                        <Minus className="w-4 h-4" />
-                    </Button>
-                    <span className="min-w-[50px] text-center">{zoom}%</span>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleZoomIn}
-                        disabled={zoom >= 200}
-                        className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
-                        title="Zoom in"
-                    >
-                        <Plus className="w-4 h-4" />
-                    </Button>
-
-                    <span className="text-zinc-500 mx-1">|</span>
+                <div className="flex items-center gap-1 shrink-0">
+                    {/* Zoom controls — hidden on mobile when auto-fit is active */}
+                    {!fitPageWidth && (
+                        <>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleZoomOut}
+                                disabled={zoom <= 50}
+                                className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
+                                title="Zoom out"
+                            >
+                                <Minus className="w-4 h-4" />
+                            </Button>
+                            <span className="min-w-[42px] text-center text-xs hidden sm:inline">{zoom}%</span>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleZoomIn}
+                                disabled={zoom >= 200}
+                                className="text-white hover:bg-zinc-600 h-8 w-8 disabled:text-zinc-500"
+                                title="Zoom in"
+                            >
+                                <Plus className="w-4 h-4" />
+                            </Button>
+                            <span className="text-zinc-500 mx-1 hidden sm:inline">|</span>
+                        </>
+                    )}
 
                     {/* Action buttons */}
                     <Button
@@ -686,15 +733,15 @@ export function PDFPreview({
                         size="icon"
                         onClick={handleFullscreen}
                         className="text-white hover:bg-zinc-600 h-8 w-8"
-                        title="Fullscreen"
+                        title={isExpanded ? "Minimize" : "Maximize"}
                     >
-                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                        {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </Button>
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={handleRotate}
-                        className="text-white hover:bg-zinc-600 h-8 w-8"
+                        className="text-white hover:bg-zinc-600 h-8 w-8 hidden sm:flex"
                         title="Rotate"
                     >
                         <RotateCw className="w-4 h-4" />
@@ -703,7 +750,7 @@ export function PDFPreview({
                         variant="ghost"
                         size="icon"
                         onClick={handlePrint}
-                        className="text-white hover:bg-zinc-600 h-8 w-8"
+                        className="text-white hover:bg-zinc-600 h-8 w-8 hidden sm:flex"
                         title="Print"
                     >
                         <Printer className="w-4 h-4" />
@@ -763,7 +810,7 @@ export function PDFPreview({
                     className="flex-1 overflow-auto bg-zinc-600 relative"
                 >
                     <div
-                        className="flex flex-col items-center p-6 space-y-4"
+                        className="w-fit mx-auto flex flex-col p-6 space-y-4"
                         style={{
                             transform: `rotate(${rotation}deg)`,
                             transformOrigin: 'center center',
@@ -790,7 +837,11 @@ export function PDFPreview({
                                 >
                                     <Page
                                         pageNumber={index + 1}
-                                        scale={zoom / 100}
+                                        // On narrow screens use width-prop to fill container; on wide screens use scale
+                                        {...(fitPageWidth
+                                            ? { width: fitPageWidth }
+                                            : { scale: zoom / 100 }
+                                        )}
                                         className="shadow-2xl rounded bg-white"
                                         renderTextLayer={false}
                                         renderAnnotationLayer={false}

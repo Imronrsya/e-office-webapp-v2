@@ -559,10 +559,10 @@ export default function TembusanDetailPage({
                           key={index}
                           className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-[#E1DFE0]"
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div
                               className={cn(
-                                "w-10 h-10 rounded-lg flex items-center justify-center",
+                                "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
                                 isPdf
                                   ? "bg-red-100"
                                   : "bg-blue-100"
@@ -572,9 +572,9 @@ export default function TembusanDetailPage({
                                 ? <FileText className="w-5 h-5 text-red-600" />
                                 : <ImageIcon className="w-5 h-5 text-blue-500" />}
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <p
-                                className="text-sm font-medium text-[#2B2B2B] truncate max-w-[300px]"
+                                className="text-sm font-medium text-[#2B2B2B] truncate"
                                 title={name}
                               >
                                 {name}
@@ -588,7 +588,7 @@ export default function TembusanDetailPage({
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             {/* Preview button - opens modal */}
                             <Button
                               variant="ghost"

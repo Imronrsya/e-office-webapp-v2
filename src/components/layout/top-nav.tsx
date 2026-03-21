@@ -43,7 +43,7 @@ export default function TopNav() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full bg-gray-100">
-      <div className="flex items-center justify-between py-3 pr-2">
+      <div className="flex items-center justify-between py-2 sm:py-3 pr-2">
         {/* Kiri: Hamburger (aligned with sidebar icons) + Logo & Institusi */}
         <div className="flex items-center">
           <div className="flex w-12 shrink-0 items-center justify-center">
@@ -55,8 +55,8 @@ export default function TopNav() {
               <Menu className="size-5" />
             </button>
           </div>
-          <div className="flex items-center gap-3 ml-2">
-            <div className="relative h-12 w-10 overflow-hidden">
+          <div className="flex items-center gap-2 sm:gap-3 ml-1 sm:ml-2">
+            <div className="relative h-9 w-8 sm:h-12 sm:w-10 overflow-hidden shrink-0">
               <Image
                 src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logo-undip.svg`}
                 alt="Logo Universitas Diponegoro"
@@ -65,7 +65,7 @@ export default function TopNav() {
                 priority
               />
             </div>
-            <div className="flex flex-col justify-center">
+            <div className="hidden sm:flex flex-col justify-center">
               <span className="text-sm font-bold leading-tight text-base-black">
                 Fakultas Sains dan Matematika
               </span>
@@ -73,6 +73,9 @@ export default function TopNav() {
                 Universitas Diponegoro
               </span>
             </div>
+            <span className="sm:hidden text-xs font-bold leading-tight text-base-black">
+              FSM UNDIP
+            </span>
           </div>
         </div>
 
@@ -86,12 +89,12 @@ export default function TopNav() {
               <button
                 id="user-menu-button"
                 suppressHydrationWarning
-                className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-2 pr-3 transition-colors hover:bg-gray-50 focus:outline-none"
+                className="flex cursor-pointer items-center gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-1.5 sm:p-2 pr-2 sm:pr-3 transition-colors hover:bg-gray-50 focus:outline-none"
               >
                 {loading || !user ? (
                   <>
-                    <div className="h-10 w-10 rounded-full bg-zinc-200 animate-pulse" />
-                    <div className="flex flex-col gap-1">
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-zinc-200 animate-pulse" />
+                    <div className="hidden sm:flex flex-col gap-1">
                       <div className="h-4 w-24 bg-zinc-200 rounded animate-pulse" />
                       <div className="h-3 w-16 bg-zinc-200 rounded animate-pulse" />
                     </div>
@@ -99,17 +102,17 @@ export default function TopNav() {
                   </>
                 ) : (
                   <>
-                    <Avatar className="h-10 w-10 border border-gray-200 bg-white">
+                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border border-gray-200 bg-white">
                       <AvatarImage
                         src={user?.image || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/default-avatar.svg`}
                         alt={user?.name || "User Avatar"}
                         className="object-cover"
                       />
-                      <AvatarFallback className="bg-gray-100 text-gray-600">
+                      <AvatarFallback className="bg-gray-100 text-gray-600 text-xs sm:text-sm">
                         {user?.name?.charAt(0) || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex flex-col items-start">
+                    <div className="hidden sm:flex flex-col items-start">
                       <span className="text-sm font-bold text-black">
                         {user?.name || ""}
                       </span>

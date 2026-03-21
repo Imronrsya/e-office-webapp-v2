@@ -183,7 +183,7 @@ export function LetterTable({
   filterType,
 }: LetterTableProps) {
   return (
-    <table className="w-full table-fixed caption-bottom text-sm">
+    <table className="w-full caption-bottom text-sm">
       <TableHeader className="sticky top-0 z-20">
         <TableRow className="bg-slate-50 hover:bg-slate-50 border-b shadow-[0_1px_0_0_theme(colors.border)]">
           {columns.map((column) => (

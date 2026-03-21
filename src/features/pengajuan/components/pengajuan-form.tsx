@@ -297,9 +297,9 @@ export function PengajuanForm() {
         <form onSubmit={handleSubmit} className="flex flex-col">
             {/* --- HEADER --- */}
             <div className="w-full">
-                <div className="flex items-center gap-3 mb-8">
+                <div className="flex items-center gap-3 mb-6 sm:mb-8">
                     <div className="w-2 h-8 bg-base-black rounded-full" />
-                    <h1 className="text-2xl font-bold text-gray-900">Pengajuan</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Pengajuan</h1>
                 </div>
 
                 <div className="space-y-8">
@@ -309,14 +309,14 @@ export function PengajuanForm() {
                         <Label className="text-sm font-medium text-gray-700">
                             Tipe Surat <span className="text-red-500">*</span>
                         </Label>
-                        <div className="flex gap-4">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                             {/* Tombol SK */}
                             <Button
                                 type="button"
                                 variant="ghost"
                                 onClick={() => handleInputChange("jenisSurat", "SURAT_KEPUTUSAN")}
                                 className={cn(
-                                    "h-auto p-3 rounded-xl border transition-all justify-start min-w-[200px]",
+                                    "h-auto p-3 rounded-xl border transition-all justify-start w-full sm:min-w-[200px] sm:w-auto",
                                     formState.jenisSurat === "SURAT_KEPUTUSAN"
                                         ? "bg-base-black border-base-black text-white hover:bg-base-black/90 hover:text-white"
                                         : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300"
@@ -341,7 +341,7 @@ export function PengajuanForm() {
                                 variant="ghost"
                                 onClick={() => handleInputChange("jenisSurat", "SURAT_TUGAS")}
                                 className={cn(
-                                    "h-auto p-3 rounded-xl border transition-all justify-start min-w-[200px]",
+                                    "h-auto p-3 rounded-xl border transition-all justify-start w-full sm:min-w-[200px] sm:w-auto",
                                     formState.jenisSurat === "SURAT_TUGAS"
                                         ? "bg-base-black border-base-black text-white hover:bg-base-black/90 hover:text-white"
                                         : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300"
@@ -497,7 +497,7 @@ export function PengajuanForm() {
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold text-gray-900">Detail Pelaksanaan</h2>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="tanggalAcara" className="text-sm font-medium text-gray-700">
                                     Tanggal Mulai <span className="text-red-500">*</span>

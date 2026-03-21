@@ -162,30 +162,31 @@ export default function TembusanInboxPage() {
       <div className="shrink-0">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
-          <h1 className="text-2xl font-bold text-black">Surat Tembusan</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-black">Surat Tembusan</h1>
         </div>
 
         {/* Search Bar */}
-        <form onSubmit={handleSearch} className="flex gap-4 mb-4">
+        <form onSubmit={handleSearch} className="flex gap-2 sm:gap-4 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
             <Input
               type="text"
-              placeholder="Cari nomor surat, perihal, atau pemohon..."
+              placeholder="Cari nomor surat, perihal..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
-          <Button type="submit" variant="secondary">
-            <Search className="w-4 h-4 mr-2" />
-            Cari
+          <Button type="submit" variant="secondary" className="shrink-0">
+            <Search className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Cari</span>
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={fetchInbox}
             disabled={loading}
+            className="shrink-0"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
@@ -194,7 +195,7 @@ export default function TembusanInboxPage() {
 
       {/* Table — scrollable area (Dashboard style) */}
       <div
-        className="mt-0 flex-1 min-h-0 overflow-hidden rounded-lg border border-border bg-white"
+        className="mt-0 flex-1 min-h-[220px] overflow-hidden rounded-lg border border-border bg-white"
       >
         <div className="h-full overflow-auto">
           {loading ? (
@@ -226,7 +227,8 @@ export default function TembusanInboxPage() {
             </div>
           ) : (
             // Table
-            <table className="w-full table-fixed caption-bottom text-sm">
+            <div className="min-w-[700px]">
+            <table className="w-full caption-bottom text-sm">
               <TableHeader className="sticky top-0 z-20">
                 <TableRow className="bg-slate-50 hover:bg-slate-50 border-b shadow-[0_1px_0_0_theme(colors.border)]">
                   <TableHead className="w-12"></TableHead>
@@ -306,6 +308,7 @@ export default function TembusanInboxPage() {
                 ))}
               </TableBody>
             </table>
+            </div>
           )}
         </div>
       </div>

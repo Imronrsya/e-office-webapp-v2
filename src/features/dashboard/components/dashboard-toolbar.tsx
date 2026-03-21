@@ -90,14 +90,14 @@ export function DashboardToolbar({
   return (
     <header className="space-y-3">
       {/* Tabs + Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
         {/* Tabs Surat Masuk/Keluar */}
         {config.hasInboxOutbox && (
-          <nav aria-label="Tipe surat" className="flex">
+          <nav aria-label="Tipe surat" className="flex w-full sm:w-auto">
             <Button
               variant={filters.type === "masuk" ? "default" : "ghost"}
               onClick={() => handleTypeChange("masuk")}
-              className={`w-[160px] rounded-r-none border ${filters.type === "masuk"
+              className={`flex-1 sm:flex-none sm:w-[160px] rounded-r-none border ${filters.type === "masuk"
                 ? "bg-base-black hover:bg-base-black/90 text-white border-base-black"
                 : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
                 }`}
@@ -117,7 +117,7 @@ export function DashboardToolbar({
             <Button
               variant={filters.type === "keluar" ? "default" : "ghost"}
               onClick={() => handleTypeChange("keluar")}
-              className={`w-[160px] rounded-l-none border-l-0 border ${filters.type === "keluar"
+              className={`flex-1 sm:flex-none sm:w-[160px] rounded-l-none border-l-0 border ${filters.type === "keluar"
                 ? "bg-base-black hover:bg-base-black/90 text-white border-base-black"
                 : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
                 }`}
@@ -138,7 +138,7 @@ export function DashboardToolbar({
         )}
 
         {/* Right side filters group - Date, Status, Search */}
-        <div className="flex flex-wrap items-center gap-3 ml-auto">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 sm:ml-auto">
           {/* Date Range Picker - using rsuite */}
           {hasToolbarAction(role, "filter_date") && (
             <DateRangePicker
@@ -154,8 +154,7 @@ export function DashboardToolbar({
               showOneCalendar={false}
               cleanable
               placement="bottomEnd"
-              style={{ width: 240 }}
-              className="[&_.rs-picker-toggle]:!border-input [&_.rs-picker-toggle]:!rounded-md [&_.rs-picker-toggle]:!bg-white [&_.rs-picker-toggle]:!h-9 [&_.rs-picker-toggle]:!text-sm"
+              className="w-full sm:w-[240px] [&_.rs-picker-toggle]:!border-input [&_.rs-picker-toggle]:!rounded-md [&_.rs-picker-toggle]:!bg-white [&_.rs-picker-toggle]:!h-9 [&_.rs-picker-toggle]:!text-sm"
             />
           )}
 
@@ -166,7 +165,7 @@ export function DashboardToolbar({
               onValueChange={handleStatusChange}
             >
               <SelectTrigger
-                className="w-[160px] bg-white"
+                className="w-full sm:w-[160px] bg-white"
                 aria-label="Filter berdasarkan status"
               >
                 <SelectValue placeholder="Semua Status" />
@@ -184,7 +183,7 @@ export function DashboardToolbar({
 
           {/* Search */}
           {hasToolbarAction(role, "search") && (
-            <div className="relative w-[200px]">
+            <div className="relative w-full sm:w-[200px]">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
                 aria-hidden="true"

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/layout/bottom-nav";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { suratService, SubmissionDetail } from "@/services/surat.service";
+import { env } from "@/lib/env";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -323,11 +324,28 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     }, [resolvedParams.id]);
 
     // Download attachment handler - force download without opening in browser
-    const handleDownloadAttachment = async (fileName: string, fileUrl: string) => {
+    const handleDownloadAttachment = async (fileName: string, fileUrl: string, attachmentId?: string) => {
         if (!detail) return;
         try {
-            // Fetch file as blob to force download
-            const response = await fetch(fileUrl);
+            // If already a blob URL (e.g. from preview), download directly without re-fetching
+            if (fileUrl.startsWith('blob:')) {
+                const a = document.createElement("a");
+                a.href = fileUrl;
+                a.download = fileName;
+                a.style.display = "none";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                toast.success(`Berhasil mengunduh ${fileName}`);
+                return;
+            }
+
+            // Use stream endpoint when attachmentId is provided — bypasses presigned URL proxy issues
+            const fetchUrl = attachmentId
+                ? `${env.apiUrl}/api/submission/${detail.id}/attachments/${attachmentId}/stream`
+                : fileUrl;
+
+            const response = await fetch(fetchUrl, { credentials: 'include' });
             if (!response.ok) throw new Error('Download failed');
 
             const blob = await response.blob();
@@ -351,16 +369,26 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         }
     };
 
-    // Preview attachment handler - use fileUrl from attachment data directly
-    const handlePreviewAttachment = (attachmentId: string, fileName: string, mimeType: string | null, fileUrl: string) => {
+    // Preview attachment handler - fetch via stream endpoint to bypass presigned URL proxy issues
+    const handlePreviewAttachment = async (attachmentId: string, fileName: string, mimeType: string | null, _fileUrl: string) => {
         if (!detail) return;
-        setPreviewAttachment({
-            id: attachmentId,
-            fileName,
-            fileUrl,
-            mimeType
-        });
-        setAttachmentPreviewOpen(true);
+        try {
+            const streamUrl = `${env.apiUrl}/api/submission/${detail.id}/attachments/${attachmentId}/stream`;
+            const response = await fetch(streamUrl, { credentials: 'include' });
+            if (!response.ok) throw new Error('Gagal memuat file');
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            setPreviewAttachment({
+                id: attachmentId,
+                fileName,
+                fileUrl: blobUrl,
+                mimeType
+            });
+            setAttachmentPreviewOpen(true);
+        } catch (err) {
+            console.error("Preview failed:", err);
+            toast.error("Gagal memuat preview file");
+        }
     };
 
     // ========================================================================
@@ -865,13 +893,13 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         return (
             <>
                 {/* Page Title Skeleton */}
-                <div className="flex items-center gap-2 mb-8">
+                <div className="flex items-center gap-2 mb-6 sm:mb-8">
                     <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
                     <div className="h-8 w-24 bg-zinc-200 rounded animate-pulse" />
                 </div>
 
                 {/* Sub-header Skeleton */}
-                <div className="h-6 w-64 bg-zinc-200 rounded animate-pulse mb-4" />
+                <div className="h-6 w-48 sm:w-64 bg-zinc-200 rounded animate-pulse mb-4" />
 
                 {/* Tab Buttons Skeleton */}
                 <div className="flex gap-2 mb-6">
@@ -1379,21 +1407,21 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                     key={att.id}
                                     className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-[#E1DFE0]"
                                 >
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
                                         <div className={cn(
-                                            "w-10 h-10 rounded-lg flex items-center justify-center",
+                                            "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
                                             isPdf ? "bg-red-100" : "bg-blue-100"
                                         )}>
                                             {isPdf
                                                 ? <FileText className="w-5 h-5 text-red-600" />
                                                 : <ImageIcon className="w-5 h-5 text-blue-500" />}
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-[#2B2B2B]">{att.fileName}</p>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-[#2B2B2B] truncate" title={att.fileName}>{att.fileName}</p>
                                             <p className="text-xs text-[#6D6D6D]">{formatFileSize(att.fileSize)}</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 shrink-0">
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -1405,7 +1433,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => handleDownloadAttachment(att.fileName, att.fileUrl)}
+                                            onClick={() => handleDownloadAttachment(att.fileName, att.fileUrl, att.id)}
                                             title="Download"
                                         >
                                             <Download className="w-5 h-5" />
@@ -1425,23 +1453,23 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                     key={`admin-${index}`}
                                     className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-[#E1DFE0]"
                                 >
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
                                         <div className={cn(
-                                            "w-10 h-10 rounded-lg flex items-center justify-center",
+                                            "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
                                             isPdf ? "bg-red-100" : isImage ? "bg-blue-100" : "bg-blue-100"
                                         )}>
                                             {isPdf
                                                 ? <FileText className="w-5 h-5 text-red-600" />
                                                 : <ImageIcon className="w-5 h-5 text-blue-500" />}
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-[#2B2B2B] truncate max-w-[180px]" title={att.name}>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-[#2B2B2B] truncate" title={att.name}>
                                                 {att.name}
                                             </p>
                                             <p className="text-xs text-[#6D6D6D]">Dari Admin Prodi</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 shrink-0">
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -1559,17 +1587,17 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                     key={index}
                                     className="flex items-center justify-between p-3.5 bg-white rounded-lg border border-[#E1DFE0]"
                                 >
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
                                         <div className={cn(
-                                            "w-10 h-10 rounded-lg flex items-center justify-center",
+                                            "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
                                             isPdf ? "bg-red-100" : "bg-blue-100"
                                         )}>
                                             {isPdf
                                                 ? <FileText className="w-5 h-5 text-red-600" />
                                                 : <ImageIcon className="w-5 h-5 text-blue-500" />}
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-[#2B2B2B] truncate max-w-[180px]" title={name}>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-[#2B2B2B] truncate" title={name}>
                                                 {name}
                                             </p>
                                             <p className="text-xs text-[#6D6D6D]">
@@ -1577,7 +1605,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1 shrink-0">
                                         {/* Preview button - opens modal */}
                                         <Button
                                             variant="ghost"
@@ -1799,7 +1827,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                                     {/* Row 1: Nomor Surat | Status */}
                                     <div className="space-y-1">
                                         <p className="text-sm text-base-gray">Nomor Surat</p>
@@ -1831,14 +1859,14 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                     </div>
 
                                     {/* Full Width: Judul Surat */}
-                                    <div className="col-span-2 space-y-1">
+                                    <div className="sm:col-span-2 space-y-1">
                                         <p className="text-sm text-base-gray">Judul Surat</p>
                                         <p className="font-medium text-base-black wrap-break-word">{judulSuratForDisplay || '-'}</p>
                                     </div>
 
                                     {/* Full Width: Keperluan (for non-staff-created letters) */}
                                     {!isStaffCreated && submissionValues.keperluan && (
-                                        <div className="col-span-2 space-y-1">
+                                        <div className="sm:col-span-2 space-y-1">
                                             <p className="text-sm text-base-gray">Keperluan</p>
                                             <p className="font-medium text-base-black wrap-break-word">{submissionValues.keperluan}</p>
                                         </div>
@@ -1866,17 +1894,17 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="flex items-start gap-6">
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
                                         <div className="flex-shrink-0">
                                             <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-sm">
                                                 <img
                                                     src={suratHasilDoc.qrCodeUrl}
                                                     alt="QR Code Verifikasi"
-                                                    className="w-32 h-32 object-contain"
+                                                    className="w-28 h-28 sm:w-32 sm:h-32 object-contain"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="flex-1 space-y-2">
+                                        <div className="flex-1 space-y-2 text-center sm:text-left">
                                             <p className="text-sm text-zinc-600">
                                                 Scan QR Code ini untuk memverifikasi keaslian dokumen.
                                             </p>
@@ -1926,7 +1954,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                         </CardHeader>
                         <CardContent>
                             {/* Info Grid - New layout */}
-                            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                                 {/* Row 1: Nomor Surat | Status */}
                                 <div className="space-y-1">
                                     <p className="text-sm text-base-gray">Nomor Surat</p>
@@ -1968,21 +1996,21 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
                                 {/* Full Width: Jenis Surat (for surat masuk after fakultas forwards) */}
                                 {!(filterType === 'keluar' && hasSuratHasil) && hasSuratPengantar && kategoriValue && (
-                                    <div className="col-span-2 space-y-1">
+                                    <div className="sm:col-span-2 space-y-1">
                                         <p className="text-sm text-base-gray">Jenis Surat</p>
                                         <p className="font-medium text-base-black">{formatKategori(kategoriValue)}</p>
                                     </div>
                                 )}
 
                                 {/* Full Width: Judul Surat */}
-                                <div className="col-span-2 space-y-1">
+                                <div className="sm:col-span-2 space-y-1">
                                     <p className="text-sm text-base-gray">Judul Surat</p>
                                     <p className="font-medium text-base-black wrap-break-word">{judulSuratForDisplay || '-'}</p>
                                 </div>
 
                                 {/* Full Width: Keperluan (for non-staff-created letters) */}
                                 {!isStaffCreated && submissionValues.keperluan && (
-                                    <div className="col-span-2 space-y-1">
+                                    <div className="sm:col-span-2 space-y-1">
                                         <p className="text-sm text-base-gray">Keperluan</p>
                                         <p className="font-medium text-base-black wrap-break-word">{submissionValues.keperluan}</p>
                                     </div>
@@ -2056,17 +2084,17 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="flex items-start gap-6">
+                                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
                                     <div className="flex-shrink-0">
                                         <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-sm">
                                             <img
                                                 src={suratHasilDoc.qrCodeUrl}
                                                 alt="QR Code Verifikasi"
-                                                className="w-32 h-32 object-contain"
+                                                className="w-28 h-28 sm:w-32 sm:h-32 object-contain"
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex-1 space-y-2">
+                                    <div className="flex-1 space-y-2 text-center sm:text-left">
                                         <p className="text-sm text-zinc-600">
                                             Scan QR Code ini untuk memverifikasi keaslian dokumen.
                                         </p>
@@ -2106,9 +2134,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     return (
         <>
             {/* Page Title */}
-            <div className="flex items-center gap-2 mb-6">
+            <div className="flex items-center gap-2 mb-4 sm:mb-6">
                 <div className="w-2 h-8 bg-zinc-800 rounded-sm" />
-                <h1 className="text-2xl font-bold text-black">Detail</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-black">Detail</h1>
             </div>
 
             {/* Main Content - Always use MahasiswaViewLayout with template preview */}
@@ -2149,7 +2177,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                     (userScope === 'FAKULTAS' && filterType === 'masuk' && hasSuratHasil) ? (
                         null
                     ) : (
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
                             {/* Buat Surat Pengantar Button - Admin Prodi (only when no document exists) */}
                             {/* {permissions.canDraft && !hasSuratPengantar && (
                             <Button 
@@ -2665,7 +2693,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             )}
 
             {/* Attachment Preview Modal */}
-            <Dialog open={attachmentPreviewOpen} onOpenChange={setAttachmentPreviewOpen}>
+            <Dialog open={attachmentPreviewOpen} onOpenChange={(open) => {
+                if (!open && previewAttachment?.fileUrl?.startsWith('blob:')) {
+                    URL.revokeObjectURL(previewAttachment.fileUrl);
+                }
+                setAttachmentPreviewOpen(open);
+            }}>
                 <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col p-6">
                     <DialogHeader>
                         <DialogTitle className="truncate pr-8">

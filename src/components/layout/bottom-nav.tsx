@@ -22,12 +22,12 @@ interface BottomNavProps {
 export default function BottomNav({ leftContent, rightContent }: BottomNavProps) {
     return (
         <footer
-            className="sticky bottom-0 z-10 mt-6 -mx-6 -mb-6 border-t border-gray-200 bg-white rounded-b-2xl"
+            className="sticky bottom-0 z-10 mt-6 -mx-3 -mb-3 sm:-mx-6 sm:-mb-6 border-t border-gray-200 bg-white rounded-b-2xl"
         >
-            <div className="px-6 pt-3 pb-4">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1 w-full">{leftContent}</div>
-                    <div className="flex items-center gap-3 shrink-0">{rightContent}</div>
+            <div className="px-3 sm:px-6 pt-3 pb-4">
+                <div className="flex items-center justify-between gap-2 sm:gap-4">
+                    <div className="shrink-0">{leftContent}</div>
+                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">{rightContent}</div>
                 </div>
             </div>
         </footer>

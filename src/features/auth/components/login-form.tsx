@@ -50,11 +50,11 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4 relative overflow-hidden">
+    <div className="flex h-dvh flex-col bg-gray-50 overflow-hidden">
 
-      {/* Header Logo */}
-      <div className="absolute left-8 top-8 flex items-center gap-3">
-        <div className="relative h-12 w-10 overflow-hidden">
+      {/* Fixed Topnav — logo & institution name, never overlaps content */}
+      <header className="shrink-0 flex h-14 items-center gap-3 border-b border-gray-200 bg-white/90 backdrop-blur-sm px-4 sm:px-8 shadow-sm z-50">
+        <div className="relative h-9 w-8 sm:h-11 sm:w-9 shrink-0 overflow-hidden">
           <Image
             src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logo-undip.svg`}
             alt="Logo Universitas Diponegoro"
@@ -63,23 +63,25 @@ export default function LoginForm() {
             priority
           />
         </div>
-
-        <div className="flex flex-col justify-center">
-          <span className="text-sm font-bold leading-tight text-base-black">
+        <div className="flex flex-col justify-center min-w-0">
+          <span className="text-xs sm:text-sm font-bold leading-tight text-base-black truncate">
             Fakultas Sains dan Matematika
           </span>
-          <span className="text-sm font-normal leading-tight text-base-black">
+          <span className="text-xs sm:text-sm font-normal leading-tight text-base-black truncate">
             Universitas Diponegoro
           </span>
         </div>
-      </div>
+      </header>
 
+      {/* Scrollable body — fills remaining height, always scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="flex min-h-full flex-col items-center justify-center p-4 sm:p-6 py-8">
       <div className="flex flex-col items-center gap-4 w-full max-w-5xl">
         <div className="text-center space-y-2">
-          <h1 className="text-6xl font-bold tracking-tight text-gray-900 md:text-6xl">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900">
             E-Office ST/SK DEKAN
           </h1>
-          <p className="text-xl text-gray-500">
+          <p className="text-sm sm:text-base md:text-xl text-gray-500">
             Masukkan kredensial Anda untuk mengakses akun.
           </p>
         </div>
@@ -163,6 +165,8 @@ export default function LoginForm() {
             </a>
           </CardContent>
         </Card>
+      </div>
+        </div>
       </div>
     </div>
   );

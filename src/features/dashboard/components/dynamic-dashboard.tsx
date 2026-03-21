@@ -32,22 +32,22 @@ function DashboardSkeleton() {
     <div className="space-y-3">
       {/* Row 1: Buat Surat Button Skeleton */}
       <div>
-        <Skeleton className="h-9 w-[320px]" />
+        <Skeleton className="h-9 w-full sm:w-[320px]" />
       </div>
 
       {/* Row 2: Tabs + Filters Skeleton (sejajar) */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
         {/* Tabs Skeleton */}
-        <div className="flex">
-          <Skeleton className="h-9 w-[160px] rounded-r-none" />
-          <Skeleton className="h-9 w-[160px] rounded-l-none" />
+        <div className="flex w-full sm:w-auto">
+          <Skeleton className="h-9 flex-1 sm:flex-none sm:w-[160px] rounded-r-none" />
+          <Skeleton className="h-9 flex-1 sm:flex-none sm:w-[160px] rounded-l-none" />
         </div>
 
         {/* Filters Skeleton (right side) */}
-        <div className="flex items-center gap-3 ml-auto">
-          <Skeleton className="h-9 w-[180px]" />
-          <Skeleton className="h-9 w-[160px]" />
-          <Skeleton className="h-9 w-[200px]" />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 sm:ml-auto">
+          <Skeleton className="h-9 w-full sm:w-[180px]" />
+          <Skeleton className="h-9 w-full sm:w-[160px]" />
+          <Skeleton className="h-9 w-full sm:w-[200px]" />
         </div>
       </div>
 
@@ -268,22 +268,24 @@ export default function DynamicDashboard() {
 
       {/* Table - scrollable area */}
       <div
-        className="mt-4 flex-1 min-h-0 overflow-hidden rounded-lg border border-border bg-white"
+        className="mt-4 flex-1 min-h-[220px] overflow-hidden rounded-lg border border-border bg-white"
       >
         <div className="h-full overflow-auto">
-          <LetterTable
-            columns={columns}
-            data={data?.items || []}
-            loading={loading}
-            filterType={config.hasInboxOutbox ? filters.type : undefined}
-            emptyMessage={
-              filters.search
-                ? `Tidak ditemukan hasil untuk "${filters.search}"`
-                : filters.status
-                  ? `Tidak ada surat dengan status "${filters.status}"`
-                  : "Belum ada data surat"
-            }
-          />
+          <div className="min-w-[700px]">
+            <LetterTable
+              columns={columns}
+              data={data?.items || []}
+              loading={loading}
+              filterType={config.hasInboxOutbox ? filters.type : undefined}
+              emptyMessage={
+                filters.search
+                  ? `Tidak ditemukan hasil untuk "${filters.search}"`
+                  : filters.status
+                    ? `Tidak ada surat dengan status "${filters.status}"`
+                    : "Belum ada data surat"
+              }
+            />
+          </div>
         </div>
       </div>
 

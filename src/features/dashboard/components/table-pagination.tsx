@@ -52,7 +52,7 @@ export function TablePagination({
   const effectiveTotalPages = Math.max(totalPages, 1);
 
   return (
-    <div className="flex w-full items-center justify-between">
+    <div className="flex w-full flex-col-reverse sm:flex-row items-center justify-between gap-3 sm:gap-0">
       {/* Rows per page */}
       {onLimitChange ? (
         <Select
