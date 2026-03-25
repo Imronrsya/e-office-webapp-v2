@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronDown, LogOut, Menu } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, LogOut, Menu, Settings, PenTool } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,6 +11,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getRoleLabel } from "@/lib/role-mapper";
@@ -27,10 +29,15 @@ import {
 
 export default function TopNav() {
   const { user, loading, logout } = useAuth();
+  const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { toggleSidebar } = useSidebar();
+
+  // Roles yang bisa mengakses manajemen tanda tangan
+  const SIGNATURE_MANAGEMENT_ROLES = ['KAPRODI', 'KADEP', 'DEKAN', 'WADEK_1', 'WADEK_2'];
+  const canManageSignature = user?.role && SIGNATURE_MANAGEMENT_ROLES.includes(user.role);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -129,7 +136,33 @@ export default function TopNav() {
               </button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end" sideOffset={8} className="w-48">
+            <DropdownMenuContent align="end" sideOffset={8} className="w-56">
+
+              <DropdownMenuItem
+                className="cursor-pointer gap-2"
+                onSelect={() => {
+                  setDropdownOpen(false);
+                  router.push("/pengaturan/profil");
+                }}
+              >
+                <Settings className="size-4" />
+                <span className="font-medium">Pengaturan</span>
+              </DropdownMenuItem>
+
+              {canManageSignature && (
+                <DropdownMenuItem
+                  className="cursor-pointer gap-2"
+                  onSelect={() => {
+                    setDropdownOpen(false);
+                    router.push("/pengaturan/tanda-tangan");
+                  }}
+                >
+                  <PenTool className="size-4" />
+                  <span className="font-medium">Kelola Tanda Tangan</span>
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuSeparator />
 
               <DropdownMenuItem
                 className="cursor-pointer gap-2 text-logout focus:bg-logout/10 focus:text-logout"

@@ -64,28 +64,26 @@ export const signatureService = {
       // Create form data
       const formData = new FormData();
       formData.append("file", blob, `signature-${Date.now()}.png`);
-      formData.append("method", method);
+      formData.append("method", method === "DRAW" ? "CANVAS" : "UPLOAD");
       if (alias) {
         formData.append("alias", alias);
       }
 
-      const apiResponse = await api.post<ApiResponse<{ signature: SavedSignature }>>(
+      const apiResponse = await api.post<ApiResponse<SavedSignature>>(
         "/api/signatures/upload",
         formData,
         {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { "Content-Type": "multipart/form-data" },
         }
       );
 
       if (apiResponse.data.success && apiResponse.data.data) {
-        return apiResponse.data.data.signature;
+        return apiResponse.data.data;
       }
       return null;
     } catch (error) {
       console.error("Failed to upload signature:", error);
-      return null;
+      throw error;
     }
   },
 

@@ -106,7 +106,7 @@ export function SignatureUpload({ onSignatureChange }: SignatureUploadProps) {
         ) : (
           <label
             htmlFor="signature-upload"
-            className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isDragging
+            className={`flex flex-col items-center justify-center w-full h-[160px] border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isDragging
               ? "border-blue-500 bg-blue-50"
               : "border-zinc-300 hover:border-zinc-400 hover:bg-zinc-50"
               }`}

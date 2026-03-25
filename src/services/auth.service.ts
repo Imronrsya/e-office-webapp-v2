@@ -66,6 +66,7 @@ export interface MeResponse {
     id: string;
     name: string;
     email: string;
+    image?: string | null;
     role: string;        // primary role
     roles: string[];     // semua role jika multi-role
     profile?: UserProfile;

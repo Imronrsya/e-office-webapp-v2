@@ -11,6 +11,7 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<AuthResponse>;
     logout: () => Promise<void>;
     checkSession: () => Promise<void>;
+    updateUser: (fields: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                 setUser({
                     ...session.user,
+                    image: meData?.image || session.user.image,
                     role,
                     roles: roles,
                     profile: meData?.profile,
@@ -94,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             const userWithRole: User = {
                 ...response.user,
+                image: meData?.image || response.user.image,
                 role,
                 roles: roles,
                 profile: meData?.profile,
@@ -124,8 +127,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const updateUser = (fields: Partial<User>) => {
+        setUser((prev) => prev ? { ...prev, ...fields } : prev);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, checkSession }}>
+        <AuthContext.Provider value={{ user, loading, login, logout, checkSession, updateUser }}>
             {children}
         </AuthContext.Provider>
     );
